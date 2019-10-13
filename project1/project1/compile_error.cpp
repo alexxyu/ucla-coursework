@@ -8,9 +8,11 @@ int main()
 {
     int numberSurveyed;
     int forImpeachment;
+    
+    // missing declaration of antiImpeachment variable
 
     cout << "How many people were surveyed? ";
-    cin > numberSurveyed;
+    cin > numberSurveyed;       // missing ">" after cin
     cout << "How many of them support impeachment of the president? ";
     cin >> forImpeachment;
     cout << "How many of them oppose impeachment of the president? ";

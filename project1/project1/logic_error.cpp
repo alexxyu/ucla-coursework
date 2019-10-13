@@ -27,7 +27,7 @@ int main()
     cout << pctFor << "% say they support impeachment." << endl;
     cout << pctAnti << "% say they oppose impeachment." << endl;
 
-    if (forImpeachment < antiImpeachment)
+    if (forImpeachment < antiImpeachment)       // "<" should be ">="
         cout << "More people support impeachment than oppose it." << endl;
     else
         cout << "More people oppose impeachment than support it." << endl;
