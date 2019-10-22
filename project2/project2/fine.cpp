@@ -1,6 +1,9 @@
 //
-//  main.cpp
+//  fine.cpp
 //  Project 2
+//
+//  Calculates the suggested amount for a fine that is to be imposed on a
+//  defendant convicted of fraud in the college admissions scandal.
 //
 //  Created by Alex Yu on 10/10/19.
 //  Copyright © 2019 UCLA. All rights reserved.
@@ -12,8 +15,8 @@ using namespace std;
 int main() {
 
     const double baseFine = 20.0;
-    const double firstThresh = 40.0;      // first amount paid to be fined
-    const double secondThresh = 210.0;    // next amount paid to be fined
+    const double firstThresh = 40.0;      // first amount paid tier to be fined
+    const double secondThresh = 210.0;    // next amount paid tier to be fined
     
     // asks for and reads defendant name
     cout << "Defendant: ";
