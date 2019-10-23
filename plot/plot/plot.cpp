@@ -11,16 +11,16 @@
 #include <cassert>
 using namespace std;
 
-const int NUM_ROWS = 20;
-const int NUM_COLS = 30;
+const int NUM_ROWS = 20;            // number of rows in the grid
+const int NUM_COLS = 30;            // number of columns in the grid
 
-const int HORIZ = 0;
-const int VERT = 1;
+const int HORIZ = 0;                // value for a horizontal line
+const int VERT = 1;                 // value for a vertical line
 
-const int FG = 0;
-const int BG = 1;
+const int FG = 0;                   // value for foreground plot
+const int BG = 1;                   // value for background plot
 
-const int DISTANCE_ERROR = 101;
+const int DISTANCE_ERROR = 101;     // value of error returned by parseDistance function
 
 void plotHorizontalLine(int r, int c, int distance, char ch)
 {
@@ -28,9 +28,7 @@ void plotHorizontalLine(int r, int c, int distance, char ch)
     {
         int cols = getCols();
         for(int n=0; n<=distance && c + n <= cols; n++)
-        {
             setChar(r, c + n, ch);
-        }
     }
 }
 
@@ -40,9 +38,7 @@ void plotVerticalLine(int r, int c, int distance, char ch)
     {
         int rows = getRows();
         for(int m=0; m<=distance && r + m <= rows; m++)
-        {
             setChar(r + m, c, ch);
-        }
     }
 }
 
@@ -92,45 +88,16 @@ bool plotLine(int r, int c, int distance, int dir, char plotChar, int fgbg)
     int absDistance = abs(distance);
     for(int n=0; n<=absDistance; n++)
     {
-        if( (fgbg == BG && getChar(r, c) == ' ') ||
-            (fgbg == FG) )
+        // only plots if in foreground mode or if empty space while in background mode
+        if( (fgbg == BG && getChar(r, c) == ' ') || (fgbg == FG) )
             setChar(r, c, plotChar);
         
+        // adjust the current column and row
         r += rowModifier;
         c += colModifier;
-        
-        /*
-        if(dir == HORIZ)
-        {
-            // find the current column, which depends on the sign of the distance
-            int currCol = c + n;
-            if(distance < 0)
-                currCol = c - n;
-            
-            // only draw in background if empty character at current position
-            if(fgbg == BG && getChar(r, currCol) == ' ')
-                setChar(r, currCol, plotChar);
-            else if(fgbg == FG)
-                setChar(r, currCol, plotChar);
-        }
-        else
-        {
-            // find the current row, which depends on the sign of the distance
-            int currRow = r + n;
-            if(distance < 0)
-                currRow = r - n;
-            
-            // only draw in background if empty character at current position
-            if(fgbg == BG && getChar(currRow, c) == ' ')
-                setChar(currRow, c, plotChar);
-            else if(fgbg == FG)
-                setChar(currRow, c, plotChar);
-        }
-        */
     }
     
     return true;
-    
 }
 
 int parseDistance(string commandString, int& index)
@@ -138,10 +105,12 @@ int parseDistance(string commandString, int& index)
     if(index >= commandString.size())
         return DISTANCE_ERROR;
         
+    // first char in current command can be only a digit or a '-' sign
     char firstChar = commandString[index];
     if(!isdigit(firstChar) && firstChar!= '-')
         return DISTANCE_ERROR;
     
+    // adjusts sign of distance
     int sign = 1;
     if(firstChar == '-')
     {
@@ -151,10 +120,12 @@ int parseDistance(string commandString, int& index)
     
     int distValue = 0;
     
+    // parses the first digit
     if(index < commandString.size() && isdigit(commandString[index]))
         distValue += commandString[index++] - '0';
     else return DISTANCE_ERROR;
     
+    // parses the second digit if present
     if(index < commandString.size() && isdigit(commandString[index]))
         distValue = distValue * 10 + commandString[index++] - '0';
     
@@ -180,12 +151,15 @@ int performCommands(string commandString, char& plotChar, int& mode, int& badPos
             case 'h':
             case 'v':
                 dist = parseDistance(commandString, index);
+                
+                // raises error if plot command syntax is incorrect
                 if(dist == DISTANCE_ERROR)
                 {
                     badPos = index;
                     return 1;
                 }
                 
+                // raises error if whole line could not be plot
                 if(!plotLine(currRow, currCol, dist, (currChar == 'h') ? HORIZ : VERT, plotChar, mode))
                 {
                     badPos = commIndex;
@@ -195,18 +169,19 @@ int performCommands(string commandString, char& plotChar, int& mode, int& badPos
                 if(currChar == 'h') currCol += dist;
                 else currRow += dist;
                 
-                // cout << "Distance parsed: " << dist << endl;
-                // cout << "Current string index: " << index << endl;
+                // cerr << "Distance parsed: " << dist << endl;
+                // cerr << "Current string index: " << index << endl;
                 
                 break;
             case 'b':
             case 'f':
-                mode = (currChar == 'f') ? FG : BG;
+                // raises error if character to set is not present or not printable
                 if(index >= commandString.size() || !isprint(commandString[index]))
                 {
                     badPos = index;
                     return 1;
                 }
+                mode = (currChar == 'f') ? FG : BG;
                 plotChar = commandString[index++];
                 break;
             case 'c':
@@ -222,7 +197,6 @@ int performCommands(string commandString, char& plotChar, int& mode, int& badPos
     }
     
     return 0;
-    
 }
 
 int main()
@@ -257,34 +231,4 @@ int main()
                 cerr << "performCommands returned " << status << "!" << endl;
         }
     }
-    
-    /*
-    const int middle = getCols() / 2;
-    setChar(6, middle, 'E');
-    setChar(8, middle, 'L');
-    setChar(9, middle, 'O');
-    setChar(7, middle, 'L');
-    setChar(5, middle, 'H');
-    if (getChar(6, middle) == 'E')
-        setChar(10, middle, '!');
-    // plotRectangle(3, 3, 0, 4, '*');
-    
-    assert(plotLine(8, 3, 12, HORIZ, '*', BG));
-    draw();
-     */
-    
-    /*
-    setSize(20, 20);
-    clearGrid();
-    assert(plotLine(1, 1, 0, HORIZ, 'H', FG));
-    assert(plotLine(1, 2, 0, HORIZ, 'i', FG));
-    assert(plotLine(1, 3, 0, HORIZ, '!', FG));
-    draw();  //  displays  Hi!  in the top row of the grid
-    assert(plotLine(1, 3, 0, HORIZ, ' ', FG));
-    draw();  //  displays  Hi   in the top row of the grid
-    assert(plotLine(1, 1, 10, HORIZ, ' ', BG));
-    draw();  //  displays  Hi   in the top row of the grid
-    assert( ! plotLine(1, 1, 10, HORIZ, '\n', FG));
-    draw();  //  displays  Hi   in the top row of the grid
-    */
 }
