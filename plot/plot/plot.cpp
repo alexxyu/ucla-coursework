@@ -1,5 +1,5 @@
 //
-//  Plot project
+//  Project 3 -- Plot
 //
 //  Created by Alex Yu on 10/21/19.
 //  Copyright © 2019 UCLA. All rights reserved.
@@ -21,25 +21,20 @@ const int FG = 0;                   // value for foreground plot
 const int BG = 1;                   // value for background plot
 
 const int DISTANCE_ERROR = 101;     // value of error returned by parseDistance function
+                                    // note: relies on fact that distance integer has to have less than 3 digits
 
 void plotHorizontalLine(int r, int c, int distance, char ch)
 {
     if(distance >= 0)
-    {
-        int cols = getCols();
-        for(int n=0; n<=distance && c + n <= cols; n++)
+        for(int n=0; n<=distance && c + n <= NUM_COLS; n++)
             setChar(r, c + n, ch);
-    }
 }
 
 void plotVerticalLine(int r, int c, int distance, char ch)
 {
     if(distance >= 0)
-    {
-        int rows = getRows();
-        for(int m=0; m<=distance && r + m <= rows; m++)
+        for(int m=0; m<=distance && r + m <= NUM_ROWS; m++)
             setChar(r + m, c, ch);
-    }
 }
 
 void plotRectangle(int r, int c, int height, int width, char ch)
@@ -59,15 +54,14 @@ bool canPlotLine(int r, int c, int distance, int dir, char plotChar, int fgbg)
         return false;
     
     // check if starting point is valid in grid
-    if( (r < 1 || r > getRows()) ||
-        (c < 1 || c > getCols()) )
+    if( r < 1 || r > NUM_ROWS || c < 1 || c > NUM_COLS )
         return false;
     
     // check if line can be fully drawn in grid
     if( (dir == HORIZ && distance < 0 && c + distance < 1) ||
-        (dir == HORIZ && distance > 0 && c + distance > getCols()) ||
+        (dir == HORIZ && distance > 0 && c + distance > NUM_COLS) ||
         (dir == VERT && distance < 0 && r + distance < 1) ||
-        (dir == VERT && distance > 0 && r + distance > getRows()) )
+        (dir == VERT && distance > 0 && r + distance > NUM_ROWS) )
         return false;
     
     return true;
@@ -202,8 +196,6 @@ int performCommands(string commandString, char& plotChar, int& mode, int& badPos
 int main()
 {
     setSize(NUM_ROWS, NUM_COLS);
-
-    clearGrid();
     char currentChar = '*';
     int currentMode = FG;
     for (;;)
@@ -217,17 +209,17 @@ int main()
         int status = performCommands(cmd, currentChar, currentMode, position);
         switch (status)
         {
-          case 0:
-            draw();
-            break;
-          case 1:
+            case 0:
+                draw();
+                break;
+            case 1:
                 cout << "Syntax error at position " << position+1 << endl;
-            break;
-          case 2:
+                break;
+            case 2:
                 cout << "Cannot perform command at position " << position+1 << endl;
-            break;
-          default:
-              // It should be impossible to get here.
+                break;
+            default:
+                // It should be impossible to get here.
                 cerr << "performCommands returned " << status << "!" << endl;
         }
     }

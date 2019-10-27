@@ -9,3 +9,4 @@ test/test.xcodeproj/project.xcworkspace/xcuserdata/alexyu.xcuserdatad/UserInterf
 test/test.xcodeproj/xcuserdata/alexyu.xcuserdatad/xcschemes/xcschememanagement.plist
 test/test/a.out
 test/test/main.cpp
+.DS_Store
