@@ -17,7 +17,7 @@ int flip(string a[], int n);
 int differ(const string a1[], int n1, const string a2[], int n2);
 int subsequence(const string a1[], int n1, const string a2[], int n2);
 int lookupAny(const string a1[], int n1, const string a2[], int n2);
-// int separate(string a[], int n, string separator); DOES NOT WORK
+int separate(string a[], int n, string separator);
 
 int appendToAll(string a[], int n, string value)
 {
@@ -64,7 +64,6 @@ int rotateLeft(string a[], int n, int pos)
     
     a[n-1] = removed;
     return pos;
-    
 }
 
 int countRuns(const string a[], int n)
@@ -145,33 +144,26 @@ int separate(string a[], int n, string separator)
     if(n < 0) return -1;
     
     int lo=0, hi=n-1;
-    bool hasSep = false;
-    while(lo < hi)
+    
+    int index = 0;
+    while(index < hi)
     {
-        if(a[lo] > separator)
+        if(a[index] < separator)
         {
             string temp = a[lo];
-            a[lo] = a[hi];
-            a[hi] = temp;
-            hi--;
+            a[lo++] = a[index];
+            a[index++] = temp;
         }
-        else if(a[lo] == separator) hasSep = true;
-        lo++;
-    }
-    
-    if(hasSep)
-    {
-        for(int i=0; i<n; i++)
+        else if(a[index] > separator)
         {
-            if(a[i] == separator)
-            {
-                a[i] = a[lo];
-                a[lo] = separator;
-            }
+            string temp = a[hi];
+            a[hi--] = a[index];
+            a[index] = temp;
         }
+        else index++;
     }
     
-    return lo;
+    return hi;
 }
 
 int main()
@@ -220,9 +212,10 @@ int main()
     
     string persons[6] = { "donald", "lindsey", "marie", "rudy", "fiona", "adam" };
     assert(separate(persons, 6, "gordon") == 3);
-    //for(string s: persons)
-    //    cerr << s << endl;
+    for(string s: persons)
+        cerr << s << endl;
     
+    cerr << endl;
     string persons2[4] = { "marie", "nancy", "lindsey", "mike" };
     assert(separate(persons2, 4, "mike") == 2);
     for(string s: persons2)
