@@ -1,11 +1,12 @@
 //
-//  array.cpp
+//  Project 4 - Array
 //
 //  Created by Alex Yu on 11/1/19.
 //  Copyright © 2019 UCLA. All rights reserved.
 //
 
 #include <iostream>
+#include <cassert>
 using namespace std;
 
 int appendToAll(string a[], int n, string value);
@@ -25,7 +26,6 @@ int appendToAll(string a[], int n, string value)
     
     for(int i=0; i<n; i++)
         a[i] = a[i] + value;
-    
     return n;
 }
 
@@ -40,18 +40,17 @@ int lookup(const string a[], int n, string target)
 int positionOfMax(const string a[], int n)
 {
     if(n <= 0) return -1;
-    string max;
     
     for(int i=0; i<n; i++)
     {
         int j;
         for(j=0; j<n; j++)
             if(a[i] < a[j])
-                break;
-        if(j == n) return i;
+                break;          // don't have to continue checking current string if not greatest in array
+        if(j == n) return i;    // return only if string is greater than all others in array
     }
     
-    return -1;
+    return -1;                  // return -1 only if no strings bigger than all others found
 }
 
 int rotateLeft(string a[], int n, int pos)
@@ -73,7 +72,7 @@ int countRuns(const string a[], int n)
     
     int runs = 1;
     for(int i=1; i<n; i++)
-        if(a[i] != a[i-1])
+        if(a[i] != a[i-1])      // new run for every element different from last
             runs++;
     
     return runs;
@@ -86,6 +85,7 @@ int flip(string a[], int n)
     int lo=0, hi=n-1;
     while(lo < hi)
     {
+        // swap lo index and hi index each turn
         string temp = a[lo];
         a[lo] = a[hi];
         a[hi] = temp;
@@ -108,20 +108,20 @@ int differ(const string a1[], int n1, const string a2[], int n2)
         index++;
     }
     
-    return (n1 < n2) ? n1 : n2;
+    return (n1 < n2) ? n1 : n2;     // return smaller of two if elements found to be same
 }
 
 int subsequence(const string a1[], int n1, const string a2[], int n2)
 {
     if(n1 < 0 || n2 < 0) return -1;
-    if(n2 == 0) return 0;
+    if(n2 == 0) return 0;                       // empty sequence always a subsequence
     
     int a2Pos = 0;
     for(int i=0; i<n1; i++)
     {
-        if(a2Pos == n2) return i - n2;
-        else if(a1[i] == a2[a2Pos]) a2Pos++;
-        else a2Pos = 0;
+        if(a2Pos == n2) return i - n2;          // return start index if subsequence found
+        else if(a1[i] == a2[a2Pos]) a2Pos++;    // increment index of subsequence to check
+        else a2Pos = 0;                         // reset index because subsequence failed to match
     }
     
     return -1;
@@ -142,33 +142,26 @@ int lookupAny(const string a1[], int n1, const string a2[], int n2)
 int separate(string a[], int n, string separator)
 {
     if(n < 0) return -1;
-    
+
     int lo=0, hi=n-1;
-    
-    int index = 0;
-    while(index < hi)
+    while(lo < hi)
     {
-        if(a[index] < separator)
-        {
-            string temp = a[lo];
-            a[lo++] = a[index];
-            a[index++] = temp;
-        }
-        else if(a[index] > separator)
-        {
-            string temp = a[hi];
-            a[hi--] = a[index];
-            a[index] = temp;
-        }
-        else index++;
+        // get next elements that are not in correct partition of array
+        while(a[lo] < separator) lo++;
+        while(a[hi] > separator) hi--;
+        
+        // swap these incorrectly placed elements
+        string temp = a[hi];
+        a[hi] = a[lo];
+        a[lo] = temp;
     }
     
-    return hi;
+    // lo will be the index of the first element >= separator
+    return lo;
 }
 
 int main()
 {
-    
     string officeholders[5] = { "donald", "lindsey", "mike", "adam", "nancy" };
     
     assert(lookup(officeholders, 5, "adam") == 3);
@@ -179,17 +172,18 @@ int main()
     flip(officeholders, 5);
     
     string politician[5] = { "mike", "donald", "lindsey", "nancy", "adam" };
-    assert(rotateLeft(politician, 5, 1) == 1);
-    // for(string s: politician)
-    //     cerr << s << endl;
+    assert(rotateLeft(politician, 5, 4) == 4);
+    for(string s: politician)
+         cerr << s << "\t";
+    cerr << endl;
     
     string d[9] = {
         "rudy", "adam", "mike", "mike", "fiona", "fiona", "fiona", "mike", "mike"
     };
     assert(countRuns(d, 9) == 5);
     
-    // string persons[6] = { "donald", "lindsey", "marie", "rudy", "fiona", "adam" };
-    // assert(positionOfMax(persons, 6) == 3);
+    string persons[6] = { "donald", "lindsey", "marie", "rudy", "fiona", "adam" };
+    assert(positionOfMax(persons, 6) == 3);
     
     string nothing[0];
     assert(lookup(nothing, 0, "hi") == -1);
@@ -210,18 +204,18 @@ int main()
     string set2[10] = { "rudy", "fiona" };
     assert(lookupAny(names, 6, set2, 2) == -1);
     
-    string persons[6] = { "donald", "lindsey", "marie", "rudy", "fiona", "adam" };
-    assert(separate(persons, 6, "gordon") == 3);
-    for(string s: persons)
-        cerr << s << endl;
-    
+    string persons1[6] = { "donald", "lindsey", "marie", "rudy", "fiona", "adam" };
+    assert(separate(persons1, 6, "gordon") == 3);
+    for(string s: persons1)
+        cerr << s << "\t";
     cerr << endl;
+    
     string persons2[4] = { "marie", "nancy", "lindsey", "mike" };
     assert(separate(persons2, 4, "mike") == 2);
     for(string s: persons2)
-        cerr << s << endl;
+        cerr << s << "\t";
+    cerr << endl;
     
     return 0;
-    
 }
 
