@@ -10,6 +10,7 @@
 #include <cassert>
 using namespace std;
 
+void swap(string a[], int pos1, int pos2);
 int appendToAll(string a[], int n, string value);
 int lookup(const string a[], int n, string target);
 int positionOfMax(const string a[], int n);
@@ -20,6 +21,13 @@ int differ(const string a1[], int n1, const string a2[], int n2);
 int subsequence(const string a1[], int n1, const string a2[], int n2);
 int lookupAny(const string a1[], int n1, const string a2[], int n2);
 int separate(string a[], int n, string separator);
+
+void swap(string a[], int pos1, int pos2)
+{
+    string temp = a[pos1];
+    a[pos1] = a[pos2];
+    a[pos2] = temp;
+}
 
 int appendToAll(string a[], int n, string value)
 {
@@ -88,14 +96,7 @@ int flip(string a[], int n)
     
     int lo=0, hi=n-1;
     while(lo < hi)
-    {
-        // swap lo index and hi index each turn
-        string temp = a[lo];
-        a[lo] = a[hi];
-        a[hi] = temp;
-        lo++;
-        hi--;
-    }
+        swap(a, lo++, hi--);    // swap lo index and hi index each turn and close in on center
     
     return n;
 }
@@ -134,12 +135,12 @@ int subsequence(const string a1[], int n1, const string a2[], int n2)
 int lookupAny(const string a1[], int n1, const string a2[], int n2)
 {
     if(n1 < 0 || n2 < 0) return -1;
-    
+
     for(int i=0; i<n1; i++)
         for(int j=0; j<n2; j++)
             if(a1[i] == a2[j])
                 return i;
-    
+
     return -1;
 }
 
@@ -156,11 +157,7 @@ int separate(string a[], int n, string separator)
         
         // swap these incorrectly placed elements
         if(lo < hi)
-        {
-            string temp = a[hi];
-            a[hi] = a[lo];
-            a[lo] = temp;
-        }
+            swap(a, lo, hi);
     }
     
     // lo will be the index of the first element >= separator, or n if element does not exist
@@ -169,44 +166,28 @@ int separate(string a[], int n, string separator)
 
 int main()
 {
-    string officeholders[5] = { "donald", "lindsey", "mike", "adam", "nancy" };
+    string h[7] = { "mick", "marie", "fiona", "rudy", "", "gordon", "lindsey" };
+    assert(lookup(h, 7, "gordon") == 5);
+    assert(lookup(h, 7, "fiona") == 2);
+    assert(lookup(h, 2, "fiona") == -1);
+    assert(positionOfMax(h, 7) == 3);
+
+    string g[4] = { "mick", "marie", "lindsey", "nancy" };
+    assert(differ(h, 4, g, 4) == 2);
+    assert(appendToAll(g, 4, "?") == 4 && g[0] == "mick?" && g[3] == "nancy?");
+    assert(rotateLeft(g, 4, 1) == 1 && g[1] == "lindsey?" && g[3] == "marie?");
+
+    string e[4] = { "fiona", "rudy", "", "gordon" };
+    assert(subsequence(h, 7, e, 4) == 2);
+
+    string d[5] = { "marie", "marie", "marie", "rudy", "rudy" };
+    assert(countRuns(d, 5) == 2);
     
-    assert(lookup(officeholders, 5, "adam") == 3);
-    assert(lookup(officeholders, 5, "joey") == -1);
-    assert(lookup(officeholders, 5, "donald") == 0);
-    assert(lookup(officeholders, 5, "") == -1);
+    string f[3] = { "lindsey", "fiona", "mike" };
+    assert(lookupAny(h, 7, f, 3) == 2);
+    assert(flip(f, 3) == 3 && f[0] == "mike" && f[2] == "lindsey");
     
-    flip(officeholders, 5);
+    assert(separate(h, 7, "lindsey") == 3);
     
-    string politician[5] = { "mike", "donald", "lindsey", "nancy", "adam" };
-    assert(rotateLeft(politician, 5, 4) == 4);
-    
-    string d[9] = {
-        "rudy", "adam", "mike", "mike", "fiona", "fiona", "fiona", "mike", "mike"
-    };
-    assert(countRuns(d, 9) == 5);
-    
-    string persons[6] = { "donald", "lindsey", "marie", "rudy", "fiona", "adam" };
-    assert(positionOfMax(persons, 6) == 3);
-    
-    string folks[7] = { "adam", "", "fiona", "mike", "rudy", "nancy", "donald" };
-    string group[6] = { "adam", "", "fiona", "donald", "mike", "rudy" };
-    assert(differ(folks, 7, group, 6) == 3);
-    assert(differ(folks, 2, group, 3) == 2);
-    
-    string names[10] = { "gordon", "marie", "nancy", "mick", "adam", "lindsey" };
-    string names1[10] = { "marie", "nancy", "mick" };
-    assert(subsequence(names, 6, names1, 3) == 1);
-    string names2[10] = { "gordon", "mick" };
-    assert(subsequence(names, 5, names2, 2) == -1);
-    
-    string set1[10] = { "donald", "adam", "mick", "marie" };
-    assert(lookupAny(names, 6, set1, 4) == 1);
-    string set2[10] = { "rudy", "fiona" };
-    assert(lookupAny(names, 6, set2, 2) == -1);
-    
-    string persons1[6] = { "donald", "lindsey", "marie", "rudy", "fiona", "adam" };
-    assert(separate(persons1, 6, "gordon") == 3);
- 
-    return 0;
+    cerr << "All tests succeeded" << endl;
 }
