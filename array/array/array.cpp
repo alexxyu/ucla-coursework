@@ -6,6 +6,7 @@
 //
 
 #include <iostream>
+#include <string>
 #include <cassert>
 using namespace std;
 
@@ -41,16 +42,19 @@ int positionOfMax(const string a[], int n)
 {
     if(n <= 0) return -1;
     
-    for(int i=0; i<n; i++)
+    int maxPos = 0;
+    string max = a[0];
+    
+    for(int i=1; i<n; i++)
     {
-        int j;
-        for(j=0; j<n; j++)
-            if(a[i] < a[j])
-                break;          // don't have to continue checking current string if not greatest in array
-        if(j == n) return i;    // return only if string is greater than all others in array
+        if(a[i] > max)
+        {
+            maxPos = i;
+            max = a[i];
+        }
     }
     
-    return -1;                  // return -1 only if no strings bigger than all others found
+    return maxPos;
 }
 
 int rotateLeft(string a[], int n, int pos)
@@ -151,12 +155,15 @@ int separate(string a[], int n, string separator)
         while(a[hi] > separator) hi--;
         
         // swap these incorrectly placed elements
-        string temp = a[hi];
-        a[hi] = a[lo];
-        a[lo] = temp;
+        if(lo < hi)
+        {
+            string temp = a[hi];
+            a[hi] = a[lo];
+            a[lo] = temp;
+        }
     }
     
-    // lo will be the index of the first element >= separator
+    // lo will be the index of the first element >= separator, or n if element does not exist
     return lo;
 }
 
@@ -173,9 +180,6 @@ int main()
     
     string politician[5] = { "mike", "donald", "lindsey", "nancy", "adam" };
     assert(rotateLeft(politician, 5, 4) == 4);
-    for(string s: politician)
-         cerr << s << "\t";
-    cerr << endl;
     
     string d[9] = {
         "rudy", "adam", "mike", "mike", "fiona", "fiona", "fiona", "mike", "mike"
@@ -184,9 +188,6 @@ int main()
     
     string persons[6] = { "donald", "lindsey", "marie", "rudy", "fiona", "adam" };
     assert(positionOfMax(persons, 6) == 3);
-    
-    string nothing[0];
-    assert(lookup(nothing, 0, "hi") == -1);
     
     string folks[7] = { "adam", "", "fiona", "mike", "rudy", "nancy", "donald" };
     string group[6] = { "adam", "", "fiona", "donald", "mike", "rudy" };
@@ -206,16 +207,6 @@ int main()
     
     string persons1[6] = { "donald", "lindsey", "marie", "rudy", "fiona", "adam" };
     assert(separate(persons1, 6, "gordon") == 3);
-    for(string s: persons1)
-        cerr << s << "\t";
-    cerr << endl;
-    
-    string persons2[4] = { "marie", "nancy", "lindsey", "mike" };
-    assert(separate(persons2, 4, "mike") == 2);
-    for(string s: persons2)
-        cerr << s << "\t";
-    cerr << endl;
-    
+ 
     return 0;
 }
-
