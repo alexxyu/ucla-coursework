@@ -55,7 +55,7 @@ int positionOfMax(const string a[], int n)
     
     for(int i=1; i<n; i++)
     {
-        if(a[i] > max)
+        if(a[i] > max)            // saves position of current max
         {
             maxPos = i;
             max = a[i];
@@ -71,7 +71,7 @@ int rotateLeft(string a[], int n, int pos)
     
     string removed = a[pos];
     for(int i=pos+1; i<n; i++)
-        a[i-1] = a[i];
+        a[i-1] = a[i];           // shift each element after removed one position to the left
     
     a[n-1] = removed;
     return pos;
@@ -118,7 +118,7 @@ int differ(const string a1[], int n1, const string a2[], int n2)
 
 int subsequence(const string a1[], int n1, const string a2[], int n2)
 {
-    if(n1 < 0 || n2 < 0) return -1;
+    if(n1 < 0 || n2 < 0 || n2 > n1) return -1;
     if(n2 == 0) return 0;                       // empty sequence always a subsequence
     
     int a2Pos = 0;
@@ -179,15 +179,18 @@ int main()
 
     string e[4] = { "fiona", "rudy", "", "gordon" };
     assert(subsequence(h, 7, e, 4) == 2);
+    assert(subsequence(g, 4, h, 7) == -1);
 
     string d[5] = { "marie", "marie", "marie", "rudy", "rudy" };
     assert(countRuns(d, 5) == 2);
     
     string f[3] = { "lindsey", "fiona", "mike" };
     assert(lookupAny(h, 7, f, 3) == 2);
+    assert(lookupAny(h, 0, f, 3) == -1);
     assert(flip(f, 3) == 3 && f[0] == "mike" && f[2] == "lindsey");
     
     assert(separate(h, 7, "lindsey") == 3);
+    assert(separate(f, 3, "lindsey") == 1);
     
-    cerr << "All tests succeeded" << endl;
+    cerr << "All tests succeeded." << endl;
 }
