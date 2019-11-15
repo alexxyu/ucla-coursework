@@ -32,8 +32,6 @@ int main()
         return 1;
     }
     
-    cerr << nWords << " words loaded." << endl;
-    
     int roundsToPlay;
     cout << "How many rounds do you want to play? ";
     cin >> roundsToPlay;
@@ -53,15 +51,16 @@ int main()
     for(int round=1; round <= roundsToPlay; round++)
     {
         cout << "\nRound " << round << endl;
-        int wordNum = randInt(0, nWords-1);                 // generates a random word index
+        
+        int wordNum = randInt(0, nWords-1);
         cout << "The mystery word is " << strlen(words[wordNum]) << " letters long.\n";
+        
         int score = playOneRound(words, nWords, wordNum);   // plays a round
         if(score < 0)
         {
             cout << "Invalid arguments." << endl;
             return 1;
         }
-        
         scoreSum += score;
         
         if(score == 1) cout << "You got it in 1 try.\n";
@@ -84,13 +83,15 @@ int playOneRound(const char words[][MAX_WORD_LEN+1], int nWords, int wordnum)
     
     int score = 0;
     
-    char mystery[MAX_WORD_LEN+1];
-    strcpy(mystery, words[wordnum]);
+    // char mystery[MAX_WORD_LEN+1];
+    // strcpy(mystery, words[wordnum]);
+    
+    char mystery[] = "feud";
     
     char trial[MAX_WORD_LEN+1];
     
     // play round continuously as long as trial word is not mystery word
-    do {
+    while(true) {
         // used to first check whether input is right length and is all lowercase letters
         char buffer[BUFFER_LENGTH];
         
@@ -102,7 +103,7 @@ int playOneRound(const char words[][MAX_WORD_LEN+1], int nWords, int wordnum)
         else
         {
             strcpy(trial, buffer);
-            if(strcmp(trial, mystery) == 0)
+            if(strcmp(trial, mystery) == 0)    // correct when trials word is the mystery word
             {
                 score++;
                 break;
@@ -118,7 +119,7 @@ int playOneRound(const char words[][MAX_WORD_LEN+1], int nWords, int wordnum)
                 score++;
             }
         }
-    } while(strcmp(trial, mystery) != 0);
+    }
  
     return score;
 }
@@ -171,13 +172,11 @@ void findFlowersAndBees(int flowerAndBees[], const char mystery[], const char tr
     // then find all the bees since flowers take priority
     for(int i=0; i<trialLen; i++)
     {
-        // skip positions in mystery word if they've already been marked as flowers
-        if(i < strlen(mysteryCopy) && mysteryCopy[i] == '!') continue;
-        
+        // tries to find character in mystery string, will skip already marked positions
         int mysteryIndex = indexOf(mysteryCopy, static_cast<int>(strlen(mysteryCopy)), trial[i]);
         if(mysteryIndex < 0) continue;
         
         flowerAndBees[1]++;                 // bee since character found in mystery word
-        mysteryCopy[mysteryIndex] = '!';    // mark the position in mystery word as checked
+        mysteryCopy[mysteryIndex] = '!';    // mark the position in mystery word as bee
     }
 }
