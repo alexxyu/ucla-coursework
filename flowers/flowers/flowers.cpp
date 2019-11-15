@@ -19,12 +19,12 @@ int playOneRound(const char words[][7], int nWords, int wordnum);
 bool doesWordExist(const char words[][MAX_WORD_LEN+1], int nWords, char word[]);
 bool isValidTrial(const char trial[], int len);
 int indexOf(const char str[], int strLen, char c);
-void findFlowersAndBees(int flowerAndBees[], const char mystery[], int mysteryLen, const char trial[], int trialLen);
+void findFlowersAndBees(int flowerAndBees[], const char mystery[], const char trial[], int trialLen);
 
 int main()
 {
     char words[MAX_WORDS][MAX_WORD_LEN+1];
-    int nWords = getWords(words, MAX_WORDS, WORD_FILEPATH);
+    int nWords = getWords(words, MAX_WORDS, WORD_FILEPATH);   // fill words array
     
     if(nWords < 1)
     {
@@ -39,19 +39,29 @@ int main()
     cin >> roundsToPlay;
     cin.ignore(10000, '\n');
     
-    if(roundsToPlay < 0)
+    if(roundsToPlay <= 0)
     {
         cout << "The number of rounds must be positive." << endl;
         return 1;
     }
+    
+    cout.setf(ios::fixed);
+    cout.precision(2);
     
     double scoreSum = 0;
     int minimum = 0, maximum = 0;
     for(int round=1; round <= roundsToPlay; round++)
     {
         cout << "\nRound " << round << endl;
-        int wordnum = randInt(0, nWords);                   // generates a random word index
-        int score = playOneRound(words, nWords, wordnum);   // plays a round
+        int wordNum = randInt(0, nWords-1);                 // generates a random word index
+        cout << "The mystery word is " << strlen(words[wordNum]) << " letters long.\n";
+        int score = playOneRound(words, nWords, wordNum);   // plays a round
+        if(score < 0)
+        {
+            cout << "Invalid arguments." << endl;
+            return 1;
+        }
+        
         scoreSum += score;
         
         if(score == 1) cout << "You got it in 1 try.\n";
@@ -59,7 +69,7 @@ int main()
         
         // keeps track of the minimum and maximum scores
         minimum = (minimum == 0) ? score : (score < minimum) ? score : minimum;
-        maximum = (score > maximum) ? score : minimum;
+        maximum = (score > maximum) ? score : maximum;
         
         cout << "Average: " << scoreSum / round << ", minimum: " << minimum << ", maximum: " << maximum << "\n";
     }
@@ -69,17 +79,20 @@ int main()
 
 int playOneRound(const char words[][MAX_WORD_LEN+1], int nWords, int wordnum)
 {
+    if(nWords <= 0 || wordnum < 0 || wordnum >= nWords)
+        return -1;
+    
     int score = 0;
     
     char mystery[MAX_WORD_LEN+1];
     strcpy(mystery, words[wordnum]);
     
-    // cerr << "The mystery word is " << mystery << ".\n";
-    cout << "The mystery word is " << strlen(mystery) << " letters long.\n";
-    
     char trial[MAX_WORD_LEN+1];
+    
+    // play round continuously as long as trial word is not mystery word
     do {
-        char buffer[BUFFER_LENGTH];           // C-string used to check whether user input is right length and is all lower-case letters
+        // used to first check whether input is right length and is all lowercase letters
+        char buffer[BUFFER_LENGTH];
         
         cout << "Trial word: ";
         cin.getline(buffer, BUFFER_LENGTH);
@@ -89,20 +102,23 @@ int playOneRound(const char words[][MAX_WORD_LEN+1], int nWords, int wordnum)
         else
         {
             strcpy(trial, buffer);
-            
-            if(!doesWordExist(words, nWords, trial))
+            if(strcmp(trial, mystery) == 0)
+            {
+                score++;
+                break;
+            }
+            else if(!doesWordExist(words, nWords, trial))
                 cout << "I don't know that word.\n";
             else
             {
                 int flowersAndBees[] = {0, 0}; // 1st index is num flowers, 2nd is bees
                 
-                findFlowersAndBees(flowersAndBees, mystery, static_cast<int>(strlen(mystery)), trial, static_cast<int>(strlen(trial)));
+                findFlowersAndBees(flowersAndBees, mystery, trial, static_cast<int>(strlen(trial)));
                 cout << "Flowers: " << flowersAndBees[0] << ", Bees: " << flowersAndBees[1] << "\n";
                 score++;
             }
         }
     } while(strcmp(trial, mystery) != 0);
-    
  
     return score;
 }
@@ -136,28 +152,32 @@ int indexOf(const char str[], int strLen, char c)
     return -1;
 }
 
-void findFlowersAndBees(int flowerAndBees[], const char mystery[], int mysteryLen, const char trial[], int trialLen)
+void findFlowersAndBees(int flowerAndBees[], const char mystery[], const char trial[], int trialLen)
 {
-    char mysteryCopy[mysteryLen];               // copy of mystery word to keep track of flowers and bees
+    // make copy of mystery word to keep track of what characters have been checked
+    char mysteryCopy[MAX_WORD_LEN+1];
     strcpy(mysteryCopy, mystery);
-    
+        
     // first find all the flowers
     for(int i=0; i<trialLen; i++)
     {
-        if(i < mysteryLen && mystery[i] == trial[i])
+        if(i < strlen(mysteryCopy) && mystery[i] == trial[i])
         {
-            flowerAndBees[0]++;     // flower because character in same position
-            mysteryCopy[i] = '!';   // mark the position in string as checked
+            flowerAndBees[0]++;         // flower because character in same position in both
+            mysteryCopy[i] = '!';       // mark the position in mystery word as flower
         }
     }
     
-    // then finda all the bees
+    // then find all the bees since flowers take priority
     for(int i=0; i<trialLen; i++)
     {
-        int mysteryIndex = indexOf(mysteryCopy, mysteryLen, trial[i]);
+        // skip positions in mystery word if they've already been marked as flowers
+        if(i < strlen(mysteryCopy) && mysteryCopy[i] == '!') continue;
+        
+        int mysteryIndex = indexOf(mysteryCopy, static_cast<int>(strlen(mysteryCopy)), trial[i]);
         if(mysteryIndex < 0) continue;
         
-        flowerAndBees[1]++;                 // bee
-        mysteryCopy[mysteryIndex] = '!';    // mark the position in string as checked
+        flowerAndBees[1]++;                 // bee since character found in mystery word
+        mysteryCopy[mysteryIndex] = '!';    // mark the position in mystery word as checked
     }
 }
