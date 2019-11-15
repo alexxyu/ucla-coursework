@@ -11,6 +11,7 @@
 using namespace std;
 
 const int MAX_WORDS = 9000;
+const int MIN_WORD_LEN = 4;
 const int MAX_WORD_LEN = 6;
 const char WORD_FILEPATH[] = "/Users/alexyu/Desktop/Projects/cs31/flowers/flowers/words.txt";
 const int BUFFER_LENGTH = 101;
@@ -128,17 +129,18 @@ bool doesWordExist(const char words[][MAX_WORD_LEN+1], int nWords, char word[])
 {
     for(int i=0; i<nWords; i++)
         if(strcmp(words[i], word) == 0)
-            return true;                        // matching word found in words array
+            return true;                         // matching word found in words array
     
     return false;
 }
 
 bool isValidTrial(const char trial[], int len)
 {
-    if(len < 4 || len > 6) return false;        // not between 4 to 6 characters
+    if(len < MIN_WORD_LEN || len > MAX_WORD_LEN) // not between 4 to 6 characters
+        return false;
     
     for(int i=0; i<len; i++)
-        if(trial[i] < 'a' || trial[i] > 'z')    // not entirely lower-case letters
+        if(trial[i] < 'a' || trial[i] > 'z')     // not entirely lower-case letters
             return false;
     
     return true;
