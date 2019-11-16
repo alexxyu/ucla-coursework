@@ -1,5 +1,5 @@
 //
-//  Project 5 - Flowers
+//  Project 5 - Flowers and Bees Game
 //
 //  Created by Alex Yu on 11/8/19.
 //  Copyright © 2019 UCLA. All rights reserved.
@@ -27,8 +27,7 @@ int main()
     char words[MAX_WORDS][MAX_WORD_LEN+1];
     int nWords = getWords(words, MAX_WORDS, WORD_FILEPATH);   // fill words array
     
-    if(nWords < 1)
-    {
+    if(nWords < 1) {
         cout << "No words were loaded, so I can't play the game." << endl;
         return 1;
     }
@@ -38,8 +37,7 @@ int main()
     cin >> roundsToPlay;
     cin.ignore(10000, '\n');
     
-    if(roundsToPlay <= 0)
-    {
+    if(roundsToPlay <= 0) {
         cout << "The number of rounds must be positive." << endl;
         return 1;
     }
@@ -49,16 +47,14 @@ int main()
     
     double scoreSum = 0;
     int minimum = 0, maximum = 0;
-    for(int round=1; round <= roundsToPlay; round++)
-    {
+    for(int round=1; round <= roundsToPlay; round++) {
         cout << "\nRound " << round << endl;
         
         int wordNum = randInt(0, nWords-1);
         cout << "The mystery word is " << strlen(words[wordNum]) << " letters long.\n";
         
         int score = playOneRound(words, nWords, wordNum);   // plays a round
-        if(score < 0)
-        {
+        if(score < 0) {
             cout << "Invalid arguments." << endl;
             return 1;
         }
@@ -84,10 +80,8 @@ int playOneRound(const char words[][MAX_WORD_LEN+1], int nWords, int wordnum)
     
     int score = 0;
     
-    // char mystery[MAX_WORD_LEN+1];
-    // strcpy(mystery, words[wordnum]);
-    
-    char mystery[] = "feud";
+    char mystery[MAX_WORD_LEN+1];
+    strcpy(mystery, words[wordnum]);
     
     char trial[MAX_WORD_LEN+1];
     
@@ -101,18 +95,15 @@ int playOneRound(const char words[][MAX_WORD_LEN+1], int nWords, int wordnum)
         
         if(!isValidTrial(buffer, static_cast<int>(strlen(buffer))))
             cout << "Your trial word must be a word of 4 to 6 lower case letters.\n";
-        else
-        {
+        else {
             strcpy(trial, buffer);
-            if(strcmp(trial, mystery) == 0)    // correct when trials word is the mystery word
-            {
+            if(strcmp(trial, mystery) == 0) {  // correct when trials word is the mystery word
                 score++;
                 break;
             }
             else if(!doesWordExist(words, nWords, trial))
                 cout << "I don't know that word.\n";
-            else
-            {
+            else {
                 int flowersAndBees[] = {0, 0}; // 1st index is num flowers, 2nd is bees
                 
                 findFlowersAndBees(flowersAndBees, mystery, trial, static_cast<int>(strlen(trial)));
@@ -162,23 +153,20 @@ void findFlowersAndBees(int flowerAndBees[], const char mystery[], const char tr
     strcpy(mysteryCopy, mystery);
         
     // first find all the flowers
-    for(int i=0; i<trialLen; i++)
-    {
-        if(i < strlen(mysteryCopy) && mystery[i] == trial[i])
-        {
+    for(int i=0; i<trialLen; i++) {
+        if(i < strlen(mysteryCopy) && mystery[i] == trial[i]) {
             flowerAndBees[0]++;         // flower because character in same position in both
             mysteryCopy[i] = '!';       // mark the position in mystery word as flower
         }
     }
     
     // then find all the bees since flowers take priority
-    for(int i=0; i<trialLen; i++)
-    {
+    for(int i=0; i<trialLen; i++) {
         // tries to find character in mystery string, will skip already marked positions
         int mysteryIndex = indexOf(mysteryCopy, static_cast<int>(strlen(mysteryCopy)), trial[i]);
-        if(mysteryIndex < 0) continue;
-        
-        flowerAndBees[1]++;                 // bee since character found in mystery word
-        mysteryCopy[mysteryIndex] = '!';    // mark the position in mystery word as bee
+        if(mysteryIndex >= 0) {
+            flowerAndBees[1]++;                 // bee since character found in mystery word
+            mysteryCopy[mysteryIndex] = '!';    // mark the position in mystery word as bee
+        }
     }
 }
