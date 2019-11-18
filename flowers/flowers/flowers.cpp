@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <cstring>
+#include <cassert>
 #include "utilities.h"
 using namespace std;
 
@@ -29,6 +30,10 @@ int main()
     
     if(nWords < 1) {
         cout << "No words were loaded, so I can't play the game." << endl;
+        return 1;
+    }
+    else if(nWords > MAX_WORDS) {
+        cout << "Too many words were loaded, so I can't play the game." << endl;
         return 1;
     }
     
@@ -83,12 +88,15 @@ int playOneRound(const char words[][MAX_WORD_LEN+1], int nWords, int wordnum)
     char mystery[MAX_WORD_LEN+1];
     strcpy(mystery, words[wordnum]);
     
+    // used to first check whether input is right length and is all lowercase letters
+    char buffer[BUFFER_LENGTH];
     char trial[MAX_WORD_LEN+1];
+    
+    // used to keep track of flowers and bees count; 1st index is num flowers, 2nd is bees
+    int flowersAndBees[] = {0, 0};
     
     // play round continuously as long as trial word is not mystery word
     while(true) {
-        // used to first check whether input is right length and is all lowercase letters
-        char buffer[BUFFER_LENGTH];
         
         cout << "Trial word: ";
         cin.getline(buffer, BUFFER_LENGTH);
@@ -104,8 +112,9 @@ int playOneRound(const char words[][MAX_WORD_LEN+1], int nWords, int wordnum)
             else if(!doesWordExist(words, nWords, trial))
                 cout << "I don't know that word.\n";
             else {
-                int flowersAndBees[] = {0, 0}; // 1st index is num flowers, 2nd is bees
                 
+                flowersAndBees[0] = 0;
+                flowersAndBees[1] = 0;
                 findFlowersAndBees(flowersAndBees, mystery, trial, static_cast<int>(strlen(trial)));
                 cout << "Flowers: " << flowersAndBees[0] << ", Bees: " << flowersAndBees[1] << "\n";
                 score++;
