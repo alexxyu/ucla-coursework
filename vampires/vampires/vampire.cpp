@@ -207,32 +207,8 @@ void Vampire::move()
         
         int dir = randInt(0, 3);
         
-        int row_change = 0;
-        int col_change = 0;
-        
-        switch(dir) {
-            case NORTH:
-                row_change = -1;
-                break;
-            case SOUTH:
-                row_change = 1;
-                break;
-            case EAST:
-                col_change = 1;
-                break;
-            case WEST:
-                col_change = -1;
-                break;
-        }
-        
-        int temp_row = m_row + row_change;
-        int temp_col = m_col + col_change;
-        
-        if(temp_row < 1 || temp_row > m_arena->rows() || temp_col < 1 || temp_col > m_arena->cols())
+        if(!attemptMove(*m_arena, dir, m_row, m_col))
             return;
-        
-        m_row = temp_row;
-        m_col = temp_col;
         
         if(m_arena->getCellStatus(m_row, m_col) == HAS_POISON) {
             m_num_poison++;
@@ -296,37 +272,25 @@ string Player::move(int dir)
       //        "Player moved east.", "Player moved south.", or
       //        "Player moved west."
     
-    int row_change = 0;
-    int col_change = 0;
+    if(!attemptMove(*m_arena, dir, m_row, m_col))
+        return "Player couldn't move; player stands.";
     
     string msg;
     switch(dir) {
         case NORTH:
-            row_change = -1;
             msg = "Player moved north.";
             break;
         case SOUTH:
-            row_change = 1;
             msg = "Player moved south.";
             break;
         case EAST:
-            col_change = 1;
             msg = "Player moved east.";
             break;
         case WEST:
-            col_change = -1;
             msg = "Player moved west.";
             break;
     }
     
-    int temp_row = m_row + row_change;
-    int temp_col = m_col + col_change;
-    
-    if(temp_row < 1 || temp_row > m_arena->rows() || temp_col < 1 || temp_col > m_arena->cols())
-        return "Player couldn't move; player stands.";
-    
-    m_row = temp_row;
-    m_col = temp_col;
     if(m_arena->numberOfVampiresAt(m_row, m_col) > 0) {
         setDead();
         return "Player walked into a vampire and died.";
@@ -699,8 +663,33 @@ bool decodeDirection(char ch, int& dir)
 bool attemptMove(const Arena& a, int dir, int& r, int& c)
 {
       // TODO:  Implement this function
-      // Delete the following line and replace it with the correct code.
-    return false;  // This implementation compiles, but is incorrect.
+    int row_change = 0;
+    int col_change = 0;
+      
+    switch(dir) {
+        case NORTH:
+            row_change = -1;
+            break;
+        case SOUTH:
+            row_change = 1;
+            break;
+        case EAST:
+            col_change = 1;
+            break;
+        case WEST:
+            col_change = -1;
+            break;
+    }
+      
+    int temp_row = r + row_change;
+    int temp_col = c + col_change;
+      
+    if(temp_row < 1 || temp_row > a.rows() || temp_col < 1 || temp_col > a.cols())
+        return false;
+    r = temp_row;
+    c = temp_col;
+    
+    return true;
 }
 
   // Recommend a move for a player at (r,c):  A false return means the
