@@ -192,14 +192,14 @@ bool Vampire::isDead() const
 
 void Vampire::move()
 {
-    //   Return without moving if the vampire has drunk one vial of
-    //   poisoned blood (so is supposed to move only every other turn) and
-    //   this is a turn it does not move.
+    // Return without moving if the vampire has drunk one vial of
+    // poisoned blood (so is supposed to move only every other turn) and
+    // this is a turn it does not move.
 
-    //   Otherwise, attempt to move in a random direction; if can't
-    //   move, don't move.  If it lands on a poisoned blood vial, drink all
-    //   the blood in the vial and remove it from the game (so it is no
-    //   longer on that grid point).
+    // Otherwise, attempt to move in a random direction; if can't
+    // move, don't move.  If it lands on a poisoned blood vial, drink all
+    // the blood in the vial and remove it from the game (so it is no
+    // longer on that grid point).
     
     if(!m_move) {
         m_move = true;
@@ -718,7 +718,9 @@ bool recommendMove(const Arena& a, int r, int c, int& bestDir)
     int minDanger = calculateDanger(a, r, c);
     bool shouldMove = false;
     
-    // Find how dangerous moving in each direction is, if possible
+    // Find how dangerous moving in each direction is, if possible. The recommended
+    // move will be dropping a vial only if moving spaces is more dangerous or if
+    // the player is in a 100% safe location currently.
     int minDangerMove;
     if(canMoveEast) {
         int dangerEast = calculateDanger(a, r, c+1);
@@ -728,7 +730,6 @@ bool recommendMove(const Arena& a, int r, int c, int& bestDir)
             minDangerMove = EAST;
         }
     }
-    
     if(canMoveWest) {
         int dangerWest = calculateDanger(a, r, c-1);
         if(minDanger != 0 && dangerWest <= minDanger) {
@@ -737,7 +738,6 @@ bool recommendMove(const Arena& a, int r, int c, int& bestDir)
             minDangerMove = WEST;
         }
     }
-    
     if(canMoveNorth) {
         int dangerNorth = calculateDanger(a, r-1, c);
         if(minDanger != 0 && dangerNorth <= minDanger) {
@@ -746,7 +746,6 @@ bool recommendMove(const Arena& a, int r, int c, int& bestDir)
             minDangerMove = NORTH;
         }
     }
-    
     if(canMoveSouth){
         int dangerSouth = calculateDanger(a, r+1, c);
         if(minDanger != 0 && dangerSouth <= minDanger) {
