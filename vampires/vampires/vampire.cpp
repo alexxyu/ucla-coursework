@@ -33,6 +33,8 @@ const int NUMDIRS = 4;
 const int EMPTY      = 0;
 const int HAS_POISON = 1;
 
+const int POISON_TO_DIE = 2;           // num of poisonous vials after which vampire dies
+
 ///////////////////////////////////////////////////////////////////////////
 // Type definitions
 ///////////////////////////////////////////////////////////////////////////
@@ -185,7 +187,7 @@ int Vampire::col() const
 
 bool Vampire::isDead() const
 {
-    return m_num_poison >= 2;
+    return m_num_poison >= POISON_TO_DIE;
 }
 
 void Vampire::move()
@@ -203,16 +205,16 @@ void Vampire::move()
         m_move = true;
     } else {
         
+        // Generate random direction and attempt to move
         int dir = randInt(0, 3);
-        
         if(!attemptMove(*m_arena, dir, m_row, m_col))
             return;
         
+        // Update behavior with poisonous vials
         if(m_arena->getCellStatus(m_row, m_col) == HAS_POISON) {
             m_num_poison++;
             m_arena->setCellStatus(m_row, m_col, EMPTY);
         }
-        
         if(m_num_poison > 0)
             m_move = false;
     }
@@ -261,14 +263,17 @@ string Player::dropPoisonVial()
 
 string Player::move(int dir)
 {
+    // Attempts move if possible
     if(!attemptMove(*m_arena, dir, m_row, m_col))
         return "Player couldn't move; player stands.";
     
+    // Player dies if s/he moves into space containing a vampire
     if(m_arena->numberOfVampiresAt(m_row, m_col) > 0) {
         setDead();
         return "Player walked into a vampire and died.";
     }
     
+    // Returns appropriate message with direction moved.
     string msg;
     switch(dir) {
         case NORTH:
@@ -322,6 +327,7 @@ Arena::Arena(int nRows, int nCols)
 
 Arena::~Arena()
 {
+    // Deallocate the player and all remaining dynamically allocated vampires.
     delete m_player;
     for(int i=0; i<m_nVampires; i++)
         delete m_vampires[i];
@@ -355,6 +361,7 @@ int Arena::getCellStatus(int r, int c) const
 
 int Arena::numberOfVampiresAt(int r, int c) const
 {
+    // Return the number of vampires at space (r, c)
     int numAtLoc = 0;
     for(int i=0; i<m_nVampires; i++) {
         Vampire* vampire = m_vampires[i];
@@ -435,6 +442,7 @@ bool Arena::addVampire(int r, int c)
     if (m_player != nullptr  &&  m_player->row() == r  &&  m_player->col() == c)
         return false;
 
+    // Don't add a vampire if there are already the max number of vampires in the game
     if(m_nVampires >= MAXVAMPIRES)
         return false;
     
@@ -467,17 +475,19 @@ void Arena::moveVampires()
     // Deallocate any dead dynamically allocated vampire.
     for(int i=0; i<m_nVampires; i++) {
         Vampire* vampire = m_vampires[i];
-        
         vampire->move();
-        if(vampire->row() == m_player->row() && vampire->col() == m_player->col())
-            m_player->setDead();
         
+        // Deallocate dead vampires and update number of vampires
         if(vampire->isDead()) {
             delete vampire;
             for(int j=i; j < m_nVampires-1; j++)
                 m_vampires[j] = m_vampires[j+1];
             m_nVampires--;
         }
+        
+        // Player is dead if vampire moves onto space containing player
+        if(vampire->row() == m_player->row() && vampire->col() == m_player->col())
+            m_player->setDead();
     }
     
     // Another turn has been taken
@@ -639,6 +649,7 @@ bool decodeDirection(char ch, int& dir)
 // return true.
 bool attemptMove(const Arena& a, int dir, int& r, int& c)
 {
+    // Find how much in row and column position changes based on given direction
     int row_change = 0;
     int col_change = 0;
       
@@ -657,6 +668,7 @@ bool attemptMove(const Arena& a, int dir, int& r, int& c)
             break;
     }
       
+    // Check to see if attempted move would stay in bounds of grid
     int temp_row = r + row_change;
     int temp_col = c + col_change;
       
@@ -702,9 +714,11 @@ bool recommendMove(const Arena& a, int r, int c, int& bestDir)
     if(!(canMoveNorth || canMoveSouth || canMoveWest || canMoveEast))
         return false;
     
+    // Assume first that safest spot is current position
     int minDanger = calculateDanger(a, r, c);
     bool shouldMove = false;
     
+    // Find how dangerous moving in each direction is, if possible
     int minDangerMove;
     if(canMoveEast) {
         int dangerEast = calculateDanger(a, r, c+1);
@@ -742,6 +756,7 @@ bool recommendMove(const Arena& a, int r, int c, int& bestDir)
         }
     }
     
+    // Safest move is to stay put
     if(!shouldMove) return false;
     
     bestDir = minDangerMove;
@@ -750,15 +765,17 @@ bool recommendMove(const Arena& a, int r, int c, int& bestDir)
 
 int calculateDanger(const Arena& a, int r, int c)
 {
+    // Danger is defined as the maximum number of vampires that could possibly move
+    // into the given space (r, c) in the next turn.
     int danger = 0;
     
-    if(r-1 >= 1)
+    if(r-1 >= 1)                                    // Space to the north within bounds
         danger += a.numberOfVampiresAt(r-1, c);
-    if(r+1 <= a.rows())
+    if(r+1 <= a.rows())                             // Space to the south within bounds
         danger += a.numberOfVampiresAt(r+1, c);
-    if(c-1 >= 1)
+    if(c-1 >= 1)                                    // Space to the west within bounds
         danger += a.numberOfVampiresAt(r, c-1);
-    if(c+1 <= a.cols())
+    if(c+1 <= a.cols())                             // Space to the east within bounds
         danger += a.numberOfVampiresAt(r, c+1);
     
     return danger;
