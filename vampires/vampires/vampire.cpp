@@ -146,6 +146,7 @@ int randInt(int lowest, int highest);
 bool decodeDirection(char ch, int& dir);
 bool attemptMove(const Arena& a, int dir, int& r, int& c);
 bool recommendMove(const Arena& a, int r, int c, int& bestDir);
+int calculateDanger(const Arena& a, int r, int c);
 void clearScreen();
 
 ///////////////////////////////////////////////////////////////////////////
@@ -184,22 +185,19 @@ int Vampire::col() const
 
 bool Vampire::isDead() const
 {
-      // TODO: Return whether the Vampire is dead
-      // Delete the following line and replace it with the correct code.
     return m_num_poison >= 2;
 }
 
 void Vampire::move()
 {
-      // TODO:
-      //   Return without moving if the vampire has drunk one vial of
-      //   poisoned blood (so is supposed to move only every other turn) and
-      //   this is a turn it does not move.
+    //   Return without moving if the vampire has drunk one vial of
+    //   poisoned blood (so is supposed to move only every other turn) and
+    //   this is a turn it does not move.
 
-      //   Otherwise, attempt to move in a random direction; if can't
-      //   move, don't move.  If it lands on a poisoned blood vial, drink all
-      //   the blood in the vial and remove it from the game (so it is no
-      //   longer on that grid point).
+    //   Otherwise, attempt to move in a random direction; if can't
+    //   move, don't move.  If it lands on a poisoned blood vial, drink all
+    //   the blood in the vial and remove it from the game (so it is no
+    //   longer on that grid point).
     
     if(!m_move) {
         m_move = true;
@@ -263,17 +261,13 @@ string Player::dropPoisonVial()
 
 string Player::move(int dir)
 {
-      // TODO:  Attempt to move the player one step in the indicated
-      //        direction.  If this fails,
-      //        return "Player couldn't move; player stands."
-      //        A player who moves onto a vampire dies, and this
-      //        returns "Player walked into a vampire and died."
-      //        Otherwise, return one of "Player moved north.",
-      //        "Player moved east.", "Player moved south.", or
-      //        "Player moved west."
-    
     if(!attemptMove(*m_arena, dir, m_row, m_col))
         return "Player couldn't move; player stands.";
+    
+    if(m_arena->numberOfVampiresAt(m_row, m_col) > 0) {
+        setDead();
+        return "Player walked into a vampire and died.";
+    }
     
     string msg;
     switch(dir) {
@@ -291,18 +285,11 @@ string Player::move(int dir)
             break;
     }
     
-    if(m_arena->numberOfVampiresAt(m_row, m_col) > 0) {
-        setDead();
-        return "Player walked into a vampire and died.";
-    }
-    
     return msg;
 }
 
 bool Player::isDead() const
 {
-      // TODO: Return whether the Player is dead
-      // Delete the following line and replace it with the correct code.
     return m_dead;
 }
 
@@ -335,9 +322,6 @@ Arena::Arena(int nRows, int nCols)
 
 Arena::~Arena()
 {
-    // TODO:  Deallocate the player and all remaining dynamically allocated
-    //        vampires.
-    
     delete m_player;
     for(int i=0; i<m_nVampires; i++)
         delete m_vampires[i];
@@ -371,7 +355,6 @@ int Arena::getCellStatus(int r, int c) const
 
 int Arena::numberOfVampiresAt(int r, int c) const
 {
-      // TODO:  Return the number of vampires at row r, column c
     int numAtLoc = 0;
     for(int i=0; i<m_nVampires; i++) {
         Vampire* vampire = m_vampires[i];
@@ -387,15 +370,15 @@ void Arena::display(string msg) const
     char displayGrid[MAXROWS][MAXCOLS];
     int r, c;
     
-      // Fill displayGrid with dots (empty) and stars (poisoned blood vials)
+    // Fill displayGrid with dots (empty) and stars (poisoned blood vials)
     for (r = 1; r <= rows(); r++)
         for (c = 1; c <= cols(); c++)
             displayGrid[r-1][c-1] = (getCellStatus(r,c) == EMPTY ? '.' : '*');
 
-      // Indicate each vampire's position
-      // TODO:  If one vampire is at some grid point, set the displayGrid char
-      //        to 'V'.  If it's 2 though 8, set it to '2' through '8'.
-      //        For 9 or more, set it to '9'.
+    // Indicate each vampire's position
+    // If one vampire is at some grid point, set the displayGrid char
+    // to 'V'.  If it's 2 though 8, set it to '2' through '8'.
+    // For 9 or more, set it to '9'.
     for (r = 1; r <= rows(); r++) {
         for (c = 1; c <= cols(); c++) {
             int vampiresAtLoc = numberOfVampiresAt(r, c);
@@ -408,11 +391,11 @@ void Arena::display(string msg) const
         }
     }
     
-      // Indicate player's position
+    // Indicate player's position
     if (m_player != nullptr)
         displayGrid[m_player->row()-1][m_player->col()-1] = (m_player->isDead() ? 'X' : '@');
 
-      // Draw the grid
+    // Draw the grid
     clearScreen();
     for (r = 1; r <= rows(); r++)
     {
@@ -422,7 +405,7 @@ void Arena::display(string msg) const
     }
     cout << endl;
 
-      // Write message, vampire, and player info
+    // Write message, vampire, and player info
     if (msg != "")
         cout << msg << endl;
     cout << "There are " << vampireCount() << " vampires remaining." << endl;
@@ -444,19 +427,14 @@ bool Arena::addVampire(int r, int c)
     if (! isPosInBounds(r, c))
         return false;
 
-      // Don't add a vampire on a spot with a poisoned blood vial
+    // Don't add a vampire on a spot with a poisoned blood vial
     if (getCellStatus(r, c) != EMPTY)
         return false;
 
-      // Don't add a vampire on a spot with a player
+    // Don't add a vampire on a spot with a player
     if (m_player != nullptr  &&  m_player->row() == r  &&  m_player->col() == c)
         return false;
 
-      // If there are MAXVAMPIRES existing vampires, return false.  Otherwise,
-      // dynamically allocate a new vampire at coordinates (r,c).  Save the
-      // pointer to newly allocated vampire and return true.
-
-      // TODO:  Implement this.
     if(m_nVampires >= MAXVAMPIRES)
         return false;
     
@@ -471,11 +449,11 @@ bool Arena::addPlayer(int r, int c)
     if (! isPosInBounds(r, c))
         return false;
 
-      // Don't add a player if one already exists
+    // Don't add a player if one already exists
     if (m_player != nullptr)
         return false;
 
-      // Don't add a player on a spot with a vampire
+    // Don't add a player on a spot with a vampire
     if (numberOfVampiresAt(r, c) > 0)
         return false;
 
@@ -485,9 +463,8 @@ bool Arena::addPlayer(int r, int c)
 
 void Arena::moveVampires()
 {
-      // Move all vampires
-      // TODO:  Move each vampire. Mark the player as dead if necessary.
-      //        Deallocate any dead dynamically allocated vampire.
+    // Move each vampire. Mark the player as dead if necessary.
+    // Deallocate any dead dynamically allocated vampire.
     for(int i=0; i<m_nVampires; i++) {
         Vampire* vampire = m_vampires[i];
         
@@ -503,7 +480,7 @@ void Arena::moveVampires()
         }
     }
     
-      // Another turn has been taken
+    // Another turn has been taken
     m_turns++;
 }
 
@@ -548,10 +525,10 @@ Game::Game(int rows, int cols, int nVampires)
         exit(1);
     }
 
-      // Create arena
+    // Create arena
     m_arena = new Arena(rows, cols);
 
-      // Add player
+    // Add player
     int rPlayer;
     int cPlayer;
     do
@@ -561,7 +538,7 @@ Game::Game(int rows, int cols, int nVampires)
     } while (m_arena->getCellStatus(rPlayer, cPlayer) != EMPTY);
     m_arena->addPlayer(rPlayer, cPlayer);
 
-      // Populate with vampires
+    // Populate with vampires
     while (nVampires > 0)
     {
         int r = randInt(1, rows);
@@ -656,13 +633,12 @@ bool decodeDirection(char ch, int& dir)
     return true;
 }
 
-  // Return false without changing anything if moving one step from (r,c)
-  // in the indicated direction would run off the edge of the arena.
-  // Otherwise, update r and c to the position resulting from the move and
-  // return true.
+// Return false without changing anything if moving one step from (r,c)
+// in the indicated direction would run off the edge of the arena.
+// Otherwise, update r and c to the position resulting from the move and
+// return true.
 bool attemptMove(const Arena& a, int dir, int& r, int& c)
 {
-      // TODO:  Implement this function
     int row_change = 0;
     int col_change = 0;
       
@@ -692,34 +668,100 @@ bool attemptMove(const Arena& a, int dir, int& r, int& c)
     return true;
 }
 
-  // Recommend a move for a player at (r,c):  A false return means the
-  // recommendation is that the player should drop a poisoned blood vial and
-  // not move; otherwise, this function sets bestDir to the recommended
-  // direction to move and returns true.
+// Recommend a move for a player at (r,c):  A false return means the
+// recommendation is that the player should drop a poisoned blood vial and
+// not move; otherwise, this function sets bestDir to the recommended
+// direction to move and returns true.
 bool recommendMove(const Arena& a, int r, int c, int& bestDir)
 {
-      // TODO:  Implement this function
-      // Delete the following line and replace it with your code.
-    return false;  // This implementation compiles, but is incorrect.
+    // Your replacement implementation should do something intelligent.
+    // You don't have to be any smarter than the following, although
+    // you can if you want to be:  If staying put runs the risk of a
+    // vampire possibly moving onto the player's location when the vampires
+    // move, yet moving in a particular direction puts the player in a
+    // position that is safe when the vampires move, then the chosen
+    // action is to move to a safer location.  Similarly, if staying put
+    // is safe, but moving in certain directions puts the player in
+    // danger of dying when the vampires move, then the chosen action should
+    // not be to move in one of the dangerous directions; instead, the player
+    // should stay put or move to another safe position.  In general, a
+    // position that may be moved to by many vampires is more dangerous than
+    // one that may be moved to by few.
+    //
+    // Unless you want to, you do not have to take into account that a
+    // vampire might be poisoned and thus sometimes less dangerous than one
+    // that is not.  That requires a more sophisticated analysis that
+    // we're not asking you to do.
+    
+    bool canMoveNorth = (r-1 >= 1 && a.numberOfVampiresAt(r-1, c) == 0);
+    bool canMoveSouth = (r+1 <= a.rows() && a.numberOfVampiresAt(r+1, c) == 0);
+    bool canMoveEast = (c+1 <= a.cols() && a.numberOfVampiresAt(r, c+1) == 0);
+    bool canMoveWest = (c-1 >= 1 && a.numberOfVampiresAt(r, c-1) == 0);
+    
+    // Stay in current position if surrounded by zombies
+    if(!(canMoveNorth || canMoveSouth || canMoveWest || canMoveEast))
+        return false;
+    
+    int minDanger = calculateDanger(a, r, c);
+    bool shouldMove = false;
+    
+    int minDangerMove;
+    if(canMoveEast) {
+        int dangerEast = calculateDanger(a, r, c+1);
+        if(minDanger != 0 && dangerEast <= minDanger) {
+            shouldMove = true;
+            minDanger = dangerEast;
+            minDangerMove = EAST;
+        }
+    }
+    
+    if(canMoveWest) {
+        int dangerWest = calculateDanger(a, r, c-1);
+        if(minDanger != 0 && dangerWest <= minDanger) {
+            shouldMove = true;
+            minDanger = dangerWest;
+            minDangerMove = WEST;
+        }
+    }
+    
+    if(canMoveNorth) {
+        int dangerNorth = calculateDanger(a, r-1, c);
+        if(minDanger != 0 && dangerNorth <= minDanger) {
+            shouldMove = true;
+            minDanger = dangerNorth;
+            minDangerMove = NORTH;
+        }
+    }
+    
+    if(canMoveSouth){
+        int dangerSouth = calculateDanger(a, r+1, c);
+        if(minDanger != 0 && dangerSouth <= minDanger) {
+            shouldMove = true;
+            minDanger = dangerSouth;
+            minDangerMove = SOUTH;
+        }
+    }
+    
+    if(!shouldMove) return false;
+    
+    bestDir = minDangerMove;
+    return true;
+}
 
-      // Your replacement implementation should do something intelligent.
-      // You don't have to be any smarter than the following, although
-      // you can if you want to be:  If staying put runs the risk of a
-      // vampire possibly moving onto the player's location when the vampires
-      // move, yet moving in a particular direction puts the player in a
-      // position that is safe when the vampires move, then the chosen
-      // action is to move to a safer location.  Similarly, if staying put
-      // is safe, but moving in certain directions puts the player in
-      // danger of dying when the vampires move, then the chosen action should
-      // not be to move in one of the dangerous directions; instead, the player
-      // should stay put or move to another safe position.  In general, a
-      // position that may be moved to by many vampires is more dangerous than
-      // one that may be moved to by few.
-      //
-      // Unless you want to, you do not have to take into account that a
-      // vampire might be poisoned and thus sometimes less dangerous than one
-      // that is not.  That requires a more sophisticated analysis that
-      // we're not asking you to do.
+int calculateDanger(const Arena& a, int r, int c)
+{
+    int danger = 0;
+    
+    if(r-1 >= 1)
+        danger += a.numberOfVampiresAt(r-1, c);
+    if(r+1 <= a.rows())
+        danger += a.numberOfVampiresAt(r+1, c);
+    if(c-1 >= 1)
+        danger += a.numberOfVampiresAt(r, c-1);
+    if(c+1 <= a.cols())
+        danger += a.numberOfVampiresAt(r, c+1);
+    
+    return danger;
 }
 
 ///////////////////////////////////////////////////////////////////////////
