@@ -8,8 +8,6 @@
 // you more flexibility in the order you tackle the rest of the functionality.
 // As you finish implementing each TODO: item, remove its TODO: comment.
 
-void doBasicTests();
-
 #include <iostream>
 #include <string>
 #include <random>
@@ -448,7 +446,9 @@ bool Arena::addVampire(int r, int c)
     if(m_nVampires >= MAXVAMPIRES)
         return false;
     
-    m_vampires[m_nVampires++] = new Vampire(this, r, c);
+    Vampire* newVampire = new Vampire(this, r, c);
+    m_vampires[m_nVampires++] = newVampire;
+    
     return true;
 }
 
@@ -477,10 +477,6 @@ void Arena::moveVampires()
         Vampire* vampire = m_vampires[i];
         vampire->move();
         
-        // Player is dead if vampire moves onto space containing player
-        if(vampire->row() == m_player->row() && vampire->col() == m_player->col())
-            m_player->setDead();
-        
         // Deallocate dead vampires and update number of vampires
         if(vampire->isDead()) {
             delete vampire;
@@ -488,6 +484,10 @@ void Arena::moveVampires()
                 m_vampires[j] = m_vampires[j+1];
             m_nVampires--;
         }
+        
+        // Player is dead if vampire moves onto space containing player
+        if(vampire->row() == m_player->row() && vampire->col() == m_player->col())
+            m_player->setDead();
     }
     
     // Another turn has been taken
@@ -666,9 +666,6 @@ bool attemptMove(const Arena& a, int dir, int& r, int& c)
         case WEST:
             col_change = -1;
             break;
-        default:
-            cout << "Invalid direction!" << endl;
-            break;
     }
       
     // Check to see if attempted move would stay in bounds of grid
@@ -724,7 +721,7 @@ bool recommendMove(const Arena& a, int r, int c, int& bestDir)
     // Find how dangerous moving in each direction is, if possible. The recommended
     // move will be dropping a vial only if moving spaces is more dangerous or if
     // the player is in a 100% safe location currently.
-    int minDangerMove = 0;
+    int minDangerMove;
     if(canMoveEast) {
         int dangerEast = calculateDanger(a, r, c+1);
         if(minDanger != 0 && dangerEast <= minDanger) {
