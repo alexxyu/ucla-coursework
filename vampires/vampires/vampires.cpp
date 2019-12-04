@@ -288,6 +288,9 @@ string Player::move(int dir)
         case WEST:
             msg = "Player moved west.";
             break;
+        default:
+            // Invalid direction
+            return "Player couldn't move; player stands.";
     }
     
     return msg;
@@ -361,6 +364,9 @@ int Arena::getCellStatus(int r, int c) const
 
 int Arena::numberOfVampiresAt(int r, int c) const
 {
+    if(!isPosInBounds(r, c))
+        return -1;
+    
     // Return the number of vampires at space (r, c)
     int numAtLoc = 0;
     for(int i=0; i<m_nVampires; i++) {
@@ -666,6 +672,9 @@ bool attemptMove(const Arena& a, int dir, int& r, int& c)
         case WEST:
             col_change = -1;
             break;
+        default:
+            // Invalid direction
+            return false;
     }
       
     // Check to see if attempted move would stay in bounds of grid
