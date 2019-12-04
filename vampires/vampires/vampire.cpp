@@ -8,6 +8,8 @@
 // you more flexibility in the order you tackle the rest of the functionality.
 // As you finish implementing each TODO: item, remove its TODO: comment.
 
+void doBasicTests();
+
 #include <iostream>
 #include <string>
 #include <random>
@@ -471,7 +473,7 @@ void Arena::moveVampires()
 {
     // Move each vampire. Mark the player as dead if necessary.
     // Deallocate any dead dynamically allocated vampire.
-    for(int i=0; i<m_nVampires; i++) {
+    for(int i=m_nVampires-1; i>=0; i--) {
         Vampire* vampire = m_vampires[i];
         vampire->move();
         
@@ -787,11 +789,11 @@ int calculateDanger(const Arena& a, int r, int c)
 
 int main()
 {
-      // Create a game
-      // Use this instead to create a mini-game:   Game g(3, 5, 2);
+    // Create a game
+    // Use this instead to create a mini-game:   Game g(3, 5, 2);
     Game g(10, 12, 40);
 
-      // Play the game
+    // Play the game
     g.play();
 }
 
