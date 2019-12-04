@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		534826B22390BE620016501A /* vampire.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 534826B12390BE620016501A /* vampire.cpp */; };
+		534826B22390BE620016501A /* vampires.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 534826B12390BE620016501A /* vampires.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -24,7 +24,7 @@
 
 /* Begin PBXFileReference section */
 		534826A72390BD430016501A /* vampires */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = vampires; sourceTree = BUILT_PRODUCTS_DIR; };
-		534826B12390BE620016501A /* vampire.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = vampire.cpp; sourceTree = "<group>"; wrapsLines = 0; };
+		534826B12390BE620016501A /* vampires.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = vampires.cpp; sourceTree = "<group>"; wrapsLines = 0; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -57,7 +57,7 @@
 		534826A92390BD430016501A /* vampires */ = {
 			isa = PBXGroup;
 			children = (
-				534826B12390BE620016501A /* vampire.cpp */,
+				534826B12390BE620016501A /* vampires.cpp */,
 			);
 			path = vampires;
 			sourceTree = "<group>";
@@ -119,7 +119,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				534826B22390BE620016501A /* vampire.cpp in Sources */,
+				534826B22390BE620016501A /* vampires.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
