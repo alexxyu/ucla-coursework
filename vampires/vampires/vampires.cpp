@@ -452,9 +452,7 @@ bool Arena::addVampire(int r, int c)
     if(m_nVampires >= MAXVAMPIRES)
         return false;
     
-    Vampire* newVampire = new Vampire(this, r, c);
-    m_vampires[m_nVampires++] = newVampire;
-    
+    m_vampires[m_nVampires++] = new Vampire(this, r, c);
     return true;
 }
 
