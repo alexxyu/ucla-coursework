@@ -483,6 +483,10 @@ void Arena::moveVampires()
         Vampire* vampire = m_vampires[i];
         vampire->move();
         
+        // Player is dead if vampire moves onto space containing player
+        if(vampire->row() == m_player->row() && vampire->col() == m_player->col())
+            m_player->setDead();
+        
         // Deallocate dead vampires and update number of vampires
         if(vampire->isDead()) {
             delete vampire;
@@ -490,10 +494,6 @@ void Arena::moveVampires()
                 m_vampires[j] = m_vampires[j+1];
             m_nVampires--;
         }
-        
-        // Player is dead if vampire moves onto space containing player
-        if(vampire->row() == m_player->row() && vampire->col() == m_player->col())
-            m_player->setDead();
     }
     
     // Another turn has been taken
@@ -730,7 +730,7 @@ bool recommendMove(const Arena& a, int r, int c, int& bestDir)
     // Find how dangerous moving in each direction is, if possible. The recommended
     // move will be dropping a vial only if moving spaces is more dangerous or if
     // the player is in a 100% safe location currently.
-    int minDangerMove;
+    int minDangerMove = -1;
     if(canMoveEast) {
         int dangerEast = calculateDanger(a, r, c+1);
         if(minDanger != 0 && dangerEast <= minDanger) {
