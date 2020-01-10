@@ -1,14 +1,12 @@
 #ifndef ARENA_H
 #define ARENA_H
 
+#include "History.h"
+#include "globals.h"
 #include <iostream>
 
 class Player;
 class Vampire;
-
-const int MAXROWS = 20;                // max number of rows in the arena
-const int MAXCOLS = 20;                // max number of columns in the arena
-const int MAXVAMPIRES = 100;           // max number of vampires allowed
 
 class Arena
 {
@@ -31,6 +29,8 @@ class Arena
     bool addVampire(int r, int c);
     bool addPlayer(int r, int c);
     void moveVampires();
+    
+    History& history();
 
   private:
     int      m_grid[MAXROWS][MAXCOLS];
@@ -40,6 +40,8 @@ class Arena
     Vampire* m_vampires[MAXVAMPIRES];
     int      m_nVampires;
     int      m_turns;
+    
+    History  m_history;
 
       // Helper functions
     void checkPos(int r, int c, std::string functionName) const;

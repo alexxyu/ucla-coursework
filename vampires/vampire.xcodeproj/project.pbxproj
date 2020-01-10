@@ -13,6 +13,7 @@
 		53D5A8A223C70566001B0B84 /* Arena.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53D5A8A123C70566001B0B84 /* Arena.cpp */; };
 		53D5A8A423C705BA001B0B84 /* Game.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53D5A8A323C705BA001B0B84 /* Game.cpp */; };
 		53D5A8A623C70A99001B0B84 /* utilities.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53D5A8A523C70A99001B0B84 /* utilities.cpp */; };
+		53D5A8A923C78A3A001B0B84 /* History.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53D5A8A823C78A3A001B0B84 /* History.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -40,6 +41,8 @@
 		53D5A8A123C70566001B0B84 /* Arena.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Arena.cpp; sourceTree = "<group>"; };
 		53D5A8A323C705BA001B0B84 /* Game.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Game.cpp; sourceTree = "<group>"; };
 		53D5A8A523C70A99001B0B84 /* utilities.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = utilities.cpp; sourceTree = "<group>"; };
+		53D5A8A723C70C42001B0B84 /* History.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = History.h; sourceTree = "<group>"; };
+		53D5A8A823C78A3A001B0B84 /* History.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = History.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -77,11 +80,13 @@
 				53D5A89823C5A28F001B0B84 /* Player.h */,
 				53D5A89923C5A314001B0B84 /* Arena.h */,
 				53D5A89A23C5A44C001B0B84 /* Game.h */,
+				53D5A8A723C70C42001B0B84 /* History.h */,
 				53D5A89B23C6FDD5001B0B84 /* globals.h */,
 				53D5A89D23C702D2001B0B84 /* Vampire.cpp */,
 				53D5A89F23C704FE001B0B84 /* Player.cpp */,
 				53D5A8A123C70566001B0B84 /* Arena.cpp */,
 				53D5A8A323C705BA001B0B84 /* Game.cpp */,
+				53D5A8A823C78A3A001B0B84 /* History.cpp */,
 				53D5A8A523C70A99001B0B84 /* utilities.cpp */,
 			);
 			path = vampire;
@@ -150,6 +155,7 @@
 				53D5A88923C59E95001B0B84 /* main.cpp in Sources */,
 				53D5A8A023C704FE001B0B84 /* Player.cpp in Sources */,
 				53D5A8A423C705BA001B0B84 /* Game.cpp in Sources */,
+				53D5A8A923C78A3A001B0B84 /* History.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

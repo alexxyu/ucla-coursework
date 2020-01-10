@@ -66,7 +66,7 @@ string Game::takePlayerTurn()
 {
     for (;;)
     {
-        cout << "Your move (n/e/s/w/x or nothing): ";
+        cout << "Your move (n/e/s/w/x/h or nothing): ";
         string playerMove;
         getline(cin, playerMove);
 
@@ -84,10 +84,17 @@ string Game::takePlayerTurn()
         {
             if (tolower(playerMove[0]) == 'x')
                 return player->dropPoisonVial();
+            else if (tolower(playerMove[0]) == 'h') {
+                m_arena->history().display();
+                cout << "Press enter to continue.";
+                cin.ignore(10000,'\n');
+                m_arena->display("");
+            }
             else if (decodeDirection(playerMove[0], dir))
                 return player->move(dir);
         }
-        cout << "Player move must be nothing, or 1 character n/e/s/w/x." << endl;
+        else
+            cout << "Player move must be nothing, or 1 character n/e/s/w/x/h." << endl;
     }
 }
 
@@ -112,7 +119,7 @@ void Game::play()
         cout << "You win." << endl;
 }
 
-bool decodeDirection(char ch, int& dir)
+bool Game::decodeDirection(char ch, int& dir)
 {
     switch (tolower(ch))
     {
@@ -125,11 +132,11 @@ bool decodeDirection(char ch, int& dir)
     return true;
 }
 
-  // Recommend a move for a player at (r,c):  A false return means the
-  // recommendation is that the player should drop a poisoned blood vial and
-  // not move; otherwise, this function sets bestDir to the recommended
-  // direction to move and returns true.
-bool recommendMove(const Arena& a, int r, int c, int& bestDir)
+// Recommend a move for a player at (r,c):  A false return means the
+// recommendation is that the player should drop a poisoned blood vial and
+// not move; otherwise, this function sets bestDir to the recommended
+// direction to move and returns true.
+bool Game::recommendMove(const Arena& a, int r, int c, int& bestDir)
 {
       // How dangerous is it to stand?
     int standDanger = computeDanger(a, r, c);
@@ -167,7 +174,7 @@ bool recommendMove(const Arena& a, int r, int c, int& bestDir)
     return false;  // recommend standing
 }
 
-int computeDanger(const Arena& a, int r, int c)
+int Game::computeDanger(const Arena& a, int r, int c)
 {
       // Our measure of danger will be the number of vampires that might move
       // to position (r,c).  If a vampire is at that position, it is fatal,
@@ -188,54 +195,3 @@ int computeDanger(const Arena& a, int r, int c)
 
     return danger;
 }
-
-///////////////////////////////////////////////////////////////////////////
-//  clearScreen implementation
-///////////////////////////////////////////////////////////////////////////
-
-// DO NOT MODIFY OR REMOVE ANY CODE BETWEEN HERE AND THE END OF THE FILE!!!
-// THE CODE IS SUITABLE FOR VISUAL C++, XCODE, AND g++/g31 UNDER LINUX.
-
-// Note to Xcode users:  clearScreen() will just write a newline instead
-// of clearing the window if you launch your program from within Xcode.
-// That's acceptable.  (The Xcode output window doesn't have the capability
-// of being cleared.)
-
-#ifdef _MSC_VER  //  Microsoft Visual C++
-
-#pragma warning(disable : 4005)
-#include <windows.h>
-
-void clearScreen()
-{
-    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-    CONSOLE_SCREEN_BUFFER_INFO csbi;
-    GetConsoleScreenBufferInfo(hConsole, &csbi);
-    DWORD dwConSize = csbi.dwSize.X * csbi.dwSize.Y;
-    COORD upperLeft = { 0, 0 };
-    DWORD dwCharsWritten;
-    FillConsoleOutputCharacter(hConsole, TCHAR(' '), dwConSize, upperLeft,
-                                                        &dwCharsWritten);
-    SetConsoleCursorPosition(hConsole, upperLeft);
-}
-
-#else  // not Microsoft Visual C++, so assume UNIX interface
-
-#include <iostream>
-#include <cstring>
-#include <cstdlib>
-
-void clearScreen()  // will just write a newline in an Xcode output window
-{
-    static const char* term = getenv("TERM");
-    if (term == nullptr  ||  strcmp(term, "dumb") == 0)
-        cout << endl;
-    else
-    {
-        static const char* ESC_SEQ = "\x1B[";  // ANSI Terminal esc seq:  ESC [
-        cout << ESC_SEQ << "2J" << ESC_SEQ << "H" << flush;
-    }
-}
-
-#endif
-

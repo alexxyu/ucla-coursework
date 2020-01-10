@@ -20,5 +20,8 @@ class Game
 
       // Helper functions
     std::string takePlayerTurn();
+    bool decodeDirection(char ch, int& dir);
+    bool recommendMove(const Arena& a, int r, int c, int& bestDir);
+    int computeDanger(const Arena& a, int r, int c);
 };
 #endif /* GAME_H */
