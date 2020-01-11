@@ -1,6 +1,7 @@
+// Player.cpp
+
 #include "Player.h"
 #include "Arena.h"
-#include "globals.h"
 using namespace std;
 
 ///////////////////////////////////////////////////////////////////////////

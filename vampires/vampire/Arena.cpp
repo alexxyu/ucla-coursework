@@ -1,8 +1,8 @@
+// Arena.cpp
+
 #include "Arena.h"
-#include "Vampire.h"
 #include "Player.h"
-#include "History.h"
-#include "globals.h"
+#include "Vampire.h"
 #include <iostream>
 using namespace std;
 

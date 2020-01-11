@@ -1,7 +1,8 @@
+// utilities.cpp
+
 #include <random>
 #include <cstdlib>
 #include "Arena.h"
-#include "globals.h"
 using namespace std;
 
 // Return a uniformly distributed random int from lowest to highest, inclusive

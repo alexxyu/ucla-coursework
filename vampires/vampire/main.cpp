@@ -1,12 +1,6 @@
-// vampires.cpp
+// main.cpp
 
-#include "Vampire.h"
-#include "Player.h"
-#include "History.h"
-#include "Arena.h"
 #include "Game.h"
-#include "globals.h"
-using namespace std;
 
 ///////////////////////////////////////////////////////////////////////////
 // main()

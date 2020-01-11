@@ -1,9 +1,10 @@
+// Arena.h
+
 #ifndef ARENA_H
 #define ARENA_H
 
 #include "History.h"
-#include "globals.h"
-#include <iostream>
+#include <string>
 
 class Player;
 class Vampire;

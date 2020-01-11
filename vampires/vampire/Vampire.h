@@ -1,3 +1,5 @@
+// Vampire.h
+
 #ifndef VAMPIRE_H
 #define VAMPIRE_H
 
