@@ -1,6 +1,7 @@
 // History.cpp
 
 #include "History.h"
+#include "globals.h"
 #include <iostream>
 using namespace std;
 

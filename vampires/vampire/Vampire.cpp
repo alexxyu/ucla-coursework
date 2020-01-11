@@ -3,6 +3,7 @@
 #include <iostream>
 #include "Vampire.h"
 #include "Arena.h"
+#include "globals.h"
 using namespace std;
 
 ///////////////////////////////////////////////////////////////////////////
