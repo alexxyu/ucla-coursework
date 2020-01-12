@@ -4,6 +4,7 @@
 #define ARENA_H
 
 #include "History.h"
+#include "globals.h"
 #include <string>
 
 class Player;

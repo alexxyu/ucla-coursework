@@ -1,5 +1,6 @@
 // Player.cpp
 
+#include <iostream>
 #include "Player.h"
 #include "Arena.h"
 #include "globals.h"

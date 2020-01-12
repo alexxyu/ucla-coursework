@@ -1,10 +1,11 @@
 // Arena.cpp
 
+#include <iostream>
 #include "Arena.h"
 #include "Player.h"
 #include "Vampire.h"
 #include "History.h"
-#include <iostream>
+#include "globals.h"
 using namespace std;
 
 ///////////////////////////////////////////////////////////////////////////

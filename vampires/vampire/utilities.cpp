@@ -1,5 +1,6 @@
 // utilities.cpp
 
+#include <iostream>
 #include <random>
 #include <cstdlib>
 #include "Arena.h"

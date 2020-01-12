@@ -1,8 +1,8 @@
 // History.cpp
 
+#include <iostream>
 #include "History.h"
 #include "globals.h"
-#include <iostream>
 using namespace std;
 
 History::History(int nRows, int nCols)
