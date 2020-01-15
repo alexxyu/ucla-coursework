@@ -8,9 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		53F163D423CEE59200D0EDBB /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53F163D323CEE59200D0EDBB /* main.cpp */; };
-		53F163DC23CEEFB900D0EDBB /* Map.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53F163DB23CEEFB900D0EDBB /* Map.cpp */; };
 		53F163E223CF997800D0EDBB /* CarMap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53F163E123CF997800D0EDBB /* CarMap.cpp */; };
-		53F163E423CFAB9100D0EDBB /* testCarMap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53F163E323CFAB9100D0EDBB /* testCarMap.cpp */; };
+		53F163E723CFB0C300D0EDBB /* newMap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53F163E623CFB0C300D0EDBB /* newMap.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -33,6 +32,8 @@
 		53F163E023CF996C00D0EDBB /* CarMap.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CarMap.h; sourceTree = "<group>"; };
 		53F163E123CF997800D0EDBB /* CarMap.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CarMap.cpp; sourceTree = "<group>"; };
 		53F163E323CFAB9100D0EDBB /* testCarMap.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = testCarMap.cpp; sourceTree = "<group>"; };
+		53F163E523CFB0B900D0EDBB /* newMap.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = newMap.h; sourceTree = "<group>"; };
+		53F163E623CFB0C300D0EDBB /* newMap.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = newMap.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -71,6 +72,8 @@
 				53F163E023CF996C00D0EDBB /* CarMap.h */,
 				53F163E123CF997800D0EDBB /* CarMap.cpp */,
 				53F163E323CFAB9100D0EDBB /* testCarMap.cpp */,
+				53F163E523CFB0B900D0EDBB /* newMap.h */,
+				53F163E623CFB0C300D0EDBB /* newMap.cpp */,
 			);
 			path = map;
 			sourceTree = "<group>";
@@ -132,10 +135,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				53F163DC23CEEFB900D0EDBB /* Map.cpp in Sources */,
+				53F163E723CFB0C300D0EDBB /* newMap.cpp in Sources */,
 				53F163D423CEE59200D0EDBB /* main.cpp in Sources */,
 				53F163E223CF997800D0EDBB /* CarMap.cpp in Sources */,
-				53F163E423CFAB9100D0EDBB /* testCarMap.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
