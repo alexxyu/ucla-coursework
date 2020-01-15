@@ -1,6 +1,8 @@
 // Game.cpp
 
 #include <iostream>
+#include <cctype>
+#include <cstdlib>
 #include "Game.h"
 #include "Arena.h"
 #include "Player.h"
