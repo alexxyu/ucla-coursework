@@ -1,5 +1,6 @@
 // main.cpp
 
+/*
 #include "Map.h"
 #include <iostream>
 #include <cassert>
@@ -31,3 +32,4 @@ int main()
            m2.size() == 1  &&  m2.contains("Fred"));
     cout << "Passed all tests" << endl;
 }
+*/
