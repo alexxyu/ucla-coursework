@@ -4,6 +4,7 @@
 #define NEWMAP_H
 
 #include <string>
+
 using KeyType = std::string;
 using ValueType = double;
 
@@ -13,10 +14,12 @@ class Map
 {
   public:
     Map();               // Create an empty map (i.e., one with no key/value pairs)
+                         // with default size
     
     Map(int maxSize);    // Create an empty map (i.e., one with no key/value pairs)
+                         // with specified size
     
-    ~Map();
+    ~Map();              // Destructor
 
     bool empty() const;  // Return true if the map is empty, otherwise false.
 
@@ -79,6 +82,7 @@ class Map
     
     MapItem* m_map;
     int      m_size;
+    int      m_maxSize;
     
 };
 

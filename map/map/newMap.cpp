@@ -8,12 +8,19 @@ Map::Map()
 {
     m_map = new MapItem[DEFAULT_MAX_ITEMS];
     m_size = 0;
+    m_maxSize = DEFAULT_MAX_ITEMS;
 }
 
 Map::Map(int maxSize)
 {
+    if(maxSize < 0) {
+        cout << "The size of the map cannot be negative!" << endl;
+        exit(1);
+    }
+    
     m_map = new MapItem[maxSize];
     m_size = 0;
+    m_maxSize = maxSize;
 }
 
 Map::~Map()
@@ -33,7 +40,7 @@ int Map::size() const
 
 bool Map::insert(const KeyType &key, const ValueType &value)
 {
-    if(m_size >= DEFAULT_MAX_ITEMS || contains(key))
+    if(m_size >= m_maxSize || contains(key))
         return false;
     
     MapItem item = {key, value};
@@ -112,12 +119,15 @@ void Map::swap(Map &other)
 {
     MapItem* otherMap = other.m_map;
     int otherSize = other.size();
+    int otherMaxSize = other.m_maxSize;
     
     other.m_map = m_map;
     other.m_size = m_size;
+    other.m_maxSize = m_maxSize;
     
     m_map = otherMap;
     m_size = otherSize;
+    m_maxSize = otherMaxSize;
 }
 
 void Map::dump() const
