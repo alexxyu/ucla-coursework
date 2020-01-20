@@ -7,9 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		53F163F623D61E9600D0EDBB /* CarMap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53F163E123CF997800D0EDBB /* CarMap.cpp */; };
-		53F163F723D61E9800D0EDBB /* testCarMap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53F163E323CFAB9100D0EDBB /* testCarMap.cpp */; };
-		53F163F823D61ED700D0EDBB /* Map.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53F163DB23CEEFB900D0EDBB /* Map.cpp */; };
+		53F163F923D61F5300D0EDBB /* testNewMap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53F163EA23D6189200D0EDBB /* testNewMap.cpp */; };
+		53F163FA23D61F5500D0EDBB /* newMap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53F163E623CFB0C300D0EDBB /* newMap.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -137,9 +136,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				53F163F823D61ED700D0EDBB /* Map.cpp in Sources */,
-				53F163F623D61E9600D0EDBB /* CarMap.cpp in Sources */,
-				53F163F723D61E9800D0EDBB /* testCarMap.cpp in Sources */,
+				53F163FA23D61F5500D0EDBB /* newMap.cpp in Sources */,
+				53F163F923D61F5300D0EDBB /* testNewMap.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

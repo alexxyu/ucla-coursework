@@ -26,5 +26,5 @@ int main()
     assert(!a.insert(k[5], v) && b.insert(k[5], v));
     a.dump();
     b.dump();
-    cout << "Pass all tests" << endl;
+    cout << "Passed all tests" << endl;
 }
