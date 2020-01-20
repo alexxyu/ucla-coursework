@@ -7,9 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		53F163D423CEE59200D0EDBB /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53F163D323CEE59200D0EDBB /* main.cpp */; };
-		53F163E223CF997800D0EDBB /* CarMap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53F163E123CF997800D0EDBB /* CarMap.cpp */; };
-		53F163E723CFB0C300D0EDBB /* newMap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53F163E623CFB0C300D0EDBB /* newMap.cpp */; };
+		53F163F323D61B2700D0EDBB /* testNewMap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53F163EA23D6189200D0EDBB /* testNewMap.cpp */; };
+		53F163F423D61B2A00D0EDBB /* newMap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53F163E623CFB0C300D0EDBB /* newMap.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -26,7 +25,7 @@
 
 /* Begin PBXFileReference section */
 		53F163D023CEE59200D0EDBB /* map */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = map; sourceTree = BUILT_PRODUCTS_DIR; };
-		53F163D323CEE59200D0EDBB /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		53F163D323CEE59200D0EDBB /* testMap.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = testMap.cpp; sourceTree = "<group>"; };
 		53F163DA23CEE59D00D0EDBB /* Map.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Map.h; sourceTree = "<group>"; };
 		53F163DB23CEEFB900D0EDBB /* Map.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Map.cpp; sourceTree = "<group>"; };
 		53F163E023CF996C00D0EDBB /* CarMap.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CarMap.h; sourceTree = "<group>"; };
@@ -34,6 +33,7 @@
 		53F163E323CFAB9100D0EDBB /* testCarMap.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = testCarMap.cpp; sourceTree = "<group>"; };
 		53F163E523CFB0B900D0EDBB /* newMap.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = newMap.h; sourceTree = "<group>"; };
 		53F163E623CFB0C300D0EDBB /* newMap.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = newMap.cpp; sourceTree = "<group>"; };
+		53F163EA23D6189200D0EDBB /* testNewMap.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = testNewMap.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -66,7 +66,7 @@
 		53F163D223CEE59200D0EDBB /* map */ = {
 			isa = PBXGroup;
 			children = (
-				53F163D323CEE59200D0EDBB /* main.cpp */,
+				53F163D323CEE59200D0EDBB /* testMap.cpp */,
 				53F163DA23CEE59D00D0EDBB /* Map.h */,
 				53F163DB23CEEFB900D0EDBB /* Map.cpp */,
 				53F163E023CF996C00D0EDBB /* CarMap.h */,
@@ -74,6 +74,7 @@
 				53F163E323CFAB9100D0EDBB /* testCarMap.cpp */,
 				53F163E523CFB0B900D0EDBB /* newMap.h */,
 				53F163E623CFB0C300D0EDBB /* newMap.cpp */,
+				53F163EA23D6189200D0EDBB /* testNewMap.cpp */,
 			);
 			path = map;
 			sourceTree = "<group>";
@@ -135,9 +136,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				53F163E723CFB0C300D0EDBB /* newMap.cpp in Sources */,
-				53F163D423CEE59200D0EDBB /* main.cpp in Sources */,
-				53F163E223CF997800D0EDBB /* CarMap.cpp in Sources */,
+				53F163F423D61B2A00D0EDBB /* newMap.cpp in Sources */,
+				53F163F323D61B2700D0EDBB /* testNewMap.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
