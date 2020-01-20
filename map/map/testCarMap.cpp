@@ -1,7 +1,7 @@
 // testCarMap.cpp
 
-#include "Map.h";
-#include "CarMap.h";
+#include "Map.h"
+#include "CarMap.h"
 #include <iostream>
 #include <cassert>
 using namespace std;
