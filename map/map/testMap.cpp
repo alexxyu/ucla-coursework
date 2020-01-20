@@ -1,6 +1,6 @@
 // main.cpp
 
-#include "newMap.h"
+#include "Map.h"
 #include <iostream>
 #include <cassert>
 using namespace std;
@@ -19,6 +19,8 @@ int main()
     m.erase(k);
     assert(m.size() == 1);
     assert(m.get(0, k, v) && k == "hello" && v == 12);
+    m.update("hello", 1234.5);
+    assert(m.get("hello", v) && v == 1234.5);
     Map m1;
     m1.insert("Fred", 2.956);
     Map m2;
