@@ -15,10 +15,8 @@ bool CarMap::addCar(std::string license)
 
 double CarMap::miles(std::string license) const
 {
-    ValueType miles;
-    bool hasLicense = m_map.get(license, miles);
-    
-    if(!hasLicense)
+    double miles;
+    if(!m_map.get(license, miles))
         return -1;
     
     return miles;
@@ -26,8 +24,12 @@ double CarMap::miles(std::string license) const
 
 bool CarMap::drive(std::string license, double distance)
 {
-    if(distance < 0) return false;
-    return m_map.update(license, distance);
+    if(distance < 0 || !m_map.contains(license))
+        return false;
+    
+    double currDistance;
+    m_map.get(license, currDistance);
+    return m_map.update(license, currDistance + distance);
 }
 
 int CarMap::fleetSize() const
