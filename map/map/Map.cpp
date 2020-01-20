@@ -33,8 +33,7 @@ bool Map::update(const KeyType &key, const ValueType &value)
 {
     for(int i=0; i<m_size; i++) {
         if(m_map[i].key == key) {
-            MapItem item = {key, value};
-            m_map[i] = item;
+            m_map[i].value = value;
             return true;
         }
     }
