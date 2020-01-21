@@ -13,17 +13,21 @@ const int DEFAULT_MAX_ITEMS = 240;
 class Map
 {
   public:
-    Map();               // Create an empty map (i.e., one with no key/value pairs)
-                         // with default size
+    Map();                      // Create an empty map (i.e., one with no key/value pairs)
+                                // with default size
     
-    Map(int maxSize);    // Create an empty map (i.e., one with no key/value pairs)
-                         // with specified size
+    Map(int maxSize);           // Create an empty map (i.e., one with no key/value pairs)
+                                // with specified size
     
-    ~Map();              // Destructor
+    Map(Map& other);            // Copy constructor
+    
+    ~Map();                     // Destructor
 
-    bool empty() const;  // Return true if the map is empty, otherwise false.
+    Map& operator=(const Map& other); // Assignment operator
+    
+    bool empty() const;         // Return true if the map is empty, otherwise false.
 
-    int size() const;    // Return the number of key/value pairs in the map.
+    int size() const;           // Return the number of key/value pairs in the map.
 
     bool insert(const KeyType& key, const ValueType& value);
       // If key is not equal to any key currently in the map, and if the

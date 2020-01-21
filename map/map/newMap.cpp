@@ -23,9 +23,35 @@ Map::Map(int maxSize)
     m_maxSize = maxSize;
 }
 
+Map::Map(Map& other)
+{
+    m_size = other.m_size;
+    m_maxSize = other.m_maxSize;
+    
+    m_map = new MapItem[m_maxSize];
+    for(int i=0; i<m_size; i++)
+        m_map[i] = other.m_map[i];
+}
+
 Map::~Map()
 {
     delete [] m_map;
+}
+
+Map& Map::operator=(const Map &other)
+{
+    if(&other == this)
+        return *this;
+    
+    delete [] m_map;
+    m_size = other.m_size;
+    m_maxSize = other.m_maxSize;
+    
+    m_map = new MapItem[m_maxSize];
+    for(int i=0; i<m_size; i++)
+        m_map[i] = other.m_map[i];
+    
+    return *this;
 }
 
 bool Map::empty() const
