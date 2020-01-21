@@ -7,8 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		53F163F923D61F5300D0EDBB /* testNewMap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53F163EA23D6189200D0EDBB /* testNewMap.cpp */; };
-		53F163FA23D61F5500D0EDBB /* newMap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53F163E623CFB0C300D0EDBB /* newMap.cpp */; };
+		53F1640023D6D94A00D0EDBB /* newMap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53F163E623CFB0C300D0EDBB /* newMap.cpp */; };
+		53F1640123D6D94B00D0EDBB /* testNewMap.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 53F163EA23D6189200D0EDBB /* testNewMap.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -136,8 +136,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				53F163FA23D61F5500D0EDBB /* newMap.cpp in Sources */,
-				53F163F923D61F5300D0EDBB /* testNewMap.cpp in Sources */,
+				53F1640023D6D94A00D0EDBB /* newMap.cpp in Sources */,
+				53F1640123D6D94B00D0EDBB /* testNewMap.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -39,4 +39,4 @@ class CarMap
     Map m_map;
 };
 
-#endif
+#endif /* CARMAP_H */

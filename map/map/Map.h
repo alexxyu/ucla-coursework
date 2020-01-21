@@ -78,4 +78,4 @@ class Map
     
 };
 
-#endif
+#endif /* MAP_H */
