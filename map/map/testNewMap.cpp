@@ -20,10 +20,18 @@ int main()
       // Failure if we try to insert a pair with a sixth distinct key into b
     assert(!b.insert(k[5], v));
 
+    c = b;
+    c.dump();
+    b = b;
+    
+    Map d = b;
+    d.dump();
+    
       // When two Maps' contents are swapped, their capacities are swapped
       // as well:
     a.swap(b);
     assert(!a.insert(k[5], v) && b.insert(k[5], v));
+    
     a.dump();
     b.dump();
     cout << "Passed all tests" << endl;
