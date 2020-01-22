@@ -1,4 +1,4 @@
-// testNewMap.cpp
+// testnewMap.cpp
 
 #include "newMap.h"
 #include <cassert>
