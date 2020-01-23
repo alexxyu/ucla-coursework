@@ -60,12 +60,13 @@ class Map
     void swap(Map& other);
       // Exchange the contents of this map with the other one.
 
+    void dump() const;
+    // Prints out all the key-value pairs in the map
+    
       // Housekeeping functions
     ~Map();
     Map(const Map& other);
     Map& operator=(const Map& rhs);
-    
-    void dump() const;
 
   private:
 
