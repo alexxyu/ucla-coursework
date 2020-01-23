@@ -217,12 +217,12 @@ Map& Map::operator=(const Map &rhs)
 void Map::dump() const
 {
     Node* ptr = m_map;
-    cout << "The map contains the following key-value pairs:" << endl;
+    cerr << "The map contains the following key-value pairs:" << endl;
     while(ptr != nullptr) {
-        cout << ptr->m_key << "\t" << ptr->m_value << endl;
+        cerr << ptr->m_key << "\t" << ptr->m_value << endl;
         ptr = ptr->next;
     }
-    cout << endl;
+    cerr << endl;
 }
 
 bool combine(const Map& m1, const Map& m2, Map& result)
