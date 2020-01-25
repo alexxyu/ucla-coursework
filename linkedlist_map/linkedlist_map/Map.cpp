@@ -183,7 +183,7 @@ void Map::swap(Map &other)
 
 Map::~Map()
 {
-    // Traverse through linked list and destruct each node
+    // Traverse through linked list and destruct each node in map
     Node* curr = m_map;
     while(curr != nullptr) {
         Node* next = curr->next;
@@ -194,25 +194,15 @@ Map::~Map()
 
 Map::Map(const Map& other)
 {
-    m_size = other.m_size;
-    
-    // Create first node in map
-    Node* other_ptr = other.m_map;
-    
     m_map = nullptr;
-    if(other_ptr != nullptr) {
-        m_map = new Node;
-        *m_map = {other_ptr->m_key, other_ptr->m_value, nullptr, nullptr};
-        
-        // Traverse through linked list and create new node corresponding to reference
-        // map; link nodes together appropriately
-        Node* ptr = m_map;
-        while(other_ptr->next != nullptr) {
-            ptr->next = new Node;
-            *(ptr->next) = {(other_ptr->next)->m_key, (other_ptr->next)->m_value, nullptr, ptr};
-            other_ptr = other_ptr->next;
-            ptr = ptr->next;
-        }
+    m_size = 0;
+    
+    // Deep-copy linked-list from reference map
+    for(int i=0; i<other.size(); i++) {
+        KeyType k;
+        ValueType v;
+        other.get(i, k, v);
+        insert(k, v);
     }
 }
 
@@ -221,25 +211,15 @@ Map& Map::operator=(const Map &rhs)
     if(&rhs == this)
         return *this;
     
-    m_size = rhs.m_size;
+    // Reset entire map first
+    reset();
     
-    // Create first node in map
-    Node* other_ptr = rhs.m_map;
-    
-    m_map = nullptr;
-    if(other_ptr != nullptr) {
-        m_map = new Node;
-        *m_map = {other_ptr->m_key, other_ptr->m_value, nullptr, nullptr};
-        
-        // Traverse through linked list and create new node corresponding to reference
-        // map; link nodes together appropriately
-        Node* ptr = m_map;
-        while(other_ptr->next != nullptr) {
-            ptr->next = new Node;
-            *(ptr->next) = {(other_ptr->next)->m_key, (other_ptr->next)->m_value, nullptr, ptr};
-            other_ptr = other_ptr->next;
-            ptr = ptr->next;
-        }
+    // Deep-copy linked-list from reference map
+    for(int i=0; i<rhs.size(); i++) {
+        KeyType k;
+        ValueType v;
+        rhs.get(i, k, v);
+        insert(k, v);
     }
         
     return *this;
@@ -317,4 +297,19 @@ void reassign(const Map& m, Map& result)
         result.update(key2, value1);
     }
     
+}
+
+void Map::reset()
+{
+    // Traverse through linked list and destruct each node in map
+    Node* curr = m_map;
+    while(curr != nullptr) {
+        Node* next = curr->next;
+        delete curr;
+        curr = next;
+    }
+    
+    // Reset primitive data members
+    m_map = nullptr;
+    m_size = 0;
 }

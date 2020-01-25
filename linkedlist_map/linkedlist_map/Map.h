@@ -61,7 +61,7 @@ class Map
       // Exchange the contents of this map with the other one.
 
     void dump() const;
-    // Prints out all the key-value pairs in the map
+      // Prints out all the key-value pairs in the map
     
       // Housekeeping functions
     ~Map();
@@ -80,6 +80,8 @@ class Map
 
     Node* m_map;       // pointer to the first node in the doubly linked-list
     int   m_size;      // number of entries in the map
+    
+    void reset();      // resets data members
 };
 
 bool combine(const Map& m1, const Map& m2, Map& result);
