@@ -31,6 +31,8 @@ bool Map::insert(const KeyType &key, const ValueType &value)
     }
     
     Node* ptr = m_map;
+    if(ptr->m_key == key)
+        return false;
     
     // Traverse linked list until end
     while(ptr->next != nullptr) {
@@ -103,8 +105,10 @@ bool Map::erase(const KeyType &key)
             Node* next = ptr->next;
             
             // Link previous node to the proceeding node of the current one
-            prev->next = next;
-            next->previous = prev;
+            if(prev != nullptr)
+                prev->next = next;
+            if(next != nullptr)
+                next->previous = prev;
             delete ptr;
             m_size--;
             return true;
@@ -194,17 +198,21 @@ Map::Map(const Map& other)
     
     // Create first node in map
     Node* other_ptr = other.m_map;
-    m_map = new Node;
-    *m_map = {other_ptr->m_key, other_ptr->m_value, nullptr, nullptr};
     
-    // Traverse through linked list and create new node corresponding to reference
-    // map; link nodes together appropriately
-    Node* ptr = m_map;
-    while(other_ptr->next != nullptr) {
-        ptr->next = new Node;
-        *(ptr->next) = {(other_ptr->next)->m_key, (other_ptr->next)->m_value, nullptr, ptr};
-        other_ptr = other_ptr->next;
-        ptr = ptr->next;
+    m_map = nullptr;
+    if(other_ptr != nullptr) {
+        m_map = new Node;
+        *m_map = {other_ptr->m_key, other_ptr->m_value, nullptr, nullptr};
+        
+        // Traverse through linked list and create new node corresponding to reference
+        // map; link nodes together appropriately
+        Node* ptr = m_map;
+        while(other_ptr->next != nullptr) {
+            ptr->next = new Node;
+            *(ptr->next) = {(other_ptr->next)->m_key, (other_ptr->next)->m_value, nullptr, ptr};
+            other_ptr = other_ptr->next;
+            ptr = ptr->next;
+        }
     }
 }
 
@@ -217,19 +225,23 @@ Map& Map::operator=(const Map &rhs)
     
     // Create first node in map
     Node* other_ptr = rhs.m_map;
-    m_map = new Node;
-    *m_map = {other_ptr->m_key, other_ptr->m_value, nullptr, nullptr};
     
-    // Traverse through linked list and create new node corresponding to reference
-    // map; link nodes together appropriately
-    Node* ptr = m_map;
-    while(other_ptr->next != nullptr) {
-        ptr->next = new Node;
-        *(ptr->next) = {(other_ptr->next)->m_key, (other_ptr->next)->m_value, nullptr, ptr};
-        other_ptr = other_ptr->next;
-        ptr = ptr->next;
+    m_map = nullptr;
+    if(other_ptr != nullptr) {
+        m_map = new Node;
+        *m_map = {other_ptr->m_key, other_ptr->m_value, nullptr, nullptr};
+        
+        // Traverse through linked list and create new node corresponding to reference
+        // map; link nodes together appropriately
+        Node* ptr = m_map;
+        while(other_ptr->next != nullptr) {
+            ptr->next = new Node;
+            *(ptr->next) = {(other_ptr->next)->m_key, (other_ptr->next)->m_value, nullptr, ptr};
+            other_ptr = other_ptr->next;
+            ptr = ptr->next;
+        }
     }
-    
+        
     return *this;
 }
 
