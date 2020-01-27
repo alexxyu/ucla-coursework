@@ -34,6 +34,17 @@ Map& Map::operator=(const Map &rhs)
     return *this;
 }
 
+Map::~Map()
+{
+    // Traverse through linked list and destruct each node in map
+    Node* curr = m_map;
+    while(curr != nullptr) {
+        Node* next = curr->next;
+        delete curr;
+        curr = next;
+    }
+}
+
 bool Map::empty() const
 {
     return m_size == 0;
@@ -203,17 +214,6 @@ void Map::swap(Map &other)
     int otherSize = other.m_size;
     other.m_size = m_size;
     m_size = otherSize;
-}
-
-Map::~Map()
-{
-    // Traverse through linked list and destruct each node in map
-    Node* curr = m_map;
-    while(curr != nullptr) {
-        Node* next = curr->next;
-        delete curr;
-        curr = next;
-    }
 }
 
 void Map::dump() const
