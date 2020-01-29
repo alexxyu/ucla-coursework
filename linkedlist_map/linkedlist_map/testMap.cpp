@@ -25,7 +25,8 @@ int main()
     assert(m.get(0, k, v)  &&  k == "xyz"  &&  v == 9876.5);    // try getting value by i
     assert(!m.get(1, k, v) &&  k == "xyz"  &&  v == 9876.5);    // no way to get out of bounds
     assert(!m.insert("xyz", 1));                    // cannot insert key if already exists
-
+    assert(m.contains("xyz"));                      // check that contains works
+    
     // Testing erase function:
     k = "hello";
     m.insert(k, 456);
@@ -64,7 +65,6 @@ int main()
     m3.insert("Lucy", 789);
     m3.insert("Ricky", 321);
     m3.insert("Jee", 158);
-    reassign(m3, m4);
     for(int i=0; i<m4.size(); i++) {
             KeyType k1, k2;
             ValueType v1, v2;
@@ -90,6 +90,13 @@ int main()
     assert(combine(empty_map, another_empty_map, m6));    // test combining empty maps
     assert(m6.size() == 0);         // resulting map should be empty
 
+    Map n1, n2;
+    n1.insert("a", 1);
+    n1.insert("b", 2);
+    n2.insert("a", 4);
+    assert(!combine(n2, n1, n2));                           // combine should return false
+    assert(n2.size() == 1 && n2.get(0, k, v) && k == "b");          // test that combine works when result is one of the maps to combine
+    
     // Test operator overloading
     m4 = m3;
     assert(m3.size() == m4.size()); // m4 should contain same element values as m3

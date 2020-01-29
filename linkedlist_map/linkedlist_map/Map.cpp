@@ -229,30 +229,32 @@ void Map::dump() const
 
 bool combine(const Map& m1, const Map& m2, Map& result)
 {
-    // Copy all key-value pairs from m1 into result as starting point
-    result = m1;
+    // Copy all key-value pairs from m1 into temp map as starting point
+    Map temp = m1;
     
-    // Traverse m2, add/delete key-value pairs to/from result appropriately
+    // Traverse m2, add/delete key-value pairs to/from temp map appropriately
     bool returnValue = true;
+    KeyType m2Key;
+    ValueType m2Value, m1Value;
     for(int i=0; i<m2.size(); i++) {
-        KeyType key;
-        ValueType value;
-        m2.get(i, key, value);
         
-        ValueType temp;
+        m2.get(i, m2Key, m2Value);
         
-        if(result.get(key, temp)) {
+        if(temp.get(m2Key, m1Value)) {
             // Key exists in both m1 and m2
             
-            if(temp != value) {
+            if(m1Value != m2Value) {
                 // Key with different value exists in m2, so key cannot be in result
-                result.erase(key);
+                temp.erase(m2Key);
                 returnValue = false;
             }
         }
         else
-            result.insert(key, value);
+            temp.insert(m2Key, m2Value);
     }
+    
+    // make result the temp map at the very end
+    result.swap(temp);
     return returnValue;
 }
 
