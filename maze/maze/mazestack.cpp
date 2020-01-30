@@ -50,7 +50,6 @@ bool pathExists(string maze[], int nRows, int nCols, int sr, int sc, int er, int
         //    (r,c) location that your algorithm is exploring.
         Coord curr = coordStack.top();
         coordStack.pop();
-        cout << curr.r() << ", " << curr.c() << endl;
         
         // If the current (r,c) coordinate is equal to the ending coordinate,
         // then we've solved the maze so return true!
