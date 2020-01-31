@@ -8,7 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		539142F823E15B340063E6E7 /* Map.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 539142F623E15B340063E6E7 /* Map.cpp */; };
-		539142FA23E21EFA0063E6E7 /* mazequeue.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 539142F123E1585A0063E6E7 /* mazequeue.cpp */; };
+		539142FC23E36D370063E6E7 /* eval.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 539142F423E15A2D0063E6E7 /* eval.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -128,8 +128,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				539142FA23E21EFA0063E6E7 /* mazequeue.cpp in Sources */,
 				539142F823E15B340063E6E7 /* Map.cpp in Sources */,
+				539142FC23E36D370063E6E7 /* eval.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

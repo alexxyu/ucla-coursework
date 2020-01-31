@@ -14,37 +14,59 @@ const int INVALID_EXPRESSION_ERROR = 1;
 const int INVALID_OPERAND_ERROR    = 2;
 const int DIVIDE_BY_ZERO_ERROR     = 3;
 
-// function declarations
+// helper function declarations
+string removeSpaces(string str);
 bool isValidOperand(char c);
 bool toPostfix(string infix, string& postfix);
 bool applyOperator(char operation, int operand1, int operand2, int& result);
 int evaluatePostfix(string postfix, const Map& values, int& result);
+
 int evaluate(string infix, const Map& values, string& postfix, int& result);
+
+string removeSpaces(string str)
+{
+    string result = "";
+    for(int i=0; i<str.size(); i++)
+        if(str.at(i) != ' ')
+            result += str.at(i);
+    
+    return result;
+}
 
 bool isValidOperand(char c)
 {
-    return (c >= 'a' && c <= 'z') || c == ' ';
+    return (c >= 'a' && c <= 'z');
+}
+
+bool isValidOperator(char c)
+{
+    return c == '+' || c == '-' || c == '*' || c == '/';
 }
 
 bool hasLessPrecedence(char op1, char op2)
 {
-    int op1Precedence = 2;
-    if(op1 == '+' || op1 == '-')
-        op1Precedence = 1;
+    // precedence value of 0 for + and -, otherwise 1
     
-    int op2Precedence = 2;
+    int op1Precedence = 1;
+    if(op1 == '+' || op1 == '-')
+        op1Precedence--;
+    
+    int op2Precedence = 1;
     if(op2 == '+' || op2 == '-')
-        op2Precedence = 1;
+        op2Precedence--;
     
     return op1Precedence <= op2Precedence;
 }
 
 bool toPostfix(string infix, string& postfix)
 {
+    if(infix == "") return false;
+    
+    infix = removeSpaces(infix);
+    
     string expr = "";
     stack<char> opStack;
     
-    int n_operand = 0, n_operator = 0;
     for(int i=0; i<infix.size(); i++) {
         char c = infix.at(i);
 
@@ -53,16 +75,21 @@ bool toPostfix(string infix, string& postfix)
                 opStack.push(c);
                 break;
             case ')':
-                // no matching '('
+                
+                // empty expression inside parenthesis
+                if(i > 0 && infix.at(i-1) == '(')
+                    return false;
+                
+                // no matching '(' found
                 if(opStack.empty())
                     return false;
                 
                 // pop stack until matching '('
-                while(opStack.top()!='(') {
+                while(opStack.top() != '(') {
                     expr += opStack.top();
                     opStack.pop();
                     
-                    // no matching '('
+                    // no matching '(' found
                     if(opStack.empty())
                         return false;
                 }
@@ -73,13 +100,19 @@ bool toPostfix(string infix, string& postfix)
             case '-':
             case '*':
             case '/':
+                // operator cannot be first in expression or proceed '(' directly
+                // operator cannot be last in expression or precede ')' directly
+                if(i == 0 || infix.at(i-1) == '(' ||
+                   i == infix.size() - 1 || infix.at(i+1) == ')')
+                    return false;
+                
                 while(!opStack.empty() && opStack.top() != '(' &&
                       hasLessPrecedence(c, opStack.top())) {
                     expr += opStack.top();
                     opStack.pop();
                 }
+                
                 opStack.push(c);
-                n_operator++;
                 break;
             default:
                 // error if invalid character (eg. '#', 'A')
@@ -87,28 +120,24 @@ bool toPostfix(string infix, string& postfix)
                     return false;
                 
                 // else, c is an operand
-                if(c != ' ') {
-                    expr += c;
-                    n_operand++;
                     
-                    if((i > 0 && (infix.at(i-1) == ')')) ||
-                       (i < infix.size()-1 && (infix.at(i+1) == '(')))
-                        return false;
+                // operand has to follow '(' or operator if not first in expression
+                if(i > 0 && infix.at(i-1) != '(' && !isValidOperator(infix.at(i-1)))
+                    return false;
                     
-                    if(n_operand != n_operator + 1)
-                        return false;
-                }
+                // operand has to precede ')' or operator if not last in expression
+                if(i < infix.size()-1 && infix.at(i+1) != ')' && !isValidOperator(infix.at(i+1)))
+                    return false;
+                
+                expr += c;
                 break;
         }
     }
     
-    if(n_operand != n_operator + 1)
-        return false;
-    
     while(!opStack.empty()) {
         char c = opStack.top();
         
-        // no matching ')'
+        // no matching ')' found
         if(c == '(') return false;
         
         expr += c;
@@ -149,7 +178,7 @@ int evaluatePostfix(string postfix, const Map& values, int& result)
     for(char c: postfix) {
         
         if(c >= 'a' && c <= 'z') {
-            // c is a possible operand
+            // c is a possible operand: check to see if operand is in map
             int value;
             if(values.get(c, value))
                 opStack.push(value);
@@ -157,12 +186,13 @@ int evaluatePostfix(string postfix, const Map& values, int& result)
                 return INVALID_OPERAND_ERROR;
         }
         else {
-            // c is an operator
+            // otherwise, c is an operator
             int operand2 = opStack.top();
             opStack.pop();
             int operand1 = opStack.top();
             opStack.pop();
             
+            // try to evaluate
             int eval;
             if(!applyOperator(c, operand1, operand2, eval))
                 return DIVIDE_BY_ZERO_ERROR;
@@ -182,28 +212,6 @@ int evaluate(string infix, const Map& values, string& postfix, int& result)
     
     return evaluatePostfix(postfix, values, result);
 }
-
-/*
-int main()
-{
-    // string infix = "1+2/(4-3)";
-    // cout << toPostfix(infix) << endl;
-    
-    char vars[] = { 'a', 'e', 'i', 'o', 'u', 'y', '#' };
-    int  vals[] = {  3,  -9,   6,   2,   4,   1  };
-    Map m;
-    for (int k = 0; vars[k] != '#'; k++)
-        m.insert(vars[k], vals[k]);
-    string pf = "";
-    int answer;
-    // assert(evaluate("a+e", m, pf, answer) == 0  &&
-    //                        pf == "ae+"  &&  answer == -6);
-    
-    cout << evaluate("i/a+e)", m, pf, answer) << endl;
-    assert(pf == "");
-    return 0;
-}
- */
 
 int main()
 {
