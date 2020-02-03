@@ -26,6 +26,7 @@ bool shouldCheck(string maze[], int nRows, int nCols, int targetRow, int targetC
     if(targetRow < 0 || targetCol < 0 || targetRow >= nRows || targetCol >= nCols)
         return false;
     
+    // already visited position, or position is a wall
     if(maze[targetRow][targetCol] == VISITED_MARKER || maze[targetRow][targetCol] == 'X')
         return false;
     

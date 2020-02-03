@@ -8,7 +8,7 @@
 #include <cassert>
 using namespace std;
 
-// evaluate return values
+// evaluation return values
 const int VALID_EVALUATION_CODE    = 0;
 const int INVALID_EXPRESSION_ERROR = 1;
 const int INVALID_OPERAND_ERROR    = 2;
@@ -17,8 +17,8 @@ const int DIVIDE_BY_ZERO_ERROR     = 3;
 // helper function declarations
 string removeSpaces(string str);
 bool isValidOperand(char c);
-bool toPostfix(string infix, string& postfix);
 bool applyOperator(char operation, int operand1, int operand2, int& result);
+bool toPostfix(string infix, string& postfix);
 int evaluatePostfix(string postfix, const Map& values, int& result);
 
 int evaluate(string infix, const Map& values, string& postfix, int& result);
@@ -58,96 +58,6 @@ bool hasLessPrecedence(char op1, char op2)
     return op1Precedence <= op2Precedence;
 }
 
-bool toPostfix(string infix, string& postfix)
-{
-    if(infix == "") return false;
-    
-    infix = removeSpaces(infix);
-    
-    string expr = "";
-    stack<char> opStack;
-    
-    for(int i=0; i<infix.size(); i++) {
-        char c = infix.at(i);
-
-        switch(c) {
-            case '(':
-                opStack.push(c);
-                break;
-            case ')':
-                
-                // empty expression inside parenthesis
-                if(i > 0 && infix.at(i-1) == '(')
-                    return false;
-                
-                // no matching '(' found
-                if(opStack.empty())
-                    return false;
-                
-                // pop stack until matching '('
-                while(opStack.top() != '(') {
-                    expr += opStack.top();
-                    opStack.pop();
-                    
-                    // no matching '(' found
-                    if(opStack.empty())
-                        return false;
-                }
-                
-                opStack.pop();
-                break;
-            case '+':
-            case '-':
-            case '*':
-            case '/':
-                // operator cannot be first in expression or proceed '(' directly
-                // operator cannot be last in expression or precede ')' directly
-                if(i == 0 || infix.at(i-1) == '(' ||
-                   i == infix.size() - 1 || infix.at(i+1) == ')')
-                    return false;
-                
-                while(!opStack.empty() && opStack.top() != '(' &&
-                      hasLessPrecedence(c, opStack.top())) {
-                    expr += opStack.top();
-                    opStack.pop();
-                }
-                
-                opStack.push(c);
-                break;
-            default:
-                // error if invalid character (eg. '#', 'A')
-                if(!isValidOperand(c))
-                    return false;
-                
-                // else, c is an operand
-                    
-                // operand has to follow '(' or operator if not first in expression
-                if(i > 0 && infix.at(i-1) != '(' && !isValidOperator(infix.at(i-1)))
-                    return false;
-                    
-                // operand has to precede ')' or operator if not last in expression
-                if(i < infix.size()-1 && infix.at(i+1) != ')' && !isValidOperator(infix.at(i+1)))
-                    return false;
-                
-                expr += c;
-                break;
-        }
-    }
-    
-    while(!opStack.empty()) {
-        char c = opStack.top();
-        
-        // no matching ')' found
-        if(c == '(') return false;
-        
-        expr += c;
-        opStack.pop();
-    }
-    
-    postfix = expr;
-    return true;
-}
-
 bool applyOperator(char operation, int operand1, int operand2, int& result)
 {
     switch(operation) {
@@ -172,36 +82,130 @@ bool applyOperator(char operation, int operand1, int operand2, int& result)
     return true;
 }
 
+bool toPostfix(string infix, string& postfix)
+{
+    // infix cannot be empty expression
+    if(infix == "") return false;
+    
+    // remove readability spaces from expression
+    infix = removeSpaces(infix);
+    
+    string expr = "";
+    stack<char> operatorStack;
+    for(int i=0; i<infix.size(); i++) {
+        char c = infix.at(i);
+
+        switch(c) {
+            case '(':
+                operatorStack.push(c);
+                break;
+            case ')':
+                
+                // expression inside parentheses cannot be empty
+                if(i > 0 && infix.at(i-1) == '(')
+                    return false;
+                
+                // no matching '(' found
+                if(operatorStack.empty())
+                    return false;
+                
+                // pop stack until matching '('
+                while(operatorStack.top() != '(') {
+                    expr += operatorStack.top();
+                    operatorStack.pop();
+                    
+                    // no matching '(' found
+                    if(operatorStack.empty())
+                        return false;
+                }
+                
+                operatorStack.pop();
+                break;
+            case '+':
+            case '-':
+            case '*':
+            case '/':
+                // operator cannot be first in expression or immediately proceed '('
+                // operator cannot be last in expression or immediately precede ')'
+                if(i == 0 || infix.at(i-1) == '(' ||
+                   i == infix.size() - 1 || infix.at(i+1) == ')')
+                    return false;
+                
+                // add operators with greater precedence to expression
+                while(!operatorStack.empty() && operatorStack.top() != '(' &&
+                      hasLessPrecedence(c, operatorStack.top())) {
+                    expr += operatorStack.top();
+                    operatorStack.pop();
+                }
+                
+                operatorStack.push(c);
+                break;
+            default:
+                // error if invalid character (eg. '#', 'A')
+                if(!isValidOperand(c))
+                    return false;
+                
+                // else, c is an operand:
+                // operand has to follow '(' or operator if not first in expression
+                if(i > 0 && infix.at(i-1) != '(' && !isValidOperator(infix.at(i-1)))
+                    return false;
+                    
+                // operand has to precede ')' or operator if not last in expression
+                if(i < infix.size()-1 && infix.at(i+1) != ')' && !isValidOperator(infix.at(i+1)))
+                    return false;
+                
+                expr += c;
+                break;
+        }
+    }
+    
+    // add remaining operators to expression
+    while(!operatorStack.empty()) {
+        char c = operatorStack.top();
+        
+        // no matching ')' found
+        if(c == '(') return false;
+        
+        expr += c;
+        operatorStack.pop();
+    }
+    
+    // postfix expression is valid
+    postfix = expr;
+    return true;
+}
+
 int evaluatePostfix(string postfix, const Map& values, int& result)
 {
-    stack<int> opStack;
+    stack<int> operandStack;
     for(char c: postfix) {
         
         if(c >= 'a' && c <= 'z') {
             // c is a possible operand: check to see if operand is in map
             int value;
             if(values.get(c, value))
-                opStack.push(value);
+                operandStack.push(value);
             else
                 return INVALID_OPERAND_ERROR;
         }
         else {
             // otherwise, c is an operator
-            int operand2 = opStack.top();
-            opStack.pop();
-            int operand1 = opStack.top();
-            opStack.pop();
+            int operand2 = operandStack.top();
+            operandStack.pop();
+            int operand1 = operandStack.top();
+            operandStack.pop();
             
-            // try to evaluate
+            // try to evaluate current operation
             int eval;
             if(!applyOperator(c, operand1, operand2, eval))
                 return DIVIDE_BY_ZERO_ERROR;
-            opStack.push(eval);
+            operandStack.push(eval);
         }
         
     }
     
-    result = opStack.top();
+    // result is valid
+    result = operandStack.top();
     return VALID_EVALUATION_CODE;
 }
 
