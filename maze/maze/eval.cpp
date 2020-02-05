@@ -27,7 +27,7 @@ string removeSpaces(string str)
 {
     string result = "";
     for(int i=0; i<str.size(); i++)
-        if(str.at(i) != ' ')
+        if(str.at(i) != ' ' && str.at(i) != '\t')
             result += str.at(i);
     
     return result;

@@ -1,4 +1,4 @@
-//  mazequeuw.cpp
+//  mazequeue.cpp
 
 #include <iostream>
 #include <queue>
