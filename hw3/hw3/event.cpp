@@ -11,7 +11,7 @@ class Event
     string name() const { return m_name; }
     
     virtual ~Event() {}
-    virtual bool isSport() const = 0;
+    virtual bool isSport() const { return true; }
     virtual string need() const = 0;
     
   private:
@@ -28,7 +28,6 @@ class BasketballGame: public Event
         cout << "Destroying the " << name() << " basketball game." << endl;
     }
     
-    virtual bool isSport() const { return true; }
     virtual string need() const { return "hoops"; }
 };
 
@@ -62,7 +61,6 @@ class HockeyGame: public Event
         cout << "Destroying the " << name() << " hockey game" << endl;
     }
     
-    virtual bool isSport() const { return false; }
     virtual string need() const { return "ice"; }
 };
 
