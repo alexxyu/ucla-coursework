@@ -1,5 +1,9 @@
 // tree.cpp
 
+#include <cassert>
+#include <iostream>
+using namespace std;
+
 // Return the number of ways that all n2 elements of a2 appear
 // in the n1 element array a1 in the same order (though not
 // necessarily consecutively).  The empty sequence appears in a
@@ -13,8 +17,8 @@
 //    50 40 30            3
 int countContains(const double a1[], int n1, const double a2[], int n2)
 {
-    if(n2 <= 0) return 1;
     if(n1 <= 0) return 0;
+    if(n2 <= 0) return 1;
     if(a1[0] == a2[0])
         return countContains(a1+1, n1-1, a2+1, n2-1);
       
@@ -87,4 +91,12 @@ void separate(double a[], int n, double separator, int& firstNotGreater, int& fi
 void order(double a[], int n)
 {
     return;  // This is not always correct.
+}
+
+int main()
+{
+    double a1[7] = { 10, 50, 40, 20, 50, 40, 30 };
+    double a2[3] = { 10, 20, 40 };
+    assert(countContains(a1, 7, a2, 3) == 1);
+    cout << "Passed all tests" << endl;
 }
