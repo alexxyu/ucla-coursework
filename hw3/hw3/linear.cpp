@@ -75,7 +75,6 @@ bool contains(const double a1[], int n1, const double a2[], int n2)
         return contains(a1+1, n1-1, a2+1, n2-1);
       
     return contains(a1+1, n1-1, a2, n2);
-    // return false;  // This is not always correct.
 }
 
 bool somePredicate(double x)

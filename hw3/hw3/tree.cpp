@@ -17,13 +17,17 @@ using namespace std;
 //    50 40 30            3
 int countContains(const double a1[], int n1, const double a2[], int n2)
 {
-    if(n1 <= 0) return 0;
     if(n2 <= 0) return 1;
+    if(n1 <= 0) return 0;
+    
+    int restCount = 0;
+    
+    // move onto next element in a2 to finish current subsequence
     if(a1[0] == a2[0])
-        return countContains(a1+1, n1-1, a2+1, n2-1);
+        restCount = countContains(a1+1, n1-1, a2+1, n2-1);
       
-    return countContains(a1+1, n1-1, a2, n2);
-    //return -999;  // This is incorrect.
+    // find more of current element for more subsequences
+    return restCount + countContains(a1+1, n1-1, a2, n2);
 }
 
 // Exchange two doubles
@@ -90,13 +94,32 @@ void separate(double a[], int n, double separator, int& firstNotGreater, int& fi
 // If n <= 1, do nothing.
 void order(double a[], int n)
 {
-    return;  // This is not always correct.
+    if(n<=1) return;
+    
+    // partition by middle element in array
+    int firstNotGreater, firstLess;
+    separate(a, n, a[n/2], firstNotGreater, firstLess);
+    
+    // order both halves of partitioned array
+    order(a, firstNotGreater);
+    order(a+firstNotGreater, n-firstNotGreater);
 }
 
 int main()
 {
     double a1[7] = { 10, 50, 40, 20, 50, 40, 30 };
-    double a2[3] = { 10, 20, 40 };
-    assert(countContains(a1, 7, a2, 3) == 1);
+    double a2[3] = { 50, 40, 30 };
+    // cout << countContains(a1, 7, a2, 3) << endl;
+    assert(countContains(a1, 7, a2, 3) == 3);
+    assert(countContains(a1, 7, a2, 0) == 1);
+    assert(countContains(a1, 0, a2, 0) == 1);
+    assert(countContains(a1, 0, a2, 2) == 0);
+    assert(countContains(a1, 3, a2, 2) == 1);
+    
+    double b[0] = { };
+    order(b, 0);
+    for(double i: b)
+        cout << i << "\t";
+    cout << endl;
     cout << "Passed all tests" << endl;
 }
