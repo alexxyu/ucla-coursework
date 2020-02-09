@@ -1,11 +1,5 @@
 // linear.cpp
 
-#include <iostream>
-#include <cassert>
-using namespace std;
-
-bool somePredicate(double x);
-
 // Return true if the somePredicate function returns false for at
 // least one of the array elements; return false otherwise.
 bool anyFalse(const double a[], int n)
@@ -75,58 +69,4 @@ bool contains(const double a1[], int n1, const double a2[], int n2)
         return contains(a1+1, n1-1, a2+1, n2-1);
       
     return contains(a1+1, n1-1, a2, n2);
-}
-
-bool somePredicate(double x)
-{
-    return x <= 0;
-}
-
-int main()
-{
-    double a[5] = { 1, 1, 5, 6, -3 };
-    assert(anyFalse(a, 5));
-    assert(firstTrue(a, 4) == -1);
-    assert(firstTrue(a, 5) == 4);
-    assert(countTrue(a, 5) == 1);
-    assert(countTrue(a, 4) == 0);
-    assert(positionOfSmallest(a, 5) == 4);
-    
-    double a1[7] = { 10, 50, 40, 20, 50, 40, 30 };
-    {
-        double a2[3] = { 50, 30, 20 };
-        assert(!contains(a1, 7, a2, 3));
-    }
-    {
-        double a2[3] = { 50, 40, 40 };
-        assert(contains(a1, 7, a2, 3));
-    }
-    {
-        double a2[3] = { 50, 20, 30 };
-        assert(contains(a1, 7, a2, 3));
-        assert(contains(a1, 7, a2, 0));
-    }
-    
-    double a2[3] = { 10, 20, 20 };
-    assert(!contains(a1, 7, a2, 3));
-    assert(anyFalse(a1, 7));
-    assert(firstTrue(a1, 7) == -1);
-    assert(positionOfSmallest(a1, 7) == 0);
-    
-    double b[3] = { -2, -2, 5 };
-    assert(anyFalse(b, 3));
-    assert(!anyFalse(b, 2));
-    assert(!anyFalse(b, 0));
-    assert(countTrue(b, 3) == 2);
-    assert(countTrue(b, 0) == 0);
-    assert(firstTrue(b, 3) == 0);
-    assert(positionOfSmallest(b, 3) == 0);
-    
-    double c[7] = { 1, 8, 3, -1, -5, -5, 10 };
-    assert(firstTrue(c, 7) == 3);
-    assert(positionOfSmallest(c, 7) == 4);
-    assert(positionOfSmallest(c, 4) == 3);
-    assert(positionOfSmallest(c, 0) == -1);
-    
-    cout << "Passed all tests" << endl;
 }

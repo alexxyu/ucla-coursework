@@ -1,9 +1,5 @@
 // event.cpp
 
-#include <iostream>
-#include <string>
-using namespace std;
-
 class Event
 {
   public:
@@ -63,30 +59,3 @@ class HockeyGame: public Event
     
     virtual string need() const { return "ice"; }
 };
-
-void display(const Event* e)
-{
-    cout << e->name() << ": ";
-    if (e->isSport())
-    cout << "(sport) ";
-    cout << "needs " << e->need() << endl;
-}
-
-int main()
-{
-    Event* events[4];
-    events[0] = new BasketballGame("Lakers vs. Suns");
-      // Concerts have a name and a genre.
-    events[1] = new Concert("Banda MS", "banda");
-    events[2] = new Concert("KISS", "hard rock");
-    events[3] = new HockeyGame("Kings vs. Flames");
-
-    cout << "Here are the events." << endl;
-    for (int k = 0; k < 4; k++)
-    display(events[k]);
-
-      // Clean up the events before exiting
-    cout << "Cleaning up." << endl;
-    for (int k = 0; k < 4; k++)
-    delete events[k];
-}
