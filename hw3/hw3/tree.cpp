@@ -102,24 +102,32 @@ void order(double a[], int n)
     
     // order both halves of partitioned array
     order(a, firstNotGreater);
-    order(a+firstNotGreater, n-firstNotGreater);
+    order(a+firstLess, n-firstLess);
 }
 
 int main()
 {
     double a1[7] = { 10, 50, 40, 20, 50, 40, 30 };
     double a2[3] = { 50, 40, 30 };
-    // cout << countContains(a1, 7, a2, 3) << endl;
     assert(countContains(a1, 7, a2, 3) == 3);
     assert(countContains(a1, 7, a2, 0) == 1);
     assert(countContains(a1, 0, a2, 0) == 1);
     assert(countContains(a1, 0, a2, 2) == 0);
     assert(countContains(a1, 3, a2, 2) == 1);
     
-    double b[0] = { };
-    order(b, 0);
-    for(double i: b)
-        cout << i << "\t";
-    cout << endl;
+    double b[8] = { 5, 5, 1, 23, -1, -5, 0, 3 };
+    order(b, 8);
+    for(int i=1; i<8; i++)
+        assert(b[i] <= b[i-1]);
+    
+    double c[5] = { -5, -3, -1, 1, 5 };
+    order(c, 5);
+    for(int i=1; i<5; i++)
+        assert(c[i] <= c[i-1]);
+    
+    double d[5] = { 5, 1, -1, -3, -5 };
+    order(d, 5);
+    for(int i=1; i<5; i++)
+        assert(d[i] <= d[i-1]);
     cout << "Passed all tests" << endl;
 }

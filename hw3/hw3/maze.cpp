@@ -5,7 +5,6 @@
 using namespace std;
 
 const char VISITED_MARKER = '#';
-bool pathExists(string maze[], int nRows, int nCols, int sr, int sc, int er, int ec);
 
 bool pathExists(string maze[], int nRows, int nCols, int sr, int sc, int er, int ec)
 {
