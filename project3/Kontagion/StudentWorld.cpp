@@ -2,6 +2,7 @@
 #include "StudentWorld.h"
 #include "GameConstants.h"
 #include <string>
+#include <cassert>
 using namespace std;
 
 GameWorld* createStudentWorld(string assetPath)
@@ -14,24 +15,36 @@ StudentWorld::StudentWorld(string assetPath)
 {
 }
 
+StudentWorld::~StudentWorld()
+{
+    cleanUp();
+}
+
 int StudentWorld::init()
 {
     // Create new Socrates object
     socrates = new Socrates(0, VIEW_HEIGHT/2, this);
     
     int level = getLevel();
+    
+    /*
     for(int i=0; i<level; i++) {
         // add pits
     }
-    
+
     int num_food = max(5 * level, 25);
     for(int i=0; i<num_food; i++) {
         // add food
     }
+    */
     
     int num_dirt = max(180 - 20 * level, 20);
     for(int i=0; i<num_dirt; i++) {
-        // add dirt
+        int x = VIEW_HEIGHT/2 + randInt(-MAX_OJBECT_DIST_FROM_CENTER, MAX_OJBECT_DIST_FROM_CENTER);
+        int y = VIEW_HEIGHT/2 + randInt(-static_cast<int>(sqrt(MAX_OJBECT_DIST_FROM_CENTER*MAX_OJBECT_DIST_FROM_CENTER - (x-VIEW_WIDTH/2)*(x-VIEW_HEIGHT/2))), static_cast<int>(sqrt(MAX_OJBECT_DIST_FROM_CENTER*MAX_OJBECT_DIST_FROM_CENTER - (x-VIEW_WIDTH/2)*(x-VIEW_HEIGHT/2))));
+        
+        Actor* dirt = new DirtPile(x, y, this);
+        actors.push_back(dirt);
     }
     
     return GWSTATUS_CONTINUE_GAME;
@@ -41,11 +54,11 @@ int StudentWorld::move()
 {
     // The term "actors" refers to all bacteria, Socrates, goodies,
     // pits, flames, spray, foods, etc.
-    
+
     socrates->doSomething();
     
     // Give each actor a chance to do something, incl. Socrates
-    for(vector<Actor*>::iterator iter = actors.begin(); iter != actors.end(); )
+    for(vector<Actor*>::iterator iter = actors.begin(); iter != actors.end(); iter++)
     {
         if(!(*iter)->isDead()) {
             (*iter)->doSomething();
@@ -75,10 +88,12 @@ void StudentWorld::removeDeadGameObjects()
 {
     for(vector<Actor*>::iterator iter = actors.begin(); iter != actors.end(); )
     {
-        if(!(*iter)->isDead()) {
+        if((*iter)->isDead()) {
             delete *iter;
             iter = actors.erase(iter);
         }
+        else
+            iter++;
     }
 }
 
@@ -109,4 +124,5 @@ void StudentWorld::cleanUp()
     for(int i=0; i<actors.size(); i++)
         delete actors[i];
     actors.clear();
+    delete socrates;
 }

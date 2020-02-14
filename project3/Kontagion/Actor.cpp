@@ -1,9 +1,14 @@
 #include "Actor.h"
 #include "GameWorld.h"
 #include "StudentWorld.h"
+#include <cmath>
 
-Actor::Actor(int imageID, double startX, double startY, GameWorld* world)
- : GraphObject(imageID, startX, startY)
+// // // // // // // // // // // // // //
+//        ACTOR IMPLEMENTATION         //
+// // // // // // // // // // // // // //
+
+Actor::Actor(int imageID, double startX, double startY, int dir, int depth, GameWorld* world)
+ : GraphObject(imageID, startX, startY, dir, depth)
 {
     m_dead = false;
     m_world = world;
@@ -14,10 +19,21 @@ bool Actor::isDead()
     return m_dead;
 }
 
-Socrates::Socrates(double startX, double startY, GameWorld* world)
- : Actor(IID_PLAYER, startX, startY, world)
+GameWorld* Actor::getWorld()
 {
-    
+    return m_world;
+}
+
+// // // // // // // // // // // // // //
+//       SOCRATES IMPLEMENTATION       //
+// // // // // // // // // // // // // //
+
+Socrates::Socrates(double startX, double startY, GameWorld* world)
+ : Actor(IID_PLAYER, startX, startY, 0, 0, world)
+{
+    m_spray_count = STARTING_SPRAY_CHARGES;
+    m_flame_count = STARTING_FLAME_CHARGES;
+    m_health = STARTING_HEALTH;
 }
 
 void Socrates::doSomething()
@@ -42,10 +58,10 @@ void Socrates::doSomething()
                 }
                 break;
             case KEY_PRESS_RIGHT:
-                // move
+                adjustPosition(-MOVE_DEGREES);
                 break;
             case KEY_PRESS_LEFT:
-                // move
+                adjustPosition(MOVE_DEGREES);
                 break;
             default:
                 break;
@@ -56,6 +72,18 @@ void Socrates::doSomething()
     else {
         // replenish sprays
     }
+}
+
+void Socrates::adjustPosition(int degree)
+{
+    const double PI = 4 * atan(1);
+    
+    int newAngle = (getDirection() + 180 + degree) % 360;
+    double newX = VIEW_DIAMETER * cos(newAngle * 1.0 / 360 * 2 * PI) + VIEW_DIAMETER;
+    double newY = VIEW_DIAMETER * sin(newAngle * 1.0 / 360 * 2 * PI) + VIEW_DIAMETER;
+    
+    moveTo(newX, newY);
+    setDirection((newAngle + 180) % 360);
 }
 
 int Socrates::getHealth()
@@ -71,4 +99,20 @@ int Socrates::getSprayCount()
 int Socrates::getFlameCount()
 {
     return m_flame_count;
+}
+
+// // // // // // // // // // // // // //
+//      DIRTPILE IMPLEMENTATION        //
+// // // // // // // // // // // // // //
+
+DirtPile::DirtPile(double startX, double startY, GameWorld* world)
+ : Actor(IID_DIRT, startX, startY, 90, 1, world)
+{
+    
+}
+
+void DirtPile::doSomething()
+{
+    // dirt can't do anything!
+    return;
 }

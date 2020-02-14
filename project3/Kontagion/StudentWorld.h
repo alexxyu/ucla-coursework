@@ -10,7 +10,11 @@
 class StudentWorld : public GameWorld
 {
 public:
+    static const int MAX_OJBECT_DIST_FROM_CENTER = 120;
+    
     StudentWorld(std::string assetPath);
+    ~StudentWorld();
+    
     virtual int init();
     virtual int move();
     virtual void cleanUp();
