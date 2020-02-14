@@ -2,6 +2,7 @@
 #define STUDENTWORLD_H_
 
 #include "GameWorld.h"
+#include <vector>
 #include <string>
 
 // Students:  Add code to this file, StudentWorld.cpp, Actor.h, and Actor.cpp
@@ -15,6 +16,12 @@ public:
     virtual void cleanUp();
 
 private:
+    void removeDeadGameObjects();
+    void addNewActors();
+    void updateDisplayText();
+    
+    Actor* socrates;
+    std::vector<Actor*> actors;
 };
 
 #endif // STUDENTWORLD_H_
