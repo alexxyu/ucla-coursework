@@ -4,11 +4,13 @@
 #include "GraphObject.h"
 #include "GameWorld.h"
 #include "GameConstants.h"
+#include <iostream>
 
 class Actor: public GraphObject
 {
 public:
     Actor(int imageID, double startX, double startY, int dir, int depth, GameWorld* world);
+    virtual ~Actor() { }
     
     virtual void doSomething() = 0;
     
@@ -30,6 +32,7 @@ public:
     static const int MOVE_DEGREES = 5;
 
     Socrates(double startX, double startY, GameWorld* world);
+    virtual ~Socrates() { }
     
     virtual void doSomething();
     
@@ -49,6 +52,7 @@ class DirtPile: public Actor
 {
 public:
     DirtPile(double startX, double startY, GameWorld* world);
+    virtual ~DirtPile() { }
     
     virtual void doSomething();
     

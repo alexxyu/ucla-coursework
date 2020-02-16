@@ -79,8 +79,8 @@ void Socrates::adjustPosition(int degree)
     const double PI = 4 * atan(1);
     
     int newAngle = (getDirection() + 180 + degree) % 360;
-    double newX = VIEW_DIAMETER * cos(newAngle * 1.0 / 360 * 2 * PI) + VIEW_DIAMETER;
-    double newY = VIEW_DIAMETER * sin(newAngle * 1.0 / 360 * 2 * PI) + VIEW_DIAMETER;
+    double newX = VIEW_RADIUS * cos(newAngle * 1.0 / 360 * 2 * PI) + VIEW_RADIUS;
+    double newY = VIEW_RADIUS * sin(newAngle * 1.0 / 360 * 2 * PI) + VIEW_RADIUS;
     
     moveTo(newX, newY);
     setDirection((newAngle + 180) % 360);

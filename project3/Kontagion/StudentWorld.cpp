@@ -32,7 +32,7 @@ int StudentWorld::init()
         // add pits
     }
 
-    int num_food = max(5 * level, 25);
+    int num_food = min(5 * level, 25);
     for(int i=0; i<num_food; i++) {
         // add food
     }
@@ -58,7 +58,7 @@ int StudentWorld::move()
     socrates->doSomething();
     
     // Give each actor a chance to do something, incl. Socrates
-    for(vector<Actor*>::iterator iter = actors.begin(); iter != actors.end(); iter++)
+    for(list<Actor*>::iterator iter = actors.begin(); iter != actors.end(); iter++)
     {
         if(!(*iter)->isDead()) {
             (*iter)->doSomething();
@@ -86,7 +86,7 @@ int StudentWorld::move()
 
 void StudentWorld::removeDeadGameObjects()
 {
-    for(vector<Actor*>::iterator iter = actors.begin(); iter != actors.end(); )
+    for(list<Actor*>::iterator iter = actors.begin(); iter != actors.end(); )
     {
         if((*iter)->isDead()) {
             delete *iter;
@@ -121,8 +121,13 @@ void StudentWorld::updateDisplayText()
 
 void StudentWorld::cleanUp()
 {
-    for(int i=0; i<actors.size(); i++)
-        delete actors[i];
+    int count = 0;
+    for(list<Actor*>::iterator iter = actors.begin(); iter != actors.end(); ) {
+        delete *iter;
+        iter = actors.erase(iter);
+        count++;
+    }
+
     actors.clear();
     delete socrates;
 }

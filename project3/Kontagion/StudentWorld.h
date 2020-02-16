@@ -2,8 +2,8 @@
 #define STUDENTWORLD_H_
 
 #include "GameWorld.h"
-#include <vector>
 #include <string>
+#include <list>
 
 // Students:  Add code to this file, StudentWorld.cpp, Actor.h, and Actor.cpp
 
@@ -25,7 +25,7 @@ private:
     void updateDisplayText();
     
     Actor* socrates;
-    std::vector<Actor*> actors;
+    std::list<Actor*> actors;
 };
 
 #endif // STUDENTWORLD_H_
