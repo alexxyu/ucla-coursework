@@ -1,11 +1,10 @@
 #include "Actor.h"
-#include "GameWorld.h"
 #include "StudentWorld.h"
-#include <cmath>
+using namespace std;
 
-// // // // // // // // // // // // // //
-//       SOCRATES IMPLEMENTATION       //
-// // // // // // // // // // // // // //
+///////////////////////////////////////////////////////////////////////////
+//  SOCRATES IMPLEMENTATION
+///////////////////////////////////////////////////////////////////////////
 
 Socrates::Socrates(double startX, double startY, StudentWorld* world)
  : Damageable(IID_PLAYER, startX, startY, 0, world, STARTING_HEALTH)
@@ -40,7 +39,6 @@ void Socrates::doSomething()
                         getPositionInThisDirection(dir+22*i, 2*SPRITE_RADIUS, flameStartX, flameStartY);
                         world->addActor(new Flame(flameStartX, flameStartY, dir+22*i, world));
                     }
-                    
                     m_flame_count--;
                     world->playSound(SOUND_PLAYER_FIRE);
                 }
@@ -57,20 +55,17 @@ void Socrates::doSomething()
         
     }
     
-    else {
-        // replenish sprays
-    }
+    else if(m_spray_count < STARTING_SPRAY_CHARGES)
+        m_spray_count++;
 }
 
 void Socrates::adjustPosition(int degree)
 {
-    const double PI = 4 * atan(1);
-    
     int newAngle = (getDirection() + 180 + degree) % 360;
-    double newX = VIEW_RADIUS * cos(newAngle * 1.0 / 360 * 2 * PI) + VIEW_RADIUS;
-    double newY = VIEW_RADIUS * sin(newAngle * 1.0 / 360 * 2 * PI) + VIEW_RADIUS;
+    double dx, dy;
+    getWorld()->getRadialPosition(newAngle, dx, dy);
     
-    moveTo(newX, newY);
+    moveTo(dx, dy);
     setDirection((newAngle + 180) % 360);
 }
 
@@ -84,12 +79,22 @@ int Socrates::getFlameCount() const
     return m_flame_count;
 }
 
+///////////////////////////////////////////////////////////////////////////
+//  PROJECTILE IMPLEMENTATION
+///////////////////////////////////////////////////////////////////////////
+
 void Projectile::doSomething()
 {
     if(isDead())
         return;
     
     // check overlap with damageable object
+    Actor* overlappingDamageable = getWorld()->findOverlapWithDamageable(getX(), getY());
+    if(overlappingDamageable != nullptr) {
+        overlappingDamageable->takeDamage(m_damage);
+        setDead();
+        return;
+    }
     
     moveForward(SPRITE_RADIUS*2);
     
@@ -98,9 +103,9 @@ void Projectile::doSomething()
         setDead();
 }
 
-// // // // // // // // // // // // // //
-//         PIT IMPLEMENTATION          //
-// // // // // // // // // // // // // //
+///////////////////////////////////////////////////////////////////////////
+//  PIT IMPLEMENTATION
+///////////////////////////////////////////////////////////////////////////
 
 Pit::Pit(double startX, double startY, StudentWorld* world)
  : Actor(IID_PIT, startX, startY, 0, 1, world)
@@ -111,4 +116,55 @@ Pit::Pit(double startX, double startY, StudentWorld* world)
 void Pit::doSomething()
 {
     
+}
+
+///////////////////////////////////////////////////////////////////////////
+//  GOODIE IMPLEMENTATION
+///////////////////////////////////////////////////////////////////////////
+
+void Goodie::doSomething()
+{
+    if(isDead())
+        return;
+    
+    StudentWorld* world = getWorld();
+    if(world->isOverlappingWithSocrates(getX(), getY())) {
+        world->increaseScore(m_pointValue);
+        setDead();
+        world->playSound(SOUND_GOT_GOODIE);
+        giveReward();
+        return;
+    }
+    
+    m_tickCount++;
+    if(m_tickCount >= m_lifespan)
+        setDead();
+}
+
+Goodie::Goodie(int imageID, double startX, double startY, StudentWorld* world, int pointValue)
+ : Actor(imageID, startX, startY, 0, 1, world)
+{
+    m_tickCount = 0;
+    m_pointValue = pointValue;
+    generateLifespan();
+}
+
+void Goodie::generateLifespan()
+{
+    m_lifespan = max(rand() % (300 - 10 * getWorld()->getLevel()), 50);
+}
+
+void RestoreHealthGoodie::giveReward()
+{
+    getWorld()->getSocrates()->healToAmount(HEAL_AMOUNT);
+}
+
+void FlameThrowerGoodie::giveReward()
+{
+    getWorld()->getSocrates()->refillFlames(REFILL_AMOUNT);
+}
+
+void ExtraLifeGoodie::giveReward()
+{
+    getWorld()->incLives();
 }

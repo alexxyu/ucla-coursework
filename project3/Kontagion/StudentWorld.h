@@ -20,15 +20,21 @@ public:
     virtual int move();
     virtual void cleanUp();
     
-    double distance(int x1, int y1, int x2, int y2) const;
     void addActor(Actor* actor);
+    Socrates* getSocrates() const { return socrates; }
+    
+    double distance(double x1, double y1, double x2, double y2) const;
+    Actor* findOverlapWithDamageable(double x, double y) const;
+    bool isOverlappingWithSocrates(double x, double y) const;
+    void getRadialPosition(int dir, double& dx, double& dy) const;
 
 private:
     void removeDeadGameObjects();
     void addNewActors();
     void updateDisplayText();
+    bool isOverlapping(double x1, double y1, double x2, double y2) const;
     
-    Socrates* socrates;
+    Socrates*         socrates;
     std::list<Actor*> actors;
 };
 
