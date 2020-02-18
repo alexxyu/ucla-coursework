@@ -119,10 +119,20 @@ void Pit::doSomething()
 }
 
 ///////////////////////////////////////////////////////////////////////////
-//  GOODIE IMPLEMENTATION
+//  EXPIRABLE IMPLEMENTATION
 ///////////////////////////////////////////////////////////////////////////
 
-void Goodie::doSomething()
+Expirable::Expirable(int imageID, double startX, double startY,
+                     StudentWorld* world, int pointValue, bool playSoundOnTouch)
+ : Damageable(imageID, startX, startY, 1, world, 0)
+{
+    m_tickCount = 0;
+    m_pointValue = pointValue;
+    m_playSound = playSoundOnTouch;
+    generateLifespan();
+}
+
+void Expirable::doSomething()
 {
     if(isDead())
         return;
@@ -131,7 +141,8 @@ void Goodie::doSomething()
     if(world->isOverlappingWithSocrates(getX(), getY())) {
         world->increaseScore(m_pointValue);
         setDead();
-        world->playSound(SOUND_GOT_GOODIE);
+        if(m_playSound)
+            getWorld()->playSound(SOUND_GOT_GOODIE);
         giveReward();
         return;
     }
@@ -141,20 +152,12 @@ void Goodie::doSomething()
         setDead();
 }
 
-Goodie::Goodie(int imageID, double startX, double startY, StudentWorld* world, int pointValue)
- : Damageable(imageID, startX, startY, 1, world, 0)
-{
-    m_tickCount = 0;
-    m_pointValue = pointValue;
-    generateLifespan();
-}
-
-void Goodie::generateLifespan()
+void Expirable::generateLifespan()
 {
     m_lifespan = max(rand() % (300 - 10 * getWorld()->getLevel()), 50);
 }
 
-void Goodie::takeDamage(int damage)
+void Expirable::takeDamage(int damage)
 {
     setDead();
 }
@@ -172,4 +175,10 @@ void FlameThrowerGoodie::giveReward()
 void ExtraLifeGoodie::giveReward()
 {
     getWorld()->incLives();
+}
+
+void Fungus::giveReward()
+{
+    // There is no reward for a fungus, mwahahaha!
+    getWorld()->getSocrates()->takeDamage(DAMAGE);
 }

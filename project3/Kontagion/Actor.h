@@ -25,7 +25,7 @@ public:
     virtual ~Actor() { }
     
     virtual void doSomething() { }
-    virtual void takeDamage(int damage) { }
+    virtual void takeDamage(int amount) { }
     
     bool isDead() const { return m_dead; }
     bool isDamageable() const { return m_damageable; }
@@ -70,36 +70,38 @@ private:
 };
 
 ///////////////////////////////////////////////////////////////////////////
-//  GOODIE DECLARATION
+//  EXPIRABLES DECLARATION
 ///////////////////////////////////////////////////////////////////////////
 
-class Goodie: public Damageable
+class Expirable: public Damageable
 {
 
 public:
-    Goodie(int imageID, double startX, double startY, StudentWorld* world, int pointValue);
-    virtual ~Goodie() { }
+    Expirable(int imageID, double startX, double startY,
+              StudentWorld* world, int pointValue, bool playSoundOnTouch=true);
+    virtual ~Expirable() { }
     
     virtual void doSomething();
     virtual void giveReward() = 0;
     virtual void takeDamage(int damage);
     
 private:
-    int m_tickCount;
-    int m_lifespan;
-    int m_pointValue;
+    int  m_tickCount;
+    int  m_lifespan;
+    int  m_pointValue;
+    bool m_playSound;
 
     void generateLifespan();
 };
 
-class RestoreHealthGoodie: public Goodie
+class RestoreHealthGoodie: public Expirable
 {
 public:
     static const int POINT_VALUE = 250;
     static const int HEAL_AMOUNT = 100;
     
     RestoreHealthGoodie(double startX, double startY, StudentWorld* world)
-     : Goodie(IID_RESTORE_HEALTH_GOODIE, startX, startY, world, POINT_VALUE)
+     : Expirable(IID_RESTORE_HEALTH_GOODIE, startX, startY, world, POINT_VALUE)
     {
         
     }
@@ -108,14 +110,14 @@ public:
     virtual void giveReward();
 };
 
-class FlameThrowerGoodie: public Goodie
+class FlameThrowerGoodie: public Expirable
 {
 public:
     static const int POINT_VALUE = 300;
     static const int REFILL_AMOUNT = 5;
     
     FlameThrowerGoodie(double startX, double startY, StudentWorld* world)
-     : Goodie(IID_FLAME_THROWER_GOODIE, startX, startY, world, POINT_VALUE)
+     : Expirable(IID_FLAME_THROWER_GOODIE, startX, startY, world, POINT_VALUE)
     {
         
     }
@@ -124,18 +126,33 @@ public:
     virtual void giveReward();
 };
 
-class ExtraLifeGoodie: public Goodie
+class ExtraLifeGoodie: public Expirable
 {
 public:
     static const int POINT_VALUE = 500;
     
     ExtraLifeGoodie(double startX, double startY, StudentWorld* world)
-     : Goodie(IID_EXTRA_LIFE_GOODIE, startX, startY, world, POINT_VALUE)
+     : Expirable(IID_EXTRA_LIFE_GOODIE, startX, startY, world, POINT_VALUE)
     {
         
     }
     virtual ~ExtraLifeGoodie() { }
     
+    virtual void giveReward();
+};
+
+class Fungus: public Expirable
+{
+public:
+    static const int POINT_VALUE = -50;
+    static const int DAMAGE = 20;
+    
+    Fungus(double startX, double startY, StudentWorld* world)
+     : Expirable(IID_FUNGUS, startX, startY, world, POINT_VALUE, false)
+    {
+        
+    }
+    virtual ~Fungus() { }
     virtual void giveReward();
 };
 
@@ -181,7 +198,7 @@ private:
 };
 
 ///////////////////////////////////////////////////////////////////////////
-//  PROJECTILE DECLARATION
+//  PROJECTILES DECLARATION
 ///////////////////////////////////////////////////////////////////////////
 
 class Projectile: public Actor

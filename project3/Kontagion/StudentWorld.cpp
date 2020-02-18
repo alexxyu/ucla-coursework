@@ -150,7 +150,11 @@ void StudentWorld::addNewActors()
     int level = getLevel();
     int chanceFungus = max(510 - level * 10, 200);
     if(randInt(0, chanceFungus-1) == 0) {
-        // add fungus
+        double x, y;
+        int dir = randInt(0, 359);
+        getRadialPosition(dir, x, y);
+        
+        actors.push_back(new Fungus(x, y, this));
     }
     
     int chanceGoodie = max(510 - level * 10, 250);
@@ -161,28 +165,31 @@ void StudentWorld::addNewActors()
         getRadialPosition(dir, x, y);
         
         int whichGoodie = randInt(0, 9);
-        Actor* goodie;
         if(whichGoodie <= 5)
-            goodie = new RestoreHealthGoodie(x, y, this);
+            actors.push_back(new RestoreHealthGoodie(x, y, this));
         else if(whichGoodie == 9)
-            goodie = new ExtraLifeGoodie(x, y, this);
+            actors.push_back(new ExtraLifeGoodie(x, y, this));
         else
-            goodie = new FlameThrowerGoodie(x, y, this);
-        
-        actors.push_back(goodie);
+            actors.push_back(new FlameThrowerGoodie(x, y, this));
     }
 }
 
 void StudentWorld::updateDisplayText()
 {
-    // Score: 004500    Level: 4    Lives: 3    Health: 82    Sprays: 16    Flames: 4
+    // Score: 004500  Level: 4  Lives: 3  Health: 82  Sprays: 16  Flames: 4
     ostringstream oss;
+    const string textDivider = "  ";
     oss.fill('0');
-    oss << "Score: " << setw(6) << getScore() << "    ";
-    oss << "Level: " << getLevel() << "    ";
-    oss << "Lives: " << getLives() << "    ";
-    oss << "Health: " << socrates->getHealth() << "    ";
-    oss << "Sprays: " << socrates->getSprayCount() << "    ";
+    
+    int score = getScore();
+    if (score >= 0)
+        oss << "Score: " << setw(6) << getScore() << textDivider;
+    else
+        oss << "Score: -" << setw(5) << -getScore() << textDivider;
+    oss << "Level: " << getLevel() << textDivider;
+    oss << "Lives: " << getLives() << textDivider;
+    oss << "Health: " << socrates->getHealth() << textDivider;
+    oss << "Sprays: " << socrates->getSprayCount() << textDivider;
     oss << "Flames: " << socrates->getFlameCount();
     setGameStatText(oss.str());
 }
