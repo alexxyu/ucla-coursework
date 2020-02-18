@@ -4,48 +4,29 @@
 #include <cmath>
 
 // // // // // // // // // // // // // //
-//        ACTOR IMPLEMENTATION         //
-// // // // // // // // // // // // // //
-
-Actor::Actor(int imageID, double startX, double startY, int dir, int depth, GameWorld* world)
- : GraphObject(imageID, startX, startY, dir, depth)
-{
-    m_dead = false;
-    m_world = world;
-}
-
-bool Actor::isDead()
-{
-    return m_dead;
-}
-
-GameWorld* Actor::getWorld()
-{
-    return m_world;
-}
-
-// // // // // // // // // // // // // //
 //       SOCRATES IMPLEMENTATION       //
 // // // // // // // // // // // // // //
 
-Socrates::Socrates(double startX, double startY, GameWorld* world)
- : Actor(IID_PLAYER, startX, startY, 0, 0, world)
+Socrates::Socrates(double startX, double startY, StudentWorld* world)
+ : Damageable(IID_PLAYER, startX, startY, 0, world, STARTING_HEALTH)
 {
     m_spray_count = STARTING_SPRAY_CHARGES;
     m_flame_count = STARTING_FLAME_CHARGES;
-    m_health = STARTING_HEALTH;
 }
 
 void Socrates::doSomething()
 {
     int dir;
-    GameWorld* world = getWorld();
+    StudentWorld* world = getWorld();
     if(world->getKey(dir)) {
         
         switch(dir) {
             case KEY_PRESS_SPACE:
                 if(m_spray_count > 0) {
                     // add spray object
+                    double sprayStartX, sprayStartY;
+                    getPositionInThisDirection(getDirection(), 2*SPRITE_RADIUS, sprayStartX, sprayStartY);
+                    world->addActor(new Spray(sprayStartX, sprayStartY, getDirection(), world));
                     m_spray_count--;
                     world->playSound(SOUND_PLAYER_SPRAY);
                 }
@@ -53,6 +34,13 @@ void Socrates::doSomething()
             case KEY_PRESS_ENTER:
                 if(m_flame_count > 0) {
                     // add flame object
+                    int dir = getDirection();
+                    double flameStartX, flameStartY;
+                    for(int i=0; i<16; i++) {
+                        getPositionInThisDirection(dir+22*i, 2*SPRITE_RADIUS, flameStartX, flameStartY);
+                        world->addActor(new Flame(flameStartX, flameStartY, dir+22*i, world));
+                    }
+                    
                     m_flame_count--;
                     world->playSound(SOUND_PLAYER_FIRE);
                 }
@@ -86,33 +74,41 @@ void Socrates::adjustPosition(int degree)
     setDirection((newAngle + 180) % 360);
 }
 
-int Socrates::getHealth()
-{
-    return m_health;
-}
-
-int Socrates::getSprayCount()
+int Socrates::getSprayCount() const
 {
     return m_spray_count;
 }
 
-int Socrates::getFlameCount()
+int Socrates::getFlameCount() const
 {
     return m_flame_count;
 }
 
+void Projectile::doSomething()
+{
+    if(isDead())
+        return;
+    
+    // check overlap with damageable object
+    
+    moveForward(SPRITE_RADIUS*2);
+    
+    // check if dissipated
+    if(getWorld()->distance(getX(), getY(), m_startX, m_startY) >= m_maxDistance)
+        setDead();
+}
+
 // // // // // // // // // // // // // //
-//      DIRTPILE IMPLEMENTATION        //
+//         PIT IMPLEMENTATION          //
 // // // // // // // // // // // // // //
 
-DirtPile::DirtPile(double startX, double startY, GameWorld* world)
- : Actor(IID_DIRT, startX, startY, 90, 1, world)
+Pit::Pit(double startX, double startY, StudentWorld* world)
+ : Actor(IID_PIT, startX, startY, 0, 1, world)
 {
     
 }
 
-void DirtPile::doSomething()
+void Pit::doSomething()
 {
-    // dirt can't do anything!
-    return;
+    
 }

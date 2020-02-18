@@ -5,7 +5,8 @@
 #include <string>
 #include <list>
 
-// Students:  Add code to this file, StudentWorld.cpp, Actor.h, and Actor.cpp
+class Socrates;
+class Actor;
 
 class StudentWorld : public GameWorld
 {
@@ -13,18 +14,21 @@ public:
     static const int MAX_OJBECT_DIST_FROM_CENTER = 120;
     
     StudentWorld(std::string assetPath);
-    ~StudentWorld();
+    virtual ~StudentWorld();
     
     virtual int init();
     virtual int move();
     virtual void cleanUp();
+    
+    double distance(int x1, int y1, int x2, int y2);
+    void addActor(Actor* actor);
 
 private:
     void removeDeadGameObjects();
     void addNewActors();
     void updateDisplayText();
     
-    Actor* socrates;
+    Socrates* socrates;
     std::list<Actor*> actors;
 };
 
