@@ -47,7 +47,7 @@ private:
 class Damageable: public Actor
 {
 public:
-    Damageable(int imageID, double startX, double startY, int depth,
+    Damageable(int imageID, double startX, double startY, int depth, 
                StudentWorld* world, int startHealth)
      : Actor(imageID, startX, startY, 0, depth, world, true), m_health(startHealth)
     {
@@ -68,6 +68,80 @@ public:
 private:
     int m_health;
 };
+
+///////////////////////////////////////////////////////////////////////////
+//  GOODIE DECLARATION
+///////////////////////////////////////////////////////////////////////////
+
+class Goodie: public Damageable
+{
+
+public:
+    Goodie(int imageID, double startX, double startY, StudentWorld* world, int pointValue);
+    virtual ~Goodie() { }
+    
+    virtual void doSomething();
+    virtual void giveReward() = 0;
+    virtual void takeDamage(int damage);
+    
+private:
+    int m_tickCount;
+    int m_lifespan;
+    int m_pointValue;
+
+    void generateLifespan();
+};
+
+class RestoreHealthGoodie: public Goodie
+{
+public:
+    static const int POINT_VALUE = 250;
+    static const int HEAL_AMOUNT = 100;
+    
+    RestoreHealthGoodie(double startX, double startY, StudentWorld* world)
+     : Goodie(IID_RESTORE_HEALTH_GOODIE, startX, startY, world, POINT_VALUE)
+    {
+        
+    }
+    virtual ~RestoreHealthGoodie() { }
+    
+    virtual void giveReward();
+};
+
+class FlameThrowerGoodie: public Goodie
+{
+public:
+    static const int POINT_VALUE = 300;
+    static const int REFILL_AMOUNT = 5;
+    
+    FlameThrowerGoodie(double startX, double startY, StudentWorld* world)
+     : Goodie(IID_FLAME_THROWER_GOODIE, startX, startY, world, POINT_VALUE)
+    {
+        
+    }
+    virtual ~FlameThrowerGoodie() { }
+    
+    virtual void giveReward();
+};
+
+class ExtraLifeGoodie: public Goodie
+{
+public:
+    static const int POINT_VALUE = 500;
+    
+    ExtraLifeGoodie(double startX, double startY, StudentWorld* world)
+     : Goodie(IID_EXTRA_LIFE_GOODIE, startX, startY, world, POINT_VALUE)
+    {
+        
+    }
+    virtual ~ExtraLifeGoodie() { }
+    
+    virtual void giveReward();
+};
+
+///////////////////////////////////////////////////////////////////////////
+//  SOCRATES DECLARATION
+///////////////////////////////////////////////////////////////////////////
 
 class Socrates: public Damageable
 {
@@ -186,75 +260,6 @@ public:
     virtual ~Pit() { }
     
     virtual void doSomething();
-};
-
-///////////////////////////////////////////////////////////////////////////
-//  GOODIE DECLARATION
-///////////////////////////////////////////////////////////////////////////
-
-class Goodie: public Actor
-{
-
-public:
-    Goodie(int imageID, double startX, double startY, StudentWorld* world, int pointValue);
-    virtual ~Goodie() { }
-    
-    virtual void doSomething();
-    virtual void giveReward() = 0;
-    
-private:
-    int m_tickCount;
-    int m_lifespan;
-    int m_pointValue;
-
-    void generateLifespan();
-};
-
-class RestoreHealthGoodie: public Goodie
-{
-public:
-    static const int POINT_VALUE = 250;
-    static const int HEAL_AMOUNT = 100;
-    
-    RestoreHealthGoodie(double startX, double startY, StudentWorld* world)
-     : Goodie(IID_RESTORE_HEALTH_GOODIE, startX, startY, world, POINT_VALUE)
-    {
-        
-    }
-    virtual ~RestoreHealthGoodie() { }
-    
-    virtual void giveReward();
-};
-
-class FlameThrowerGoodie: public Goodie
-{
-public:
-    static const int POINT_VALUE = 300;
-    static const int REFILL_AMOUNT = 5;
-    
-    FlameThrowerGoodie(double startX, double startY, StudentWorld* world)
-     : Goodie(IID_FLAME_THROWER_GOODIE, startX, startY, world, POINT_VALUE)
-    {
-        
-    }
-    virtual ~FlameThrowerGoodie() { }
-    
-    virtual void giveReward();
-};
-
-class ExtraLifeGoodie: public Goodie
-{
-public:
-    static const int POINT_VALUE = 500;
-    
-    ExtraLifeGoodie(double startX, double startY, StudentWorld* world)
-     : Goodie(IID_EXTRA_LIFE_GOODIE, startX, startY, world, POINT_VALUE)
-    {
-        
-    }
-    virtual ~ExtraLifeGoodie() { }
-    
-    virtual void giveReward();
 };
 
 #endif // ACTOR_H_

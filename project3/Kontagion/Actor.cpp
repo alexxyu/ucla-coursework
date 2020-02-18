@@ -142,7 +142,7 @@ void Goodie::doSomething()
 }
 
 Goodie::Goodie(int imageID, double startX, double startY, StudentWorld* world, int pointValue)
- : Actor(imageID, startX, startY, 0, 1, world)
+ : Damageable(imageID, startX, startY, 1, world, 0)
 {
     m_tickCount = 0;
     m_pointValue = pointValue;
@@ -152,6 +152,11 @@ Goodie::Goodie(int imageID, double startX, double startY, StudentWorld* world, i
 void Goodie::generateLifespan()
 {
     m_lifespan = max(rand() % (300 - 10 * getWorld()->getLevel()), 50);
+}
+
+void Goodie::takeDamage(int damage)
+{
+    setDead();
 }
 
 void RestoreHealthGoodie::giveReward()

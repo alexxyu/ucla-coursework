@@ -196,7 +196,8 @@ void StudentWorld::cleanUp()
         count++;
     }
 
-    delete socrates;
+    if(socrates != nullptr)
+        delete socrates;
 }
 
 double StudentWorld::distance(double x1, double y1, double x2, double y2) const
