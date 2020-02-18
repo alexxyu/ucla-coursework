@@ -35,7 +35,7 @@ class Damageable: public Actor
 {
 public:
     Damageable(int imageID, double startX, double startY, int depth, StudentWorld* world, int startHealth)
-     : Actor(imageID, startX, startY, 0, 0, world), m_health(startHealth) { }
+     : Actor(imageID, startX, startY, 0, depth, world), m_health(startHealth) { }
     
     virtual ~Damageable() { }
     

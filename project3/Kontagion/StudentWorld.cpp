@@ -4,6 +4,7 @@
 #include <string>
 #include <cassert>
 #include <sstream>
+#include <iomanip>
 using namespace std;
 
 GameWorld* createStudentWorld(string assetPath)
@@ -184,7 +185,7 @@ void StudentWorld::cleanUp()
     delete socrates;
 }
 
-double StudentWorld::distance(int x1, int y1, int x2, int y2)
+double StudentWorld::distance(int x1, int y1, int x2, int y2) const
 {
     return sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2));
 }

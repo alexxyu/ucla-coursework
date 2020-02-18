@@ -20,7 +20,7 @@ public:
     virtual int move();
     virtual void cleanUp();
     
-    double distance(int x1, int y1, int x2, int y2);
+    double distance(int x1, int y1, int x2, int y2) const;
     void addActor(Actor* actor);
 
 private:
