@@ -7,7 +7,7 @@ using namespace std;
 ///////////////////////////////////////////////////////////////////////////
 
 Socrates::Socrates(double startX, double startY, StudentWorld* world)
- : Damageable(IID_PLAYER, startX, startY, 0, world, STARTING_HEALTH)
+ : Damageable(IID_PLAYER, startX, startY, 0, 0, world, STARTING_HEALTH)
 {
     m_spray_count = STARTING_SPRAY_CHARGES;
     m_flame_count = STARTING_FLAME_CHARGES;
@@ -110,10 +110,65 @@ void Projectile::doSomething()
 Pit::Pit(double startX, double startY, StudentWorld* world)
  : Actor(IID_PIT, startX, startY, 0, 1, world)
 {
-    // initialize inventory of bacteria
+    m_bacteriaCount[REGULAR_SALMONELLA_ID] = NUM_REGULAR_SALMONELLA;
+    m_bacteriaCount[AGGRESSIVE_SALMONELLA_ID] = NUM_AGGRESSIVE_SALMONELLA;
+    m_bacteriaCount[ECOLI_ID] = NUM_ECOLI;
 }
 
 void Pit::doSomething()
+{
+    if(isEmpty()) {
+        cout << "PIT DIED!" << endl;
+        setDead();
+        return;
+    }
+    
+    int chance = randInt(0, 49);
+    if(chance == 0) {
+        
+        int bacteriumGenerated;
+        do {
+            bacteriumGenerated = randInt(0, NUM_OF_BACTERIA_TYPES-1);
+        } while(m_bacteriaCount[bacteriumGenerated] < 1);
+        
+        StudentWorld* world = getWorld();
+        int modX = randInt(-10, 10);
+        int modY = randInt(-10, 10);
+        
+        switch(bacteriumGenerated) {
+            case REGULAR_SALMONELLA_ID:
+                world->addActor(new RegularSalmonella(getX()+modX, getY()+modY, world));
+                break;
+            case AGGRESSIVE_SALMONELLA_ID:
+                world->addActor(new AggressiveSalmonella(getX()+modX, getY()+modY, world));
+                break;
+            case ECOLI_ID:
+                world->addActor(new EColi(getX()+modX, getY()+modY, world));
+                break;
+            default:
+                break;
+        }
+        
+        m_bacteriaCount[bacteriumGenerated]--;
+        world->playSound(SOUND_BACTERIUM_BORN);
+        
+    }
+}
+
+bool Pit::isEmpty()
+{
+    for(int i=0; i<NUM_OF_BACTERIA_TYPES; i++)
+        if(m_bacteriaCount[i] > 0)
+            return false;
+    
+    return true;
+}
+
+///////////////////////////////////////////////////////////////////////////
+//  BACTERIA IMPLEMENTATION
+///////////////////////////////////////////////////////////////////////////
+
+void Bacterium::doSomething()
 {
     return;
 }
@@ -124,7 +179,7 @@ void Pit::doSomething()
 
 Expirable::Expirable(int imageID, double startX, double startY,
                      StudentWorld* world, int pointValue, bool playSoundOnTouch)
- : Damageable(imageID, startX, startY, 1, world, 0)
+ : Damageable(imageID, startX, startY, 0, 1, world, 0)
 {
     m_tickCount = 0;
     m_pointValue = pointValue;

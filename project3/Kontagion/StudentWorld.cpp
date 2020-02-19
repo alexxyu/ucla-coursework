@@ -30,35 +30,39 @@ int StudentWorld::init()
     
     int level = getLevel();
     
-    for(int pitCount=0; pitCount < level; pitCount++) {
+    for(int pitCount=0; pitCount < level; ) {
         int x = VIEW_WIDTH/2 + randInt(-MAX_OJBECT_DIST_FROM_CENTER, MAX_OJBECT_DIST_FROM_CENTER);
         int y = VIEW_HEIGHT/2 + randInt(-MAX_OJBECT_DIST_FROM_CENTER, MAX_OJBECT_DIST_FROM_CENTER);
         
         if(distance(x, y, VIEW_WIDTH/2, VIEW_HEIGHT/2) <= MAX_OJBECT_DIST_FROM_CENTER &&
            !isOverlappingWithActors(x, y, static_cast<int>(actors.size()))) {
             addActor(new Pit(x, y, this));
+            pitCount++;
         }
     }
 
     int numFood = min(5 * level, 25);
-    for(int foodCount=0; foodCount < numFood; foodCount++) {
+    for(int foodCount=0; foodCount < numFood; ) {
         int x = VIEW_WIDTH/2 + randInt(-MAX_OJBECT_DIST_FROM_CENTER, MAX_OJBECT_DIST_FROM_CENTER);
         int y = VIEW_HEIGHT/2 + randInt(-MAX_OJBECT_DIST_FROM_CENTER, MAX_OJBECT_DIST_FROM_CENTER);
         
         if(distance(x, y, VIEW_WIDTH/2, VIEW_HEIGHT/2) <= MAX_OJBECT_DIST_FROM_CENTER &&
            !isOverlappingWithActors(x, y, static_cast<int>(actors.size()))) {
             addActor(new Food(x, y, this));
+            foodCount++;
         }
     }
     
     int numDirt = max(180 - 20 * level, 20);
-    for(int dirtCount=0; dirtCount < numDirt; dirtCount++) {
+    for(int dirtCount=0; dirtCount < numDirt; ) {
         int x = VIEW_WIDTH/2 + randInt(-MAX_OJBECT_DIST_FROM_CENTER, MAX_OJBECT_DIST_FROM_CENTER);
         int y = VIEW_HEIGHT/2 + randInt(-MAX_OJBECT_DIST_FROM_CENTER, MAX_OJBECT_DIST_FROM_CENTER);
         
         if(distance(x, y, VIEW_WIDTH/2, VIEW_HEIGHT/2) <= MAX_OJBECT_DIST_FROM_CENTER &&
-           !isOverlappingWithActors(x, y, numFood + level))
+           !isOverlappingWithActors(x, y, numFood + level)) {
             addActor(new DirtPile(x, y, this));
+            dirtCount++;
+        }
     }
     
     return GWSTATUS_CONTINUE_GAME;

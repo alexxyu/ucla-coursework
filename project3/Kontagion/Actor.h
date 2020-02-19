@@ -47,9 +47,9 @@ private:
 class Damageable: public Actor
 {
 public:
-    Damageable(int imageID, double startX, double startY, int depth, 
+    Damageable(int imageID, double startX, double startY, int dir, int depth,
                StudentWorld* world, int startHealth)
-    : Actor(imageID, startX, startY, 0, depth, world, true), m_health(startHealth)
+    : Actor(imageID, startX, startY, dir, depth, world, true), m_health(startHealth)
     {
         
     }
@@ -75,7 +75,6 @@ private:
 
 class Expirable: public Damageable
 {
-
 public:
     Expirable(int imageID, double startX, double startY,
               StudentWorld* world, int pointValue, bool playSoundOnTouch=true);
@@ -164,11 +163,48 @@ class Bacterium: public Damageable
 {
 public:
     Bacterium(int imageID, double startX, double startY, StudentWorld* world, int health)
-    : Damageable(imageID, startX, startY, 0, world, health)
+    : Damageable(imageID, startX, startY, 90, 0, world, health)
     {
         
     }
     virtual ~Bacterium() { }
+    virtual void doSomething();
+};
+
+class RegularSalmonella: public Bacterium
+{
+public:
+    static const int STARTING_HEALTH = 4;
+    
+    RegularSalmonella(double startX, double startY, StudentWorld* world)
+    : Bacterium(IID_SALMONELLA, startX, startY, world, STARTING_HEALTH)
+    {
+        
+    }
+};
+
+class AggressiveSalmonella: public Bacterium
+{
+public:
+    static const int STARTING_HEALTH = 10;
+    
+    AggressiveSalmonella(double startX, double startY, StudentWorld* world)
+    : Bacterium(IID_SALMONELLA, startX, startY, world, STARTING_HEALTH)
+    {
+        
+    }
+};
+
+class EColi: public Bacterium
+{
+public:
+    static const int STARTING_HEALTH = 5;
+    
+    EColi(double startX, double startY, StudentWorld* world)
+    : Bacterium(IID_ECOLI, startX, startY, world, STARTING_HEALTH)
+    {
+        
+    }
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -203,7 +239,7 @@ class DirtPile: public Damageable
 {
 public:
     DirtPile(double startX, double startY, StudentWorld* world)
-     : Damageable(IID_DIRT, startX, startY, 1, world, 1)
+    : Damageable(IID_DIRT, startX, startY, 0, 1, world, 1)
     {
         
     }
@@ -221,7 +257,7 @@ class Projectile: public Actor
 public:
     Projectile(int imageID, double startX, double startY, int dir, StudentWorld* world,
                double maxDistance, int damage)
-     : Actor(imageID, startX, startY, dir, 1, world)
+    : Actor(imageID, startX, startY, dir, 1, world)
     {
         m_startX = startX;
         m_startY = startY;
@@ -292,12 +328,20 @@ public:
     static const int NUM_AGGRESSIVE_SALMONELLA = 3;
     static const int NUM_ECOLI = 2;
     
+    static const int REGULAR_SALMONELLA_ID = 0;
+    static const int AGGRESSIVE_SALMONELLA_ID = 1;
+    static const int ECOLI_ID = 2;
+    
+    static const int NUM_OF_BACTERIA_TYPES = 3;
+    
     Pit(double startX, double startY, StudentWorld* world);
     virtual ~Pit() { }
     
     virtual void doSomething();
+    bool isEmpty();
     
 private:
+    int m_bacteriaCount[NUM_OF_BACTERIA_TYPES];
 };
 
 #endif // ACTOR_H_
