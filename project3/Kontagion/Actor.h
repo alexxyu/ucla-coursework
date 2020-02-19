@@ -15,7 +15,7 @@ class Actor: public GraphObject
 public:
     Actor(int imageID, double startX, double startY, int dir, int depth,
           StudentWorld* world, bool damageable=false)
-     : GraphObject(imageID, startX, startY, dir, depth)
+    : GraphObject(imageID, startX, startY, dir, depth)
     {
         m_dead = false;
         m_world = world;
@@ -49,7 +49,7 @@ class Damageable: public Actor
 public:
     Damageable(int imageID, double startX, double startY, int depth, 
                StudentWorld* world, int startHealth)
-     : Actor(imageID, startX, startY, 0, depth, world, true), m_health(startHealth)
+    : Actor(imageID, startX, startY, 0, depth, world, true), m_health(startHealth)
     {
         
     }
@@ -101,7 +101,7 @@ public:
     static const int HEAL_AMOUNT = 100;
     
     RestoreHealthGoodie(double startX, double startY, StudentWorld* world)
-     : Expirable(IID_RESTORE_HEALTH_GOODIE, startX, startY, world, POINT_VALUE)
+    : Expirable(IID_RESTORE_HEALTH_GOODIE, startX, startY, world, POINT_VALUE)
     {
         
     }
@@ -117,7 +117,7 @@ public:
     static const int REFILL_AMOUNT = 5;
     
     FlameThrowerGoodie(double startX, double startY, StudentWorld* world)
-     : Expirable(IID_FLAME_THROWER_GOODIE, startX, startY, world, POINT_VALUE)
+    : Expirable(IID_FLAME_THROWER_GOODIE, startX, startY, world, POINT_VALUE)
     {
         
     }
@@ -132,7 +132,7 @@ public:
     static const int POINT_VALUE = 500;
     
     ExtraLifeGoodie(double startX, double startY, StudentWorld* world)
-     : Expirable(IID_EXTRA_LIFE_GOODIE, startX, startY, world, POINT_VALUE)
+    : Expirable(IID_EXTRA_LIFE_GOODIE, startX, startY, world, POINT_VALUE)
     {
         
     }
@@ -148,12 +148,27 @@ public:
     static const int DAMAGE = 20;
     
     Fungus(double startX, double startY, StudentWorld* world)
-     : Expirable(IID_FUNGUS, startX, startY, world, POINT_VALUE, false)
+    : Expirable(IID_FUNGUS, startX, startY, world, POINT_VALUE, false)
     {
         
     }
     virtual ~Fungus() { }
     virtual void giveReward();
+};
+
+///////////////////////////////////////////////////////////////////////////
+//  BACTERIA DECLARATION
+///////////////////////////////////////////////////////////////////////////
+
+class Bacterium: public Damageable
+{
+public:
+    Bacterium(int imageID, double startX, double startY, StudentWorld* world, int health)
+    : Damageable(imageID, startX, startY, 0, world, health)
+    {
+        
+    }
+    virtual ~Bacterium() { }
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -247,7 +262,7 @@ public:
     static const int DAMAGE = 5;
     
     Flame(double startX, double startY, int dir, StudentWorld* world)
-     : Projectile(IID_FLAME, startX, startY, dir, world, MAX_DISTANCE, DAMAGE)
+    : Projectile(IID_FLAME, startX, startY, dir, world, MAX_DISTANCE, DAMAGE)
     {
         
     }
@@ -263,7 +278,7 @@ class Food: public Actor
 {
 public:
     Food(double startX, double startY, StudentWorld* world)
-     : Actor(IID_FOOD, startX, startY, 90, 1, world)
+    : Actor(IID_FOOD, startX, startY, 90, 1, world)
     {
         
     }
@@ -273,10 +288,16 @@ public:
 class Pit: public Actor
 {
 public:
+    static const int NUM_REGULAR_SALMONELLA = 5;
+    static const int NUM_AGGRESSIVE_SALMONELLA = 3;
+    static const int NUM_ECOLI = 2;
+    
     Pit(double startX, double startY, StudentWorld* world);
     virtual ~Pit() { }
     
     virtual void doSomething();
+    
+private:
 };
 
 #endif // ACTOR_H_

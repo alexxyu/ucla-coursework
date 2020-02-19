@@ -30,69 +30,35 @@ int StudentWorld::init()
     
     int level = getLevel();
     
-    int pit_count = 0;
-    while(pit_count < level) {
+    for(int pitCount=0; pitCount < level; pitCount++) {
         int x = VIEW_WIDTH/2 + randInt(-MAX_OJBECT_DIST_FROM_CENTER, MAX_OJBECT_DIST_FROM_CENTER);
         int y = VIEW_HEIGHT/2 + randInt(-MAX_OJBECT_DIST_FROM_CENTER, MAX_OJBECT_DIST_FROM_CENTER);
         
-        if(distance(x, y, VIEW_WIDTH/2, VIEW_HEIGHT/2) <= MAX_OJBECT_DIST_FROM_CENTER) {
-            bool notOverlapping = true;
-            for(Actor* actor: actors) {
-                if(isOverlapping(x, y, actor->getX(), actor->getY())) {
-                    notOverlapping = false;
-                    break;
-                }
-            }
-            
-            if(notOverlapping) {
-                addActor(new Pit(x, y, this));
-                pit_count++;
-            }
+        if(distance(x, y, VIEW_WIDTH/2, VIEW_HEIGHT/2) <= MAX_OJBECT_DIST_FROM_CENTER &&
+           !isOverlappingWithActors(x, y, static_cast<int>(actors.size()))) {
+            addActor(new Pit(x, y, this));
         }
     }
 
-    int num_food = min(5 * level, 25);
-    int food_count = 0;
-    while(food_count < num_food) {
+    int numFood = min(5 * level, 25);
+    for(int foodCount=0; foodCount < numFood; foodCount++) {
         int x = VIEW_WIDTH/2 + randInt(-MAX_OJBECT_DIST_FROM_CENTER, MAX_OJBECT_DIST_FROM_CENTER);
         int y = VIEW_HEIGHT/2 + randInt(-MAX_OJBECT_DIST_FROM_CENTER, MAX_OJBECT_DIST_FROM_CENTER);
         
-        if(distance(x, y, VIEW_WIDTH/2, VIEW_HEIGHT/2) <= MAX_OJBECT_DIST_FROM_CENTER) {
-            bool notOverlapping = true;
-            for(Actor* actor: actors) {
-                if(isOverlapping(x, y, actor->getX(), actor->getY())) {
-                    notOverlapping = false;
-                    break;
-                }
-            }
-            
-            if(notOverlapping) {
-                addActor(new Food(x, y, this));
-                food_count++;
-            }
+        if(distance(x, y, VIEW_WIDTH/2, VIEW_HEIGHT/2) <= MAX_OJBECT_DIST_FROM_CENTER &&
+           !isOverlappingWithActors(x, y, static_cast<int>(actors.size()))) {
+            addActor(new Food(x, y, this));
         }
     }
     
-    int num_dirt = max(180 - 20 * level, 20);
-    int dirt_count = 0;
-    while(dirt_count < num_dirt) {
+    int numDirt = max(180 - 20 * level, 20);
+    for(int dirtCount=0; dirtCount < numDirt; dirtCount++) {
         int x = VIEW_WIDTH/2 + randInt(-MAX_OJBECT_DIST_FROM_CENTER, MAX_OJBECT_DIST_FROM_CENTER);
         int y = VIEW_HEIGHT/2 + randInt(-MAX_OJBECT_DIST_FROM_CENTER, MAX_OJBECT_DIST_FROM_CENTER);
-        if(distance(x, y, VIEW_WIDTH/2, VIEW_HEIGHT/2) <= MAX_OJBECT_DIST_FROM_CENTER) {
-            bool notOverlapping = true;
-            int i=0;
-            for(list<Actor*>::iterator iter = actors.begin(); i<num_food+level; iter++, i++) {
-                if(isOverlapping(x, y, (*iter)->getX(), (*iter)->getY())) {
-                    notOverlapping = false;
-                    break;
-                }
-            }
-            
-            if(notOverlapping) {
-                addActor(new DirtPile(x, y, this));
-                dirt_count++;
-            }
-        }
+        
+        if(distance(x, y, VIEW_WIDTH/2, VIEW_HEIGHT/2) <= MAX_OJBECT_DIST_FROM_CENTER &&
+           !isOverlappingWithActors(x, y, numFood + level))
+            addActor(new DirtPile(x, y, this));
     }
     
     return GWSTATUS_CONTINUE_GAME;
@@ -229,7 +195,17 @@ bool StudentWorld::isOverlappingWithSocrates(double x, double y) const
 {
     return isOverlapping(x, y, socrates->getX(), socrates->getY());
 }
-       
+ 
+bool StudentWorld::isOverlappingWithActors(double x, double y, int numToCheck) const
+{
+    list<Actor*>::const_iterator iter = actors.begin();
+    for(int i=0; i<numToCheck && iter!=actors.end(); iter++, i++)
+        if(isOverlapping(x, y, (*iter)->getX(), (*iter)->getY()))
+            return true;
+    
+    return false;
+}
+
 bool StudentWorld::isOverlapping(double x1, double y1, double x2, double y2) const
 {
     return (distance(x1, y1, x2, y2) <= 2*SPRITE_RADIUS);

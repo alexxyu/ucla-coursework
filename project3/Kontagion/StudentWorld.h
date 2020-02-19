@@ -32,6 +32,7 @@ private:
     void removeDeadGameObjects();
     void addNewActors();
     void updateDisplayText();
+    bool isOverlappingWithActors(double x, double y, int numToCheck) const;
     bool isOverlapping(double x1, double y1, double x2, double y2) const;
     
     Socrates*         socrates;

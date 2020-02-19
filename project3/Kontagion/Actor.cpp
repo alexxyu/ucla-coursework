@@ -110,12 +110,12 @@ void Projectile::doSomething()
 Pit::Pit(double startX, double startY, StudentWorld* world)
  : Actor(IID_PIT, startX, startY, 0, 1, world)
 {
-    
+    // initialize inventory of bacteria
 }
 
 void Pit::doSomething()
 {
-    
+    return;
 }
 
 ///////////////////////////////////////////////////////////////////////////
