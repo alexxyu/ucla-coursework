@@ -25,8 +25,9 @@ public:
     virtual void doSomething() { }
     virtual void takeDamage(int amount) { }
     
-    virtual bool isDamageable() const { return false; }
+    virtual bool isPit() const { return false; }
     virtual bool isFood() const { return false; }
+    virtual bool isDamageable() const { return false; }
     virtual bool isDirtPile() const { return false; }
     
     bool isDead() const { return m_dead; }
@@ -394,6 +395,7 @@ public:
     
     virtual void doSomething();
     
+    virtual bool isPit() { return true; }
     bool isEmpty();
     
 private:

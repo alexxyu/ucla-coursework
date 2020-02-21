@@ -73,7 +73,7 @@ int StudentWorld::init()
 int StudentWorld::move()
 {
     m_socrates->doSomething();
-    int temp = m_numEnemies;
+
     // Give each actor a chance to do something, including Socrates
     for(Actor* a: m_actors) {
         if(!(a->isDead())) {
@@ -91,9 +91,6 @@ int StudentWorld::move()
             return GWSTATUS_FINISHED_LEVEL;
         }
     }
-    
-    if(m_numEnemies != temp)
-        cout << m_numEnemies << endl;
     
     // Remove newly-dead actors after each tick
     removeDeadGameObjects();

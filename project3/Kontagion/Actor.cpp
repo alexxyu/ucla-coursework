@@ -174,6 +174,9 @@ void Bacterium::doSomething()
 
 void Bacterium::takeDamage(int damage)
 {
+    if(isDead())
+        return;
+    
     Damageable::takeDamage(damage);
     if(!isDead()) {
         getWorld()->playSound(m_soundHurt);
@@ -236,6 +239,7 @@ void RegularSalmonella::doSomething()
         double newX, newY;
         calculateNewBacteriumDistance(newX, newY);
         world->addActor(new RegularSalmonella(newX, newY, world));
+        world->addNumberOfBacteria(1);
         world->playSound(SOUND_BACTERIUM_BORN);
         resetFoodEaten();
     }
@@ -296,6 +300,7 @@ void AggressiveSalmonella::doSomething()
         calculateNewBacteriumDistance(newX, newY);
         world->addActor(new AggressiveSalmonella(newX, newY, world));
         world->playSound(SOUND_BACTERIUM_BORN);
+        world->addNumberOfBacteria(1);
         resetFoodEaten();
         if(shouldNotMoveForFood)
             return;
@@ -331,7 +336,6 @@ void AggressiveSalmonella::doSomething()
     }
 }
 
-
 void EColi::doSomething()
 {
     if(isDead()) return;
@@ -344,6 +348,7 @@ void EColi::doSomething()
         double newX, newY;
         calculateNewBacteriumDistance(newX, newY);
         world->addActor(new EColi(newX, newY, world));
+        world->addNumberOfBacteria(1);
         world->playSound(SOUND_BACTERIUM_BORN);
         resetFoodEaten();
     }
