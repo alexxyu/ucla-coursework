@@ -5,6 +5,7 @@
 #include <cassert>
 #include <sstream>
 #include <iomanip>
+#include <climits>
 using namespace std;
 
 GameWorld* createStudentWorld(string assetPath)
@@ -28,6 +29,7 @@ int StudentWorld::init()
     socrates = new Socrates(0, VIEW_HEIGHT/2, this);
     actors.clear();
     
+    numEnemies = 0;
     int level = getLevel();
     
     for(int pitCount=0; pitCount < level; ) {
@@ -76,10 +78,9 @@ int StudentWorld::move()
     socrates->doSomething();
     
     // Give each actor a chance to do something, incl. Socrates
-    for(list<Actor*>::iterator iter = actors.begin(); iter != actors.end(); iter++)
-    {
-        if(!(*iter)->isDead()) {
-            (*iter)->doSomething();
+    for(Actor* a: actors) {
+        if(!(a->isDead())) {
+            a->doSomething();
         }
         
         if(socrates->isDead())
@@ -166,11 +167,8 @@ void StudentWorld::updateDisplayText()
 
 void StudentWorld::cleanUp()
 {
-    int count = 0;
-    for(list<Actor*>::iterator iter = actors.begin(); iter != actors.end(); ) {
-        delete *iter;
-        iter = actors.erase(iter);
-        count++;
+    for(Actor* a: actors) {
+        delete a;
     }
 
     if(socrates != nullptr)
@@ -187,17 +185,42 @@ void StudentWorld::addActor(Actor *actor)
     actors.push_back(actor);
 }
 
-Actor* StudentWorld::findOverlapWithDamageable(double x, double y) const
+Actor* StudentWorld::findNearestFood(double x, double y) const
 {
-    for(list<Actor*>::const_iterator iter = actors.begin(); iter != actors.end(); iter++)
-        if((*iter)->isDamageable() && isOverlapping(x, y, (*iter)->getX(), (*iter)->getY()))
-            return (*iter);
-    return nullptr;
+    int closestDistance = INT_MAX;
+    Actor* closestFood = nullptr;
+    for(Actor* a: actors) {
+        if(a->isFood() && distance(x, y, a->getX(), a->getY()) < closestDistance) {
+            closestDistance = distance(x, y, a->getX(), a->getY());
+            closestFood = a;
+        }
+    }
+    return closestFood;
+}
+
+bool StudentWorld::damageDamageable(double x, double y, int damage)
+{
+    for(Actor* a: actors) {
+        if(a->isDamageable() && isOverlapping(x, y, a->getX(), a->getY())) {
+            a->takeDamage(damage);
+            return true;
+        }
+    }
+    
+    return false;
 }
 
 bool StudentWorld::isOverlappingWithSocrates(double x, double y) const
 {
     return isOverlapping(x, y, socrates->getX(), socrates->getY());
+}
+
+bool StudentWorld::isOverlappingWithDirt(double x, double y) const
+{
+    for(Actor* a: actors)
+        if(a->isDirtPile() && isOverlapping(x, y, a->getX(), a->getY()))
+            return true;
+    return false;
 }
  
 bool StudentWorld::isOverlappingWithActors(double x, double y, int numToCheck) const

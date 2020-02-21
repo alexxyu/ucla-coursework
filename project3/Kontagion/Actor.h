@@ -13,13 +13,11 @@
 class Actor: public GraphObject
 {
 public:
-    Actor(int imageID, double startX, double startY, int dir, int depth,
-          StudentWorld* world, bool damageable=false)
+    Actor(int imageID, double startX, double startY, int dir, int depth, StudentWorld* world)
     : GraphObject(imageID, startX, startY, dir, depth)
     {
         m_dead = false;
         m_world = world;
-        m_damageable = damageable;
     }
     
     virtual ~Actor() { }
@@ -27,16 +25,17 @@ public:
     virtual void doSomething() { }
     virtual void takeDamage(int amount) { }
     
+    virtual bool isDamageable() const { return false; }
+    virtual bool isFood() const { return false; }
+    virtual bool isDirtPile() const { return false; }
+    
     bool isDead() const { return m_dead; }
-    bool isDamageable() const { return m_damageable; }
-    StudentWorld* getWorld() const { return m_world; }
-
-protected:
     void setDead() { m_dead = true; }
+    
+    StudentWorld* getWorld() const { return m_world; }
     
 private:
     bool          m_dead;
-    bool          m_damageable;
     StudentWorld* m_world;
 };
 
@@ -49,7 +48,7 @@ class Damageable: public Actor
 public:
     Damageable(int imageID, double startX, double startY, int dir, int depth,
                StudentWorld* world, int startHealth)
-    : Actor(imageID, startX, startY, dir, depth, world, true), m_health(startHealth)
+    : Actor(imageID, startX, startY, dir, depth, world), m_health(startHealth)
     {
         
     }
@@ -61,6 +60,7 @@ public:
         if(m_health <= 0)
             setDead();
     }
+    virtual bool isDamageable() const { return true; }
     
     int getHealth() const { return m_health; }
     void healToAmount(int amount) { m_health = amount; }
@@ -162,49 +162,94 @@ public:
 class Bacterium: public Damageable
 {
 public:
-    Bacterium(int imageID, double startX, double startY, StudentWorld* world, int health)
+    static const int POINT_VALUE = 100;
+    static const int RESET_MOVEMENT_PLAN_DISTANCE = 10;
+    
+    Bacterium(int imageID, double startX, double startY, StudentWorld* world,
+              int health, int soundHurt, int soundDead, int movementPlanDistance)
     : Damageable(imageID, startX, startY, 90, 0, world, health)
     {
-        
+        m_soundHurt = soundHurt;
+        m_soundDead = soundDead;
+        m_foodEatenSinceLastDivide = 0;
+        m_movementPlanDistance = movementPlanDistance;
     }
     virtual ~Bacterium() { }
     virtual void doSomething();
+    virtual void takeDamage(int damage);
+    
+    int getFoodEatenSinceLastDivide() const { return m_foodEatenSinceLastDivide; }
+    void resetFoodEaten() { m_foodEatenSinceLastDivide = 0; }
+    void eatFood() { m_foodEatenSinceLastDivide++; }
+    void tryToEatFood();
+    
+    int getDirectionToActor(Actor* actor) const;
+    void tryToMove();
+    
+    int getMovementPlanDistance() const { return m_movementPlanDistance; }
+    void decreaseMovementPlanDistance() { m_movementPlanDistance--; }
+    void resetMovementPlanDistance() { m_movementPlanDistance = RESET_MOVEMENT_PLAN_DISTANCE; }
+    
+    void calculateNewBacteriumDistance(double& newX, double& newY);
+    
+private:
+    int m_soundHurt;
+    int m_soundDead;
+    int m_foodEatenSinceLastDivide;
+    int m_movementPlanDistance;
 };
 
 class RegularSalmonella: public Bacterium
 {
 public:
     static const int STARTING_HEALTH = 4;
+    static const int DAMAGE = 1;
     
     RegularSalmonella(double startX, double startY, StudentWorld* world)
-    : Bacterium(IID_SALMONELLA, startX, startY, world, STARTING_HEALTH)
+    : Bacterium(IID_SALMONELLA, startX, startY, world, STARTING_HEALTH,
+                SOUND_SALMONELLA_HURT, SOUND_SALMONELLA_DIE, 0)
     {
         
     }
+    
+    virtual ~RegularSalmonella() { }
+    
+    virtual void doSomething();
 };
 
 class AggressiveSalmonella: public Bacterium
 {
 public:
     static const int STARTING_HEALTH = 10;
+    static const int DAMAGE = 2;
     
     AggressiveSalmonella(double startX, double startY, StudentWorld* world)
-    : Bacterium(IID_SALMONELLA, startX, startY, world, STARTING_HEALTH)
+    : Bacterium(IID_SALMONELLA, startX, startY, world, STARTING_HEALTH,
+                SOUND_SALMONELLA_HURT, SOUND_SALMONELLA_DIE, 0)
     {
         
     }
+    
+    virtual ~AggressiveSalmonella() { }
+    
+    virtual void doSomething();
 };
 
 class EColi: public Bacterium
 {
 public:
     static const int STARTING_HEALTH = 5;
+    static const int DAMAGE = 4;
     
     EColi(double startX, double startY, StudentWorld* world)
-    : Bacterium(IID_ECOLI, startX, startY, world, STARTING_HEALTH)
+    : Bacterium(IID_ECOLI, startX, startY, world, STARTING_HEALTH,
+                SOUND_ECOLI_HURT, SOUND_SALMONELLA_DIE, 0)
     {
         
     }
+    
+    virtual ~EColi() { }
+    virtual void doSomething();
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -244,6 +289,7 @@ public:
         
     }
     virtual ~DirtPile() { }
+    virtual bool isDirtPile() const { return true; }
     
 private:
 };
@@ -319,6 +365,7 @@ public:
         
     }
     virtual ~Food() { }
+    virtual bool isFood() const { return true; }
 };
 
 class Pit: public Actor
@@ -338,7 +385,9 @@ public:
     virtual ~Pit() { }
     
     virtual void doSomething();
+    
     bool isEmpty();
+    int size();
     
 private:
     int m_bacteriaCount[NUM_OF_BACTERIA_TYPES];
