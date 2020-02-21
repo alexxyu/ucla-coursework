@@ -26,10 +26,10 @@ StudentWorld::~StudentWorld()
 int StudentWorld::init()
 {
     // Create new Socrates object
-    socrates = new Socrates(0, VIEW_HEIGHT/2, this);
-    actors.clear();
+    m_socrates = new Socrates(0, VIEW_HEIGHT/2, this);
+    m_actors.clear();
     
-    numEnemies = 0;
+    m_numEnemies = 0;
     int level = getLevel();
     
     for(int pitCount=0; pitCount < level; ) {
@@ -37,7 +37,7 @@ int StudentWorld::init()
         int y = VIEW_HEIGHT/2 + randInt(-MAX_OJBECT_DIST_FROM_CENTER, MAX_OJBECT_DIST_FROM_CENTER);
         
         if(distance(x, y, VIEW_WIDTH/2, VIEW_HEIGHT/2) <= MAX_OJBECT_DIST_FROM_CENTER &&
-           !isOverlappingWithActors(x, y, static_cast<int>(actors.size()))) {
+           !isOverlappingWithActors(x, y, static_cast<int>(m_actors.size()))) {
             addActor(new Pit(x, y, this));
             pitCount++;
         }
@@ -49,7 +49,7 @@ int StudentWorld::init()
         int y = VIEW_HEIGHT/2 + randInt(-MAX_OJBECT_DIST_FROM_CENTER, MAX_OJBECT_DIST_FROM_CENTER);
         
         if(distance(x, y, VIEW_WIDTH/2, VIEW_HEIGHT/2) <= MAX_OJBECT_DIST_FROM_CENTER &&
-           !isOverlappingWithActors(x, y, static_cast<int>(actors.size()))) {
+           !isOverlappingWithActors(x, y, static_cast<int>(m_actors.size()))) {
             addActor(new Food(x, y, this));
             foodCount++;
         }
@@ -72,22 +72,28 @@ int StudentWorld::init()
 
 int StudentWorld::move()
 {
-    // The term "actors" refers to all bacteria, Socrates, goodies,
-    // pits, flames, spray, foods, etc.
-
-    socrates->doSomething();
-    
-    // Give each actor a chance to do something, incl. Socrates
-    for(Actor* a: actors) {
+    m_socrates->doSomething();
+    int temp = m_numEnemies;
+    // Give each actor a chance to do something, including Socrates
+    for(Actor* a: m_actors) {
         if(!(a->isDead())) {
             a->doSomething();
         }
         
-        if(socrates->isDead())
+        if(m_socrates->isDead()) {
+            decLives();
+            playSound(SOUND_PLAYER_DIE);
             return GWSTATUS_PLAYER_DIED;
+        }
         
-        // handle whether socrates finished level
+        if(m_numEnemies == 0) {
+            playSound(SOUND_FINISHED_LEVEL);
+            return GWSTATUS_FINISHED_LEVEL;
+        }
     }
+    
+    if(m_numEnemies != temp)
+        cout << m_numEnemies << endl;
     
     // Remove newly-dead actors after each tick
     removeDeadGameObjects();
@@ -95,7 +101,7 @@ int StudentWorld::move()
     // Potentially add new actors to the game (e.g., goodies or fungi)
     addNewActors();
     
-    // Update the Game Status Line
+    // Update the game status text line
     updateDisplayText();
                
     // the player hasn’t completed the current level and hasn’t died, so
@@ -105,11 +111,11 @@ int StudentWorld::move()
 
 void StudentWorld::removeDeadGameObjects()
 {
-    for(list<Actor*>::iterator iter = actors.begin(); iter != actors.end(); )
+    for(list<Actor*>::iterator iter = m_actors.begin(); iter != m_actors.end(); )
     {
         if((*iter)->isDead()) {
             delete *iter;
-            iter = actors.erase(iter);
+            iter = m_actors.erase(iter);
         }
         else
             iter++;
@@ -125,7 +131,7 @@ void StudentWorld::addNewActors()
         int dir = randInt(0, 359);
         getRadialPosition(dir, x, y);
         
-        actors.push_back(new Fungus(x, y, this));
+        m_actors.push_back(new Fungus(x, y, this));
     }
     
     int chanceGoodie = max(510 - level * 10, 250);
@@ -137,11 +143,11 @@ void StudentWorld::addNewActors()
         
         int whichGoodie = randInt(0, 9);
         if(whichGoodie <= 5)
-            actors.push_back(new RestoreHealthGoodie(x, y, this));
+            m_actors.push_back(new RestoreHealthGoodie(x, y, this));
         else if(whichGoodie == 9)
-            actors.push_back(new ExtraLifeGoodie(x, y, this));
+            m_actors.push_back(new ExtraLifeGoodie(x, y, this));
         else
-            actors.push_back(new FlameThrowerGoodie(x, y, this));
+            m_actors.push_back(new FlameThrowerGoodie(x, y, this));
     }
 }
 
@@ -159,49 +165,76 @@ void StudentWorld::updateDisplayText()
         oss << "Score: -" << setw(5) << -getScore() << textDivider;
     oss << "Level: " << getLevel() << textDivider;
     oss << "Lives: " << getLives() << textDivider;
-    oss << "Health: " << socrates->getHealth() << textDivider;
-    oss << "Sprays: " << socrates->getSprayCount() << textDivider;
-    oss << "Flames: " << socrates->getFlameCount();
+    oss << "Health: " << m_socrates->getHealth() << textDivider;
+    oss << "Sprays: " << m_socrates->getSprayCount() << textDivider;
+    oss << "Flames: " << m_socrates->getFlameCount();
     setGameStatText(oss.str());
 }
 
 void StudentWorld::cleanUp()
 {
-    for(Actor* a: actors) {
+    for(Actor* a: m_actors) {
         delete a;
     }
 
-    if(socrates != nullptr)
-        delete socrates;
-}
-
-double StudentWorld::distance(double x1, double y1, double x2, double y2) const
-{
-    return sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2));
+    if(m_socrates != nullptr)
+        delete m_socrates;
 }
 
 void StudentWorld::addActor(Actor *actor)
 {
-    actors.push_back(actor);
+    m_actors.push_back(actor);
 }
 
-Actor* StudentWorld::findNearestFood(double x, double y) const
+bool StudentWorld::directionToNearestFoodIfWithinDistance(double x, double y, double dist, int& dir)
 {
     int closestDistance = INT_MAX;
     Actor* closestFood = nullptr;
-    for(Actor* a: actors) {
-        if(a->isFood() && distance(x, y, a->getX(), a->getY()) < closestDistance) {
-            closestDistance = distance(x, y, a->getX(), a->getY());
-            closestFood = a;
+    for(Actor* a: m_actors) {
+        if(a->isFood()) {
+            double currDistance = distance(x, y, a->getX(), a->getY());
+            if(currDistance < closestDistance && currDistance <= dist) {
+                closestDistance = currDistance;
+                closestFood = a;
+            }
         }
     }
-    return closestFood;
+    
+    if(closestFood != nullptr) {
+        dir = getDirectionToActor(closestFood, x, y);
+        return true;
+    }
+    
+    return false;
+}
+
+bool StudentWorld::directionToSocratesIfWithinDistance(double x, double y, double dist, int &dir)
+{
+    double distToSocrates = distance(x, y, m_socrates->getX(), m_socrates->getY());
+    if(distToSocrates < dist) {
+        dir = getDirectionToActor(m_socrates, x, y);
+        return true;
+    }
+    
+    return false;
+}
+
+bool StudentWorld::findAndEatOverlappingFood(double x, double y)
+{
+    for(Actor* a: m_actors) {
+        if(a->isFood() && isOverlapping(x, y, a->getX(), a->getY())) {
+            a->setDead();
+            return true;
+        }
+    }
+    
+    return false;
 }
 
 bool StudentWorld::damageDamageable(double x, double y, int damage)
 {
-    for(Actor* a: actors) {
-        if(a->isDamageable() && isOverlapping(x, y, a->getX(), a->getY())) {
+    for(Actor* a: m_actors) {
+        if(a->isDamageable() && isOverlapping(x, y, a->getX(), a->getY()) && !(a->isDead())) {
             a->takeDamage(damage);
             return true;
         }
@@ -212,12 +245,12 @@ bool StudentWorld::damageDamageable(double x, double y, int damage)
 
 bool StudentWorld::isOverlappingWithSocrates(double x, double y) const
 {
-    return isOverlapping(x, y, socrates->getX(), socrates->getY());
+    return isOverlapping(x, y, m_socrates->getX(), m_socrates->getY());
 }
 
 bool StudentWorld::isOverlappingWithDirt(double x, double y) const
 {
-    for(Actor* a: actors)
+    for(Actor* a: m_actors)
         if(a->isDirtPile() && isOverlapping(x, y, a->getX(), a->getY()))
             return true;
     return false;
@@ -225,8 +258,8 @@ bool StudentWorld::isOverlappingWithDirt(double x, double y) const
  
 bool StudentWorld::isOverlappingWithActors(double x, double y, int numToCheck) const
 {
-    list<Actor*>::const_iterator iter = actors.begin();
-    for(int i=0; i<numToCheck && iter!=actors.end(); iter++, i++)
+    list<Actor*>::const_iterator iter = m_actors.begin();
+    for(int i=0; i<numToCheck && iter!=m_actors.end(); iter++, i++)
         if(isOverlapping(x, y, (*iter)->getX(), (*iter)->getY()))
             return true;
     
@@ -238,10 +271,38 @@ bool StudentWorld::isOverlapping(double x1, double y1, double x2, double y2) con
     return (distance(x1, y1, x2, y2) <= 2*SPRITE_RADIUS);
 }
 
+void StudentWorld::damageSocrates(int damage)
+{
+    m_socrates->takeDamage(damage);
+}
+
+void StudentWorld::healSocrates(int amount)
+{
+    m_socrates->healToAmount(amount);
+}
+
+void StudentWorld::refillSocratesFlames(int amount)
+{
+    m_socrates->refillFlames(amount);
+}
+
 void StudentWorld::getRadialPosition(int dir, double &dx, double &dy) const
 {
     const double PI = 4 * atan(1);
     
     dx = VIEW_RADIUS * cos(dir * 1.0 / 360 * 2 * PI) + VIEW_RADIUS;
     dy = VIEW_RADIUS * sin(dir * 1.0 / 360 * 2 * PI) + VIEW_RADIUS;
+}
+
+int StudentWorld::getDirectionToActor(Actor *actor, double x, double y) const
+{
+    double dir = atan2(actor->getY() - y, actor->getX() - x);
+    const double PI = atan(1) * 4;
+    dir = dir / PI * 180;
+    return dir;
+}
+
+double StudentWorld::distance(double x1, double y1, double x2, double y2) const
+{
+    return sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2));
 }

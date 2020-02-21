@@ -164,6 +164,7 @@ class Bacterium: public Damageable
 public:
     static const int POINT_VALUE = 100;
     static const int RESET_MOVEMENT_PLAN_DISTANCE = 10;
+    static const int FOOD_NEEDED_TO_DIVIDE = 3;
     
     Bacterium(int imageID, double startX, double startY, StudentWorld* world,
               int health, int soundHurt, int soundDead, int movementPlanDistance)
@@ -180,7 +181,6 @@ public:
     
     int getFoodEatenSinceLastDivide() const { return m_foodEatenSinceLastDivide; }
     void resetFoodEaten() { m_foodEatenSinceLastDivide = 0; }
-    void eatFood() { m_foodEatenSinceLastDivide++; }
     void tryToEatFood();
     
     int getDirectionToActor(Actor* actor) const;
@@ -204,6 +204,8 @@ class RegularSalmonella: public Bacterium
 public:
     static const int STARTING_HEALTH = 4;
     static const int DAMAGE = 1;
+    static const int MAX_DISTANCE_TO_FOOD = 128;
+    static const int MOVEMENT = 3;
     
     RegularSalmonella(double startX, double startY, StudentWorld* world)
     : Bacterium(IID_SALMONELLA, startX, startY, world, STARTING_HEALTH,
@@ -222,6 +224,9 @@ class AggressiveSalmonella: public Bacterium
 public:
     static const int STARTING_HEALTH = 10;
     static const int DAMAGE = 2;
+    static const int MAX_DISTANCE_TO_SOCRATES = 72;
+    static const int MAX_DISTANCE_TO_FOOD = 128;
+    static const int MOVEMENT = 3;
     
     AggressiveSalmonella(double startX, double startY, StudentWorld* world)
     : Bacterium(IID_SALMONELLA, startX, startY, world, STARTING_HEALTH,
@@ -240,6 +245,9 @@ class EColi: public Bacterium
 public:
     static const int STARTING_HEALTH = 5;
     static const int DAMAGE = 4;
+    static const int MOVEMENT = 2;
+    static const int MOVEMENT_TRIES = 10;
+    static const int MAX_DISTANCE_TO_SOCRATES = 256;
     
     EColi(double startX, double startY, StudentWorld* world)
     : Bacterium(IID_ECOLI, startX, startY, world, STARTING_HEALTH,
@@ -269,8 +277,8 @@ public:
     
     virtual void doSomething();
     
-    int getSprayCount() const;
-    int getFlameCount() const;
+    int getSprayCount() const { return m_spray_count; }
+    int getFlameCount() const { return m_flame_count; }
     void refillFlames(int amount) { m_flame_count += amount; }
     
 private:
@@ -340,7 +348,7 @@ public:
 class Flame: public Projectile
 {
 public:
-    static const int MAX_DISTANCE = 32;
+    static const int MAX_DISTANCE = 100;
     static const int DAMAGE = 5;
     
     Flame(double startX, double startY, int dir, StudentWorld* world)
@@ -387,7 +395,6 @@ public:
     virtual void doSomething();
     
     bool isEmpty();
-    int size();
     
 private:
     int m_bacteriaCount[NUM_OF_BACTERIA_TYPES];
