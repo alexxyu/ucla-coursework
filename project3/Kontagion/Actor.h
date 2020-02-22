@@ -33,6 +33,7 @@ public:
     bool isDead() const { return m_dead; }
     void setDead() { m_dead = true; }
     
+protected:
     StudentWorld* getWorld() const { return m_world; }
     
 private:
@@ -55,6 +56,7 @@ public:
     }
     
     virtual ~Damageable() { }
+    
     virtual void takeDamage(int damage)
     {
         m_health -= damage;
@@ -82,7 +84,7 @@ public:
     virtual ~Expirable() { }
     
     virtual void doSomething();
-    virtual void giveReward() = 0;
+    virtual void giveReward() const = 0;
     virtual void takeDamage(int damage);
     
 private:
@@ -97,9 +99,6 @@ private:
 class RestoreHealthGoodie: public Expirable
 {
 public:
-    static const int POINT_VALUE = 250;
-    static const int HEAL_AMOUNT = 100;
-    
     RestoreHealthGoodie(double startX, double startY, StudentWorld* world)
     : Expirable(IID_RESTORE_HEALTH_GOODIE, startX, startY, world, POINT_VALUE)
     {
@@ -107,15 +106,16 @@ public:
     }
     virtual ~RestoreHealthGoodie() { }
     
-    virtual void giveReward();
+    virtual void giveReward() const;
+    
+private:
+    static const int POINT_VALUE = 250;
+    static const int HEAL_AMOUNT = 100;
 };
 
 class FlameThrowerGoodie: public Expirable
 {
 public:
-    static const int POINT_VALUE = 300;
-    static const int REFILL_AMOUNT = 5;
-    
     FlameThrowerGoodie(double startX, double startY, StudentWorld* world)
     : Expirable(IID_FLAME_THROWER_GOODIE, startX, startY, world, POINT_VALUE)
     {
@@ -123,14 +123,16 @@ public:
     }
     virtual ~FlameThrowerGoodie() { }
     
-    virtual void giveReward();
+    virtual void giveReward() const;
+    
+private:
+    static const int POINT_VALUE = 300;
+    static const int REFILL_AMOUNT = 5;
 };
 
 class ExtraLifeGoodie: public Expirable
 {
 public:
-    static const int POINT_VALUE = 500;
-    
     ExtraLifeGoodie(double startX, double startY, StudentWorld* world)
     : Expirable(IID_EXTRA_LIFE_GOODIE, startX, startY, world, POINT_VALUE)
     {
@@ -138,79 +140,82 @@ public:
     }
     virtual ~ExtraLifeGoodie() { }
     
-    virtual void giveReward();
+    virtual void giveReward() const;
+    
+private:
+    static const int POINT_VALUE = 500;
 };
 
 class Fungus: public Expirable
 {
 public:
-    static const int POINT_VALUE = -50;
-    static const int DAMAGE = 20;
-    
     Fungus(double startX, double startY, StudentWorld* world)
     : Expirable(IID_FUNGUS, startX, startY, world, POINT_VALUE, false)
     {
         
     }
     virtual ~Fungus() { }
-    virtual void giveReward();
+    virtual void giveReward() const;
+    
+private:
+    static const int POINT_VALUE = -50;
+    static const int DAMAGE = 20;
 };
 
 ///////////////////////////////////////////////////////////////////////////
-//  BACTERIA DECLARATION
+//  BACTERIA DECLARATIONS
 ///////////////////////////////////////////////////////////////////////////
 
 class Bacterium: public Damageable
 {
 public:
-    static const int POINT_VALUE = 100;
-    static const int RESET_MOVEMENT_PLAN_DISTANCE = 10;
-    static const int FOOD_NEEDED_TO_DIVIDE = 3;
-    
     Bacterium(int imageID, double startX, double startY, StudentWorld* world,
-              int health, int soundHurt, int soundDead, int movementPlanDistance)
+              int health, int soundHurt, int soundDead, int movementPlanDistance,
+              int damage, int movement)
     : Damageable(imageID, startX, startY, 90, 0, world, health)
     {
         m_soundHurt = soundHurt;
         m_soundDead = soundDead;
         m_foodEatenSinceLastDivide = 0;
         m_movementPlanDistance = movementPlanDistance;
+        m_damage = damage;
+        m_movement = movement;
     }
     virtual ~Bacterium() { }
     virtual void doSomething();
     virtual void takeDamage(int damage);
     
-    int getFoodEatenSinceLastDivide() const { return m_foodEatenSinceLastDivide; }
-    void resetFoodEaten() { m_foodEatenSinceLastDivide = 0; }
+protected:
     void tryToEatFood();
+    bool tryToMove();
+    bool tryToDivide();
+    void moveTowardFood();
     
-    int getDirectionToActor(Actor* actor) const;
-    void tryToMove();
-    
-    int getMovementPlanDistance() const { return m_movementPlanDistance; }
-    void decreaseMovementPlanDistance() { m_movementPlanDistance--; }
-    void resetMovementPlanDistance() { m_movementPlanDistance = RESET_MOVEMENT_PLAN_DISTANCE; }
-    
-    void calculateNewBacteriumDistance(double& newX, double& newY);
+    virtual void divide(double newX, double newY) = 0;
     
 private:
+    static const int POINT_VALUE = 100;
+    static const int RESET_MOVEMENT_PLAN_DISTANCE = 10;
+    static const int FOOD_NEEDED_TO_DIVIDE = 3;
+    static const int MAX_DISTANCE_TO_FOOD = 128;
+    
     int m_soundHurt;
     int m_soundDead;
     int m_foodEatenSinceLastDivide;
     int m_movementPlanDistance;
+    int m_damage;
+    int m_movement;
+    
+    void calculateNewBacteriumDistance(double& newX, double& newY) const;
+    void tryNewDirection();
 };
 
 class RegularSalmonella: public Bacterium
 {
 public:
-    static const int STARTING_HEALTH = 4;
-    static const int DAMAGE = 1;
-    static const int MAX_DISTANCE_TO_FOOD = 128;
-    static const int MOVEMENT = 3;
-    
     RegularSalmonella(double startX, double startY, StudentWorld* world)
     : Bacterium(IID_SALMONELLA, startX, startY, world, STARTING_HEALTH,
-                SOUND_SALMONELLA_HURT, SOUND_SALMONELLA_DIE, 0)
+                SOUND_SALMONELLA_HURT, SOUND_SALMONELLA_DIE, 0, DAMAGE, MOVEMENT)
     {
         
     }
@@ -218,20 +223,22 @@ public:
     virtual ~RegularSalmonella() { }
     
     virtual void doSomething();
+    
+protected:
+    virtual void divide(double newX, double newY);
+    
+private:
+    static const int STARTING_HEALTH = 4;
+    static const int DAMAGE = 1;
+    static const int MOVEMENT = 3;
 };
 
 class AggressiveSalmonella: public Bacterium
 {
 public:
-    static const int STARTING_HEALTH = 10;
-    static const int DAMAGE = 2;
-    static const int MAX_DISTANCE_TO_SOCRATES = 72;
-    static const int MAX_DISTANCE_TO_FOOD = 128;
-    static const int MOVEMENT = 3;
-    
     AggressiveSalmonella(double startX, double startY, StudentWorld* world)
     : Bacterium(IID_SALMONELLA, startX, startY, world, STARTING_HEALTH,
-                SOUND_SALMONELLA_HURT, SOUND_SALMONELLA_DIE, 0)
+                SOUND_SALMONELLA_HURT, SOUND_SALMONELLA_DIE, 0, DAMAGE, MOVEMENT)
     {
         
     }
@@ -239,26 +246,37 @@ public:
     virtual ~AggressiveSalmonella() { }
     
     virtual void doSomething();
+protected:
+    virtual void divide(double newX, double newY);
+    
+private:
+    static const int STARTING_HEALTH = 10;
+    static const int DAMAGE = 2;
+    static const int MAX_DISTANCE_TO_SOCRATES = 72;
+    static const int MOVEMENT = 3;
 };
 
 class EColi: public Bacterium
 {
 public:
-    static const int STARTING_HEALTH = 5;
-    static const int DAMAGE = 4;
-    static const int MOVEMENT = 2;
-    static const int MOVEMENT_TRIES = 10;
-    static const int MAX_DISTANCE_TO_SOCRATES = 256;
-    
     EColi(double startX, double startY, StudentWorld* world)
     : Bacterium(IID_ECOLI, startX, startY, world, STARTING_HEALTH,
-                SOUND_ECOLI_HURT, SOUND_SALMONELLA_DIE, 0)
+                SOUND_ECOLI_HURT, SOUND_SALMONELLA_DIE, 0, DAMAGE, MOVEMENT)
     {
         
     }
     
     virtual ~EColi() { }
     virtual void doSomething();
+protected:
+    virtual void divide(double newX, double newY);
+    
+private:
+    static const int STARTING_HEALTH = 5;
+    static const int DAMAGE = 4;
+    static const int MOVEMENT = 2;
+    static const int MOVEMENT_TRIES = 10;
+    static const int MAX_DISTANCE_TO_SOCRATES = 256;
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -268,12 +286,12 @@ public:
 class Socrates: public Damageable
 {
 public:
-    static const int MOVE_DEGREES = 5;
-    static const int STARTING_HEALTH = 100;
-    static const int STARTING_SPRAY_CHARGES = 20;
-    static const int STARTING_FLAME_CHARGES = 5;
-
-    Socrates(double startX, double startY, StudentWorld* world);
+    Socrates(double startX, double startY, StudentWorld* world)
+    : Damageable(IID_PLAYER, startX, startY, 0, 0, world, STARTING_HEALTH)
+    {
+        m_spray_count = STARTING_SPRAY_CHARGES;
+        m_flame_count = STARTING_FLAME_CHARGES;
+    }
     virtual ~Socrates() { }
     
     virtual void doSomething();
@@ -283,9 +301,18 @@ public:
     void refillFlames(int amount) { m_flame_count += amount; }
     
 private:
+    static const int MOVE_DEGREES = 5;
+    static const int STARTING_HEALTH = 100;
+    static const int STARTING_SPRAY_CHARGES = 20;
+    static const int STARTING_FLAME_CHARGES = 5;
+    static const int DEGREES_BETWEEN_FLAMES = 22;
+    static const int NUMBER_OF_FLAMES_PER_CHARGE = 16;
+
     int m_spray_count;
     int m_flame_count;
     
+    void shootSpray();
+    void shootFlameCharge();
     void adjustPosition(int degree);
 };
 
@@ -304,7 +331,7 @@ private:
 };
 
 ///////////////////////////////////////////////////////////////////////////
-//  PROJECTILES DECLARATION
+//  PROJECTILE DECLARATIONS
 ///////////////////////////////////////////////////////////////////////////
 
 class Projectile: public Actor
@@ -334,9 +361,6 @@ private:
 class Spray: public Projectile
 {
 public:
-    static const int MAX_DISTANCE = 112;
-    static const int DAMAGE = 2;
-    
     Spray(double startX, double startY, int dir, StudentWorld* world)
      : Projectile(IID_SPRAY, startX, startY, dir, world, MAX_DISTANCE, DAMAGE)
     {
@@ -344,14 +368,15 @@ public:
     }
     
     virtual ~Spray() { }
+    
+private:
+    static const int MAX_DISTANCE = 112;
+    static const int DAMAGE = 2;
 };
 
 class Flame: public Projectile
 {
 public:
-    static const int MAX_DISTANCE = 100;
-    static const int DAMAGE = 5;
-    
     Flame(double startX, double startY, int dir, StudentWorld* world)
     : Projectile(IID_FLAME, startX, startY, dir, world, MAX_DISTANCE, DAMAGE)
     {
@@ -359,6 +384,11 @@ public:
     }
     
     virtual ~Flame() { }
+    
+private:
+    static const int MAX_DISTANCE = 100;
+    // static const int MAX_DISTANCE = 32;
+    static const int DAMAGE = 5;
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -380,6 +410,15 @@ public:
 class Pit: public Actor
 {
 public:
+    Pit(double startX, double startY, StudentWorld* world);
+    virtual ~Pit() { }
+    
+    virtual void doSomething();
+    
+    virtual bool isPit() { return true; }
+    bool isEmpty();
+    
+private:
     static const int NUM_REGULAR_SALMONELLA = 5;
     static const int NUM_AGGRESSIVE_SALMONELLA = 3;
     static const int NUM_ECOLI = 2;
@@ -390,15 +429,6 @@ public:
     
     static const int NUM_OF_BACTERIA_TYPES = 3;
     
-    Pit(double startX, double startY, StudentWorld* world);
-    virtual ~Pit() { }
-    
-    virtual void doSomething();
-    
-    virtual bool isPit() { return true; }
-    bool isEmpty();
-    
-private:
     int m_bacteriaCount[NUM_OF_BACTERIA_TYPES];
 };
 

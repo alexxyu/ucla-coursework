@@ -178,9 +178,57 @@ void StudentWorld::cleanUp()
         delete m_socrates;
 }
 
+bool StudentWorld::isOverlappingWithActors(double x, double y, int numToCheck) const
+{
+    list<Actor*>::const_iterator iter = m_actors.begin();
+    for(int i=0; i<numToCheck && iter!=m_actors.end(); iter++, i++)
+        if(isOverlapping(x, y, (*iter)->getX(), (*iter)->getY()))
+            return true;
+    
+    return false;
+}
+
 void StudentWorld::addActor(Actor *actor)
 {
     m_actors.push_back(actor);
+}
+
+bool StudentWorld::isOverlappingWithSocrates(double x, double y) const
+{
+    return isOverlapping(x, y, m_socrates->getX(), m_socrates->getY());
+}
+
+bool StudentWorld::isOverlappingWithDirt(double x, double y) const
+{
+    for(Actor* a: m_actors)
+        if(a->isDirtPile() && isOverlapping(x, y, a->getX(), a->getY()))
+            return true;
+    return false;
+}
+
+void StudentWorld::getRadialPosition(int dir, double &dx, double &dy) const
+{
+    const double PI = 4 * atan(1);
+    
+    dx = VIEW_RADIUS * cos(dir * 1.0 / 360 * 2 * PI) + VIEW_RADIUS;
+    dy = VIEW_RADIUS * sin(dir * 1.0 / 360 * 2 * PI) + VIEW_RADIUS;
+}
+
+double StudentWorld::distance(double x1, double y1, double x2, double y2) const
+{
+    return sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2));
+}
+
+bool StudentWorld::findAndEatOverlappingFood(double x, double y)
+{
+    for(Actor* a: m_actors) {
+        if(a->isFood() && isOverlapping(x, y, a->getX(), a->getY())) {
+            a->setDead();
+            return true;
+        }
+    }
+    
+    return false;
 }
 
 bool StudentWorld::directionToNearestFoodIfWithinDistance(double x, double y, double dist, int& dir)
@@ -216,18 +264,6 @@ bool StudentWorld::directionToSocratesIfWithinDistance(double x, double y, doubl
     return false;
 }
 
-bool StudentWorld::findAndEatOverlappingFood(double x, double y)
-{
-    for(Actor* a: m_actors) {
-        if(a->isFood() && isOverlapping(x, y, a->getX(), a->getY())) {
-            a->setDead();
-            return true;
-        }
-    }
-    
-    return false;
-}
-
 bool StudentWorld::damageDamageable(double x, double y, int damage)
 {
     for(Actor* a: m_actors) {
@@ -238,34 +274,6 @@ bool StudentWorld::damageDamageable(double x, double y, int damage)
     }
     
     return false;
-}
-
-bool StudentWorld::isOverlappingWithSocrates(double x, double y) const
-{
-    return isOverlapping(x, y, m_socrates->getX(), m_socrates->getY());
-}
-
-bool StudentWorld::isOverlappingWithDirt(double x, double y) const
-{
-    for(Actor* a: m_actors)
-        if(a->isDirtPile() && isOverlapping(x, y, a->getX(), a->getY()))
-            return true;
-    return false;
-}
- 
-bool StudentWorld::isOverlappingWithActors(double x, double y, int numToCheck) const
-{
-    list<Actor*>::const_iterator iter = m_actors.begin();
-    for(int i=0; i<numToCheck && iter!=m_actors.end(); iter++, i++)
-        if(isOverlapping(x, y, (*iter)->getX(), (*iter)->getY()))
-            return true;
-    
-    return false;
-}
-
-bool StudentWorld::isOverlapping(double x1, double y1, double x2, double y2) const
-{
-    return (distance(x1, y1, x2, y2) <= 2*SPRITE_RADIUS);
 }
 
 void StudentWorld::damageSocrates(int damage)
@@ -283,14 +291,6 @@ void StudentWorld::refillSocratesFlames(int amount)
     m_socrates->refillFlames(amount);
 }
 
-void StudentWorld::getRadialPosition(int dir, double &dx, double &dy) const
-{
-    const double PI = 4 * atan(1);
-    
-    dx = VIEW_RADIUS * cos(dir * 1.0 / 360 * 2 * PI) + VIEW_RADIUS;
-    dy = VIEW_RADIUS * sin(dir * 1.0 / 360 * 2 * PI) + VIEW_RADIUS;
-}
-
 int StudentWorld::getDirectionToActor(Actor *actor, double x, double y) const
 {
     double dir = atan2(actor->getY() - y, actor->getX() - x);
@@ -299,7 +299,7 @@ int StudentWorld::getDirectionToActor(Actor *actor, double x, double y) const
     return dir;
 }
 
-double StudentWorld::distance(double x1, double y1, double x2, double y2) const
+bool StudentWorld::isOverlapping(double x1, double y1, double x2, double y2) const
 {
-    return sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2));
+    return (distance(x1, y1, x2, y2) <= 2*SPRITE_RADIUS);
 }

@@ -7,42 +7,16 @@ using namespace std;
 //  SOCRATES IMPLEMENTATION
 ///////////////////////////////////////////////////////////////////////////
 
-Socrates::Socrates(double startX, double startY, StudentWorld* world)
- : Damageable(IID_PLAYER, startX, startY, 0, 0, world, STARTING_HEALTH)
-{
-    m_spray_count = STARTING_SPRAY_CHARGES;
-    m_flame_count = STARTING_FLAME_CHARGES;
-}
-
 void Socrates::doSomething()
 {
     int dir;
-    StudentWorld* world = getWorld();
-    if(world->getKey(dir)) {
-        
+    if(getWorld()->getKey(dir)) {
         switch(dir) {
             case KEY_PRESS_SPACE:
-                if(m_spray_count > 0) {
-                    // add spray object
-                    double sprayStartX, sprayStartY;
-                    getPositionInThisDirection(getDirection(), 2*SPRITE_RADIUS, sprayStartX, sprayStartY);
-                    world->addActor(new Spray(sprayStartX, sprayStartY, getDirection(), world));
-                    m_spray_count--;
-                    world->playSound(SOUND_PLAYER_SPRAY);
-                }
+                shootSpray();
                 break;
             case KEY_PRESS_ENTER:
-                if(m_flame_count > 0) {
-                    // add flame object
-                    int dir = getDirection();
-                    double flameStartX, flameStartY;
-                    for(int i=0; i<16; i++) {
-                        getPositionInThisDirection(dir+22*i, 2*SPRITE_RADIUS, flameStartX, flameStartY);
-                        world->addActor(new Flame(flameStartX, flameStartY, dir+22*i, world));
-                    }
-                    m_flame_count--;
-                    world->playSound(SOUND_PLAYER_FIRE);
-                }
+                shootFlameCharge();
                 break;
             case KEY_PRESS_RIGHT:
                 adjustPosition(-MOVE_DEGREES);
@@ -50,26 +24,42 @@ void Socrates::doSomething()
             case KEY_PRESS_LEFT:
                 adjustPosition(MOVE_DEGREES);
                 break;
-            case KEY_PRESS_TAB:
-                if(m_flame_count > 0) {
-                    // add flame object
-                    int dir = getDirection();
-                    double flameStartX, flameStartY;
-                    for(int i=0; i<16; i++) {
-                        getPositionInThisDirection(dir+22*i, 2*SPRITE_RADIUS, flameStartX, flameStartY);
-                        world->addActor(new Flame(flameStartX, flameStartY, dir+22*i, world));
-                    }
-                    world->playSound(SOUND_PLAYER_FIRE);
-                }
-                break;
             default:
                 break;
         }
-        
     }
-    
     else if(m_spray_count < STARTING_SPRAY_CHARGES)
         m_spray_count++;
+}
+
+void Socrates::shootSpray()
+{
+    if(m_spray_count > 0) {
+        StudentWorld* world = getWorld();
+        double sprayStartX, sprayStartY;
+        
+        getPositionInThisDirection(getDirection(), 2*SPRITE_RADIUS, sprayStartX, sprayStartY);
+        world->addActor(new Spray(sprayStartX, sprayStartY, getDirection(), world));
+        m_spray_count--;
+        world->playSound(SOUND_PLAYER_SPRAY);
+    }
+}
+
+void Socrates::shootFlameCharge()
+{
+    if(m_flame_count > 0) {
+        StudentWorld* world = getWorld();
+        int dir = getDirection();
+        double flameStartX, flameStartY;
+        
+        for(int i=0; i<NUMBER_OF_FLAMES_PER_CHARGE; i++) {
+            getPositionInThisDirection(dir+DEGREES_BETWEEN_FLAMES*i, 2*SPRITE_RADIUS,
+                                       flameStartX, flameStartY);
+            world->addActor(new Flame(flameStartX, flameStartY, dir+DEGREES_BETWEEN_FLAMES*i, world));
+        }
+        // m_flame_count--;
+        world->playSound(SOUND_PLAYER_FIRE);
+    }
 }
 
 void Socrates::adjustPosition(int degree)
@@ -164,19 +154,27 @@ bool Pit::isEmpty()
 }
 
 ///////////////////////////////////////////////////////////////////////////
-//  BACTERIA IMPLEMENTATION
+//  BACTERIUM IMPLEMENTATION
 ///////////////////////////////////////////////////////////////////////////
 
 void Bacterium::doSomething()
 {
-    return;
+    if(isDead())
+        return;
+    
+    StudentWorld* world = getWorld();
+    if(world->isOverlappingWithSocrates(getX(), getY())) {
+        world->damageSocrates(m_damage);
+    }
+    else if(!tryToDivide())
+        tryToEatFood();
 }
 
 void Bacterium::takeDamage(int damage)
 {
     if(isDead())
         return;
-    
+
     Damageable::takeDamage(damage);
     if(!isDead()) {
         getWorld()->playSound(m_soundHurt);
@@ -192,7 +190,65 @@ void Bacterium::takeDamage(int damage)
     }
 }
 
-void Bacterium::calculateNewBacteriumDistance(double &newX, double &newY)
+bool Bacterium::tryToMove()
+{
+    if(m_movementPlanDistance > 0) {
+        m_movementPlanDistance--;
+        
+        double newX, newY;
+        getPositionInThisDirection(getDirection(), 3, newX, newY);
+        double distToCenter = getWorld()->distance(newX, newY, VIEW_WIDTH/2, VIEW_HEIGHT/2);
+        if(!getWorld()->isOverlappingWithDirt(newX, newY) && distToCenter < VIEW_RADIUS)
+            moveTo(newX, newY);
+        else
+            tryNewDirection();
+        return true;
+    }
+    
+    return false;
+}
+
+void Bacterium::tryToEatFood()
+{
+    if(getWorld()->findAndEatOverlappingFood(getX(), getY()))
+        m_foodEatenSinceLastDivide++;
+}
+
+bool Bacterium::tryToDivide()
+{
+    if(m_foodEatenSinceLastDivide == FOOD_NEEDED_TO_DIVIDE) {
+        double newX, newY;
+        calculateNewBacteriumDistance(newX, newY);
+        divide(newX, newY);
+        
+        StudentWorld* world = getWorld();
+        world->playSound(SOUND_BACTERIUM_BORN);
+        world->addNumberOfBacteria(1);
+        
+        m_foodEatenSinceLastDivide = 0;
+        return true;
+    }
+    
+    return false;
+}
+
+void Bacterium::moveTowardFood()
+{
+    StudentWorld* world = getWorld();
+    int dir;
+    if(world->directionToNearestFoodIfWithinDistance(getX(), getY(), MAX_DISTANCE_TO_FOOD, dir)) {
+        double newX, newY;
+        getPositionInThisDirection(dir, m_movement, newX, newY);
+        if(!world->isOverlappingWithDirt(newX, newY))
+            moveTo(newX, newY);
+        else
+            tryNewDirection();
+    }
+    else
+        tryNewDirection();
+}
+
+void Bacterium::calculateNewBacteriumDistance(double &newX, double &newY) const
 {
     newX = getX();
     if(newX < VIEW_WIDTH / 2)
@@ -207,75 +263,37 @@ void Bacterium::calculateNewBacteriumDistance(double &newX, double &newY)
         newY -= SPRITE_HEIGHT/2;
 }
 
-void Bacterium::tryToMove()
+void Bacterium::tryNewDirection()
 {
-    double newX, newY;
-    getPositionInThisDirection(getDirection(), 3, newX, newY);
-    double distToCenter = getWorld()->distance(newX, newY, VIEW_WIDTH/2, VIEW_HEIGHT/2);
-    if(!getWorld()->isOverlappingWithDirt(newX, newY) && distToCenter < VIEW_RADIUS) {
-        moveTo(newX, newY);
-    }
-    else {
-        setDirection(randInt(0, 359));
-        resetMovementPlanDistance();
-    }
+    setDirection(randInt(0, 359));
+    m_movementPlanDistance = RESET_MOVEMENT_PLAN_DISTANCE;
 }
 
-void Bacterium::tryToEatFood()
-{
-    if(getWorld()->findAndEatOverlappingFood(getX(), getY()))
-        m_foodEatenSinceLastDivide++;
-}
+///////////////////////////////////////////////////////////////////////////
+//  SALMONELLA AND E. COLI IMPLEMENTATION
+///////////////////////////////////////////////////////////////////////////
 
 void RegularSalmonella::doSomething()
 {
-    if(isDead()) return;
+    if(isDead())
+        return;
     
-    StudentWorld* world = getWorld();
-    if(world->isOverlappingWithSocrates(getX(), getY())) {
-        world->damageSocrates(DAMAGE);
-    }
-    else if(getFoodEatenSinceLastDivide() == FOOD_NEEDED_TO_DIVIDE) {
-        double newX, newY;
-        calculateNewBacteriumDistance(newX, newY);
-        world->addActor(new RegularSalmonella(newX, newY, world));
-        world->addNumberOfBacteria(1);
-        world->playSound(SOUND_BACTERIUM_BORN);
-        resetFoodEaten();
-    }
-    else
-        tryToEatFood();
-    
-    if(getMovementPlanDistance() > 0) {
-        decreaseMovementPlanDistance();
-        tryToMove();
-    }
-    else {
-        int dir;
-        if(world->directionToNearestFoodIfWithinDistance(getX(), getY(), MAX_DISTANCE_TO_FOOD, dir)) {
-            double newX, newY;
-            getPositionInThisDirection(dir, MOVEMENT, newX, newY);
-            if(!world->isOverlappingWithDirt(newX, newY))
-                moveTo(newX, newY);
-            else {
-                setDirection(randInt(0, 359));
-                resetMovementPlanDistance();
-            }
-        }
-        else {
-            setDirection(randInt(0, 359));
-            resetMovementPlanDistance();
-        }
-    }
-    
+    Bacterium::doSomething();
+    if(!tryToMove())
+        moveTowardFood();
+}
+
+void RegularSalmonella::divide(double newX, double newY)
+{
+    getWorld()->addActor(new RegularSalmonella(newX, newY, getWorld()));
 }
 
 void AggressiveSalmonella::doSomething()
 {
-    if(isDead()) return;
+    if(isDead())
+        return;
     
     StudentWorld* world = getWorld();
-    
     bool shouldNotMoveForFood = false;
     bool shouldSkip = false;
     
@@ -295,13 +313,7 @@ void AggressiveSalmonella::doSomething()
         shouldSkip = true;
     }
     
-    if(!shouldSkip && getFoodEatenSinceLastDivide() == FOOD_NEEDED_TO_DIVIDE) {
-        double newX, newY;
-        calculateNewBacteriumDistance(newX, newY);
-        world->addActor(new AggressiveSalmonella(newX, newY, world));
-        world->playSound(SOUND_BACTERIUM_BORN);
-        world->addNumberOfBacteria(1);
-        resetFoodEaten();
+    if(!shouldSkip && tryToDivide()) {
         if(shouldNotMoveForFood)
             return;
         shouldSkip = true;
@@ -309,58 +321,31 @@ void AggressiveSalmonella::doSomething()
     
     if(!shouldSkip)
         tryToEatFood();
-    
     if(shouldNotMoveForFood)
         return;
-    
-    if(getMovementPlanDistance() > 0) {
-        decreaseMovementPlanDistance();
-        tryToMove();
-    }
-    else {
-        int dir;
-        if(world->directionToNearestFoodIfWithinDistance(getX(), getY(), MAX_DISTANCE_TO_FOOD, dir)) {
-            double newX, newY;
-            getPositionInThisDirection(dir, MOVEMENT, newX, newY);
-            if(!world->isOverlappingWithDirt(newX, newY))
-                moveTo(newX, newY);
-            else {
-                setDirection(randInt(0, 359));
-                resetMovementPlanDistance();
-            }
-        }
-        else {
-            setDirection(randInt(0, 359));
-            resetMovementPlanDistance();
-        }
-    }
+    if(!tryToMove())
+        moveTowardFood();
+}
+
+void AggressiveSalmonella::divide(double newX, double newY)
+{
+    getWorld()->addActor(new AggressiveSalmonella(newX, newY, getWorld()));
 }
 
 void EColi::doSomething()
 {
-    if(isDead()) return;
+    if(isDead())
+        return;
+    
+    Bacterium::doSomething();
     
     StudentWorld* world = getWorld();
-    
-    if(world->isOverlappingWithSocrates(getX(), getY()))
-        world->damageSocrates(DAMAGE);
-    else if(getFoodEatenSinceLastDivide() == FOOD_NEEDED_TO_DIVIDE) {
-        double newX, newY;
-        calculateNewBacteriumDistance(newX, newY);
-        world->addActor(new EColi(newX, newY, world));
-        world->addNumberOfBacteria(1);
-        world->playSound(SOUND_BACTERIUM_BORN);
-        resetFoodEaten();
-    }
-    else
-        tryToEatFood();
-    
     int dirToTry;
     if(world->directionToSocratesIfWithinDistance(getX(), getY(),
                                                   MAX_DISTANCE_TO_SOCRATES, dirToTry)) {
         for(int i=0; i<MOVEMENT_TRIES; i++) {
             double newX, newY;
-            getPositionInThisDirection(dirToTry, 2, newX, newY);
+            getPositionInThisDirection(dirToTry, MOVEMENT, newX, newY);
             if(!world->isOverlappingWithDirt(newX, newY)) {
                 moveTo(newX, newY);
                 return;
@@ -370,8 +355,13 @@ void EColi::doSomething()
     }
 }
 
+void EColi::divide(double newX, double newY)
+{
+    getWorld()->addActor(new EColi(newX, newY, getWorld()));
+}
+
 ///////////////////////////////////////////////////////////////////////////
-//  EXPIRABLE IMPLEMENTATION
+//  EXPIRABLES IMPLEMENTATION
 ///////////////////////////////////////////////////////////////////////////
 
 Expirable::Expirable(int imageID, double startX, double startY,
@@ -414,22 +404,22 @@ void Expirable::takeDamage(int damage)
     setDead();
 }
 
-void RestoreHealthGoodie::giveReward()
+void RestoreHealthGoodie::giveReward() const
 {
     getWorld()->healSocrates(HEAL_AMOUNT);
 }
 
-void FlameThrowerGoodie::giveReward()
+void FlameThrowerGoodie::giveReward() const
 {
     getWorld()->refillSocratesFlames(REFILL_AMOUNT);
 }
 
-void ExtraLifeGoodie::giveReward()
+void ExtraLifeGoodie::giveReward() const
 {
     getWorld()->incLives();
 }
 
-void Fungus::giveReward()
+void Fungus::giveReward() const
 {
     // There is no reward for a fungus, mwahahaha!
     getWorld()->damageSocrates(DAMAGE);
