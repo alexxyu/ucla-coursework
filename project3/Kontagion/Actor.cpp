@@ -9,6 +9,7 @@ using namespace std;
 
 void Socrates::doSomething()
 {
+    // handle user input
     int dir;
     if(getWorld()->getKey(dir)) {
         switch(dir) {
@@ -52,12 +53,13 @@ void Socrates::shootFlameCharge()
         int dir = getDirection();
         double flameStartX, flameStartY;
         
+        // generate flame charges in circular fashion around Socrates
         for(int i=0; i<NUMBER_OF_FLAMES_PER_CHARGE; i++) {
             getPositionInThisDirection(dir+DEGREES_BETWEEN_FLAMES*i, 2*SPRITE_RADIUS,
                                        flameStartX, flameStartY);
             world->addActor(new Flame(flameStartX, flameStartY, dir+DEGREES_BETWEEN_FLAMES*i, world));
         }
-        // m_flame_count--;
+        m_flame_count--;
         world->playSound(SOUND_PLAYER_FIRE);
     }
 }
@@ -116,41 +118,44 @@ void Pit::doSomething()
     }
     
     int chance = randInt(0, 49);
-    if(chance == 0) {
-        
-        int bacteriumGenerated;
-        do {
-            bacteriumGenerated = randInt(0, NUM_OF_BACTERIA_TYPES-1);
-        } while(m_bacteriaCount[bacteriumGenerated] < 1);
-        
-        StudentWorld* world = getWorld();
-        
-        switch(bacteriumGenerated) {
-            case REGULAR_SALMONELLA_ID:
-                world->addActor(new RegularSalmonella(getX(), getY(), world));
-                break;
-            case AGGRESSIVE_SALMONELLA_ID:
-                world->addActor(new AggressiveSalmonella(getX(), getY(), world));
-                break;
-            case ECOLI_ID:
-                world->addActor(new EColi(getX(), getY(), world));
-                break;
-            default:
-                break;
-        }
-        
-        m_bacteriaCount[bacteriumGenerated]--;
-        world->playSound(SOUND_BACTERIUM_BORN);
-    }
+    if(chance == 0)
+        generateBacteria();
 }
 
-bool Pit::isEmpty()
+bool Pit::isEmpty() const
 {
     for(int i=0; i<NUM_OF_BACTERIA_TYPES; i++)
         if(m_bacteriaCount[i] != 0)
             return false;
     
     return true;
+}
+
+void Pit::generateBacteria()
+{
+    int bacteriumGenerated;
+    do {
+        bacteriumGenerated = randInt(0, NUM_OF_BACTERIA_TYPES-1);
+    } while(m_bacteriaCount[bacteriumGenerated] < 1);
+    
+    StudentWorld* world = getWorld();
+    
+    switch(bacteriumGenerated) {
+        case REGULAR_SALMONELLA_ID:
+            world->addActor(new RegularSalmonella(getX(), getY(), world));
+            break;
+        case AGGRESSIVE_SALMONELLA_ID:
+            world->addActor(new AggressiveSalmonella(getX(), getY(), world));
+            break;
+        case ECOLI_ID:
+            world->addActor(new EColi(getX(), getY(), world));
+            break;
+        default:
+            break;
+    }
+    
+    m_bacteriaCount[bacteriumGenerated]--;
+    world->playSound(SOUND_BACTERIUM_BORN);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -193,15 +198,17 @@ void Bacterium::takeDamage(int damage)
 bool Bacterium::tryToMove()
 {
     if(m_movementPlanDistance > 0) {
-        m_movementPlanDistance--;
         
         double newX, newY;
         getPositionInThisDirection(getDirection(), 3, newX, newY);
         double distToCenter = getWorld()->distance(newX, newY, VIEW_WIDTH/2, VIEW_HEIGHT/2);
+        
         if(!getWorld()->isOverlappingWithDirt(newX, newY) && distToCenter < VIEW_RADIUS)
             moveTo(newX, newY);
         else
             tryNewDirection();
+        
+        m_movementPlanDistance--;
         return true;
     }
     
@@ -297,6 +304,7 @@ void AggressiveSalmonella::doSomething()
     bool shouldNotMoveForFood = false;
     bool shouldSkip = false;
     
+    // try to move towards Socrates
     int dir;
     if(world->directionToSocratesIfWithinDistance(getX(), getY(), MAX_DISTANCE_TO_SOCRATES, dir)) {
         double newX, newY;
@@ -323,6 +331,7 @@ void AggressiveSalmonella::doSomething()
         tryToEatFood();
     if(shouldNotMoveForFood)
         return;
+    
     if(!tryToMove())
         moveTowardFood();
 }
@@ -343,6 +352,8 @@ void EColi::doSomething()
     int dirToTry;
     if(world->directionToSocratesIfWithinDistance(getX(), getY(),
                                                   MAX_DISTANCE_TO_SOCRATES, dirToTry)) {
+        
+        // try to move towards Socrates
         for(int i=0; i<MOVEMENT_TRIES; i++) {
             double newX, newY;
             getPositionInThisDirection(dirToTry, MOVEMENT, newX, newY);

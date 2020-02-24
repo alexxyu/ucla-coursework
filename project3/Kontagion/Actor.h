@@ -19,11 +19,9 @@ public:
         m_dead = false;
         m_world = world;
     }
-    
     virtual ~Actor() { }
     
-    virtual void doSomething() { }
-    virtual void takeDamage(int amount) { }
+    virtual void doSomething() = 0;
     
     virtual bool isPit() const { return false; }
     virtual bool isFood() const { return false; }
@@ -54,9 +52,9 @@ public:
     {
         
     }
-    
     virtual ~Damageable() { }
     
+    virtual void doSomething() = 0;
     virtual void takeDamage(int damage)
     {
         m_health -= damage;
@@ -155,6 +153,7 @@ public:
         
     }
     virtual ~Fungus() { }
+    
     virtual void giveReward() const;
     
 private:
@@ -219,7 +218,6 @@ public:
     {
         
     }
-    
     virtual ~RegularSalmonella() { }
     
     virtual void doSomething();
@@ -242,10 +240,10 @@ public:
     {
         
     }
-    
     virtual ~AggressiveSalmonella() { }
     
     virtual void doSomething();
+    
 protected:
     virtual void divide(double newX, double newY);
     
@@ -265,9 +263,10 @@ public:
     {
         
     }
-    
     virtual ~EColi() { }
+    
     virtual void doSomething();
+    
 protected:
     virtual void divide(double newX, double newY);
     
@@ -326,6 +325,7 @@ public:
     }
     virtual ~DirtPile() { }
     virtual bool isDirtPile() const { return true; }
+    virtual void doSomething() { };
     
 private:
 };
@@ -346,7 +346,6 @@ public:
         m_maxDistance = maxDistance;
         m_damage = damage;
     }
-    
     virtual ~Projectile() { }
     
     virtual void doSomething();
@@ -366,7 +365,6 @@ public:
     {
         
     }
-    
     virtual ~Spray() { }
     
 private:
@@ -382,12 +380,10 @@ public:
     {
         
     }
-    
     virtual ~Flame() { }
     
 private:
-    static const int MAX_DISTANCE = 100;
-    // static const int MAX_DISTANCE = 32;
+    static const int MAX_DISTANCE = 32;
     static const int DAMAGE = 5;
 };
 
@@ -404,6 +400,8 @@ public:
         
     }
     virtual ~Food() { }
+    
+    virtual void doSomething() { }
     virtual bool isFood() const { return true; }
 };
 
@@ -414,9 +412,7 @@ public:
     virtual ~Pit() { }
     
     virtual void doSomething();
-    
     virtual bool isPit() { return true; }
-    bool isEmpty();
     
 private:
     static const int NUM_REGULAR_SALMONELLA = 5;
@@ -430,6 +426,9 @@ private:
     static const int NUM_OF_BACTERIA_TYPES = 3;
     
     int m_bacteriaCount[NUM_OF_BACTERIA_TYPES];
+    
+    bool isEmpty() const;
+    void generateBacteria();
 };
 
 #endif // ACTOR_H_

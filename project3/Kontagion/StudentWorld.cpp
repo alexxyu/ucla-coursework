@@ -32,6 +32,7 @@ int StudentWorld::init()
     m_numEnemies = 0;
     int level = getLevel();
     
+    // generate pits
     for(int pitCount=0; pitCount < level; ) {
         int x = VIEW_WIDTH/2 + randInt(-MAX_OJBECT_DIST_FROM_CENTER, MAX_OJBECT_DIST_FROM_CENTER);
         int y = VIEW_HEIGHT/2 + randInt(-MAX_OJBECT_DIST_FROM_CENTER, MAX_OJBECT_DIST_FROM_CENTER);
@@ -43,6 +44,7 @@ int StudentWorld::init()
         }
     }
 
+    // generate food
     int numFood = min(5 * level, 25);
     for(int foodCount=0; foodCount < numFood; ) {
         int x = VIEW_WIDTH/2 + randInt(-MAX_OJBECT_DIST_FROM_CENTER, MAX_OJBECT_DIST_FROM_CENTER);
@@ -55,6 +57,7 @@ int StudentWorld::init()
         }
     }
     
+    // generate dirt piles
     int numDirt = max(180 - 20 * level, 20);
     for(int dirtCount=0; dirtCount < numDirt; ) {
         int x = VIEW_WIDTH/2 + randInt(-MAX_OJBECT_DIST_FROM_CENTER, MAX_OJBECT_DIST_FROM_CENTER);
@@ -74,7 +77,7 @@ int StudentWorld::move()
 {
     m_socrates->doSomething();
 
-    // Give each actor a chance to do something, including Socrates
+    // give each actor a chance to do something, including Socrates
     for(Actor* a: m_actors) {
         if(!(a->isDead())) {
             a->doSomething();
@@ -92,13 +95,13 @@ int StudentWorld::move()
         }
     }
     
-    // Remove newly-dead actors after each tick
+    // remove newly-dead actors after each tick
     removeDeadGameObjects();
     
-    // Potentially add new actors to the game (e.g., goodies or fungi)
+    // potentially add new actors to the game (e.g., goodies or fungi)
     addNewActors();
     
-    // Update the game status text line
+    // update the game status text line
     updateDisplayText();
                
     // the player hasn’t completed the current level and hasn’t died, so
@@ -268,7 +271,7 @@ bool StudentWorld::damageDamageable(double x, double y, int damage)
 {
     for(Actor* a: m_actors) {
         if(a->isDamageable() && isOverlapping(x, y, a->getX(), a->getY()) && !(a->isDead())) {
-            a->takeDamage(damage);
+            static_cast<Damageable*>(a)->takeDamage(damage);
             return true;
         }
     }
