@@ -383,7 +383,6 @@ public:
     virtual ~Flame() { }
     
 private:
-    // static const int MAX_DISTANCE = 100;
     static const int MAX_DISTANCE = 32;
     static const int DAMAGE = 5;
 };

@@ -204,7 +204,7 @@ bool StudentWorld::isOverlappingWithSocrates(double x, double y) const
 bool StudentWorld::isOverlappingWithDirt(double x, double y) const
 {
     for(Actor* a: m_actors)
-        if(a->isDirtPile() && isOverlapping(x, y, a->getX(), a->getY()))
+        if(a->isDirtPile() && distance(x, y, a->getX(), a->getY()) <= SPRITE_WIDTH/2)
             return true;
     return false;
 }
@@ -304,5 +304,5 @@ int StudentWorld::getDirectionToActor(Actor *actor, double x, double y) const
 
 bool StudentWorld::isOverlapping(double x1, double y1, double x2, double y2) const
 {
-    return (distance(x1, y1, x2, y2) <= 2*SPRITE_RADIUS);
+    return (distance(x1, y1, x2, y2) <= SPRITE_WIDTH);
 }
