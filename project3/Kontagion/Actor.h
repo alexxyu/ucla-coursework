@@ -23,7 +23,6 @@ public:
     
     virtual void doSomething() = 0;
     
-    virtual bool isPit() const { return false; }
     virtual bool isFood() const { return false; }
     virtual bool isDamageable() const { return false; }
     virtual bool isDirtPile() const { return false; }
@@ -412,7 +411,6 @@ public:
     virtual ~Pit() { }
     
     virtual void doSomething();
-    virtual bool isPit() { return true; }
     
 private:
     static const int NUM_REGULAR_SALMONELLA = 5;
