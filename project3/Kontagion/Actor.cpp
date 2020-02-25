@@ -33,6 +33,12 @@ void Socrates::doSomething()
         m_spray_count++;
 }
 
+void Socrates::takeDamage(int damage)
+{
+    Damageable::takeDamage(damage);
+    getWorld()->playSound(SOUND_PLAYER_HURT);
+}
+
 void Socrates::shootSpray()
 {
     if(m_spray_count > 0) {
@@ -198,9 +204,8 @@ void Bacterium::takeDamage(int damage)
 bool Bacterium::tryToMove()
 {
     if(m_movementPlanDistance > 0) {
-        
         double newX, newY;
-        getPositionInThisDirection(getDirection(), 3, newX, newY);
+        getPositionInThisDirection(getDirection(), m_movement, newX, newY);
         double distToCenter = getWorld()->distance(newX, newY, VIEW_WIDTH/2, VIEW_HEIGHT/2);
         
         if(!getWorld()->isOverlappingWithDirt(newX, newY) && distToCenter < VIEW_RADIUS)
@@ -246,8 +251,10 @@ void Bacterium::moveTowardFood()
     if(world->directionToNearestFoodIfWithinDistance(getX(), getY(), MAX_DISTANCE_TO_FOOD, dir)) {
         double newX, newY;
         getPositionInThisDirection(dir, m_movement, newX, newY);
-        if(!world->isOverlappingWithDirt(newX, newY))
+        if(!world->isOverlappingWithDirt(newX, newY)) {
+            setDirection(dir);
             moveTo(newX, newY);
+        }
         else
             tryNewDirection();
     }
@@ -316,23 +323,14 @@ void AggressiveSalmonella::doSomething()
     
     if(world->isOverlappingWithSocrates(getX(), getY())) {
         world->damageSocrates(DAMAGE);
-        if(shouldNotMoveForFood)
-            return;
         shouldSkip = true;
     }
-    
-    if(!shouldSkip && tryToDivide()) {
-        if(shouldNotMoveForFood)
-            return;
+    if(!shouldSkip && tryToDivide())
         shouldSkip = true;
-    }
-    
     if(!shouldSkip)
         tryToEatFood();
-    if(shouldNotMoveForFood)
-        return;
     
-    if(!tryToMove())
+    if(!shouldNotMoveForFood && !tryToMove())
         moveTowardFood();
 }
 
@@ -351,8 +349,8 @@ void EColi::doSomething()
     StudentWorld* world = getWorld();
     int dirToTry;
     if(world->directionToSocratesIfWithinDistance(getX(), getY(),
-                                                  MAX_DISTANCE_TO_SOCRATES, dirToTry)) {
-        
+                                                  MAX_DISTANCE_TO_SOCRATES, dirToTry))
+    {
         // try to move towards Socrates
         for(int i=0; i<MOVEMENT_TRIES; i++) {
             double newX, newY;

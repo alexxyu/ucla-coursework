@@ -293,6 +293,7 @@ public:
     virtual ~Socrates() { }
     
     virtual void doSomething();
+    virtual void takeDamage(int damage);
     
     int getSprayCount() const { return m_spray_count; }
     int getFlameCount() const { return m_flame_count; }
@@ -382,6 +383,7 @@ public:
     virtual ~Flame() { }
     
 private:
+    // static const int MAX_DISTANCE = 100;
     static const int MAX_DISTANCE = 32;
     static const int DAMAGE = 5;
 };
