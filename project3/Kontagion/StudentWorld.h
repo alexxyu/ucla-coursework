@@ -41,8 +41,8 @@ public:
     void refillSocratesFlames(int amount);
     
     // Handle number of enemies
-    void addNumberOfBacteria(int amount) { m_numEnemies += amount; }
-    void decrementNumberOfBacteria() { m_numEnemies--; }
+    void addNumberOfBacteria(int amount);
+    void decrementNumberOfBacteria();
 
 private:
     static const int MAX_OJBECT_DIST_FROM_CENTER = 120;
@@ -52,9 +52,11 @@ private:
     void addNewActors();
     void updateDisplayText();
     
-    bool isOverlappingWithActors(double x, double y, int numToCheck) const;
+    bool canAddToWorld(double x, double y, int numToCheck) const;
     int getDirectionToActor(Actor *actor, double x, double y) const;
     bool isOverlapping(double x1, double y1, double x2, double y2) const;
+    
+    void getRandomPointInDish(double& x, double& y);
     
     Socrates*         m_socrates;
     std::list<Actor*> m_actors;

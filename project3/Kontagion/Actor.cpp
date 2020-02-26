@@ -4,169 +4,152 @@
 using namespace std;
 
 ///////////////////////////////////////////////////////////////////////////
-//  SOCRATES IMPLEMENTATION
+//  ACTOR IMPLEMENTATION
 ///////////////////////////////////////////////////////////////////////////
 
-void Socrates::doSomething()
+Actor::Actor(int imageID, double startX, double startY, int dir,
+             int depth, StudentWorld* world)
+: GraphObject(imageID, startX, startY, dir, depth)
 {
-    // handle user input
-    int dir;
-    if(getWorld()->getKey(dir)) {
-        switch(dir) {
-            case KEY_PRESS_SPACE:
-                shootSpray();
-                break;
-            case KEY_PRESS_ENTER:
-                shootFlameCharge();
-                break;
-            case KEY_PRESS_RIGHT:
-                adjustPosition(-MOVE_DEGREES);
-                break;
-            case KEY_PRESS_LEFT:
-                adjustPosition(MOVE_DEGREES);
-                break;
-            default:
-                break;
-        }
-    }
-    else if(m_spray_count < STARTING_SPRAY_CHARGES)
-        m_spray_count++;
+    m_dead = false;
+    m_world = world;
 }
 
-void Socrates::takeDamage(int damage)
-{
-    Damageable::takeDamage(damage);
-    getWorld()->playSound(SOUND_PLAYER_HURT);
-}
+bool Actor::isFood() const { return false; }
+bool Actor::isDamageable() const { return false; }
+bool Actor::isDirtPile() const { return false; }
+bool Actor::isDead() const { return m_dead; }
+void Actor::setDead() { m_dead = true; }
+StudentWorld* Actor::getWorld() const { return m_world; }
 
-void Socrates::shootSpray()
-{
-    if(m_spray_count > 0) {
-        StudentWorld* world = getWorld();
-        double sprayStartX, sprayStartY;
-        
-        getPositionInThisDirection(getDirection(), 2*SPRITE_RADIUS, sprayStartX, sprayStartY);
-        world->addActor(new Spray(sprayStartX, sprayStartY, getDirection(), world));
-        m_spray_count--;
-        world->playSound(SOUND_PLAYER_SPRAY);
-    }
-}
+///////////////////////////////////////////////////////////////////////////
+//  DAMAGEABLES IMPLEMENTATION
+///////////////////////////////////////////////////////////////////////////
 
-void Socrates::shootFlameCharge()
+Damageable::Damageable(int imageID, double startX, double startY,
+                       int dir, int depth, StudentWorld* world, int startHealth)
+: Actor(imageID, startX, startY, dir, depth, world), m_health(startHealth)
 {
-    if(m_flame_count > 0) {
-        StudentWorld* world = getWorld();
-        int dir = getDirection();
-        double flameStartX, flameStartY;
-        
-        // generate flame charges in circular fashion around Socrates
-        for(int i=0; i<NUMBER_OF_FLAMES_PER_CHARGE; i++) {
-            getPositionInThisDirection(dir+DEGREES_BETWEEN_FLAMES*i, 2*SPRITE_RADIUS,
-                                       flameStartX, flameStartY);
-            world->addActor(new Flame(flameStartX, flameStartY, dir+DEGREES_BETWEEN_FLAMES*i, world));
-        }
-        m_flame_count--;
-        world->playSound(SOUND_PLAYER_FIRE);
-    }
-}
-
-void Socrates::adjustPosition(int degree)
-{
-    int newAngle = (getDirection() + 180 + degree) % 360;
-    double dx, dy;
-    getWorld()->getRadialPosition(newAngle, dx, dy);
     
-    moveTo(dx, dy);
-    setDirection((newAngle + 180) % 360);
 }
 
+void Damageable::takeDamage(int damage)
+{
+    m_health -= damage;
+    if(m_health <= 0)
+        setDead();
+}
+
+bool Damageable::isDamageable() const { return true; }
+int Damageable::getHealth() const { return m_health; }
+void Damageable::healToAmount(int amount) { m_health = amount; }
+
 ///////////////////////////////////////////////////////////////////////////
-//  PROJECTILE IMPLEMENTATION
+//  EXPIRABLES IMPLEMENTATION
 ///////////////////////////////////////////////////////////////////////////
 
-void Projectile::doSomething()
+Expirable::Expirable(int imageID, double startX, double startY,
+                     StudentWorld* world, int pointValue, bool playSoundOnTouch)
+ : Damageable(imageID, startX, startY, 0, 1, world, 0)
+{
+    m_tickCount = 0;
+    m_pointValue = pointValue;
+    m_playSound = playSoundOnTouch;
+    generateLifespan();
+}
+
+void Expirable::doSomething()
 {
     if(isDead())
         return;
     
-    // check overlap with damageable object
-    if(getWorld()->damageDamageable(getX(), getY(), m_damage)) {
-        setDead();
-        return;
-    }
-    
-    moveForward(SPRITE_RADIUS*2);
-    
-    // check if dissipated
-    if(getWorld()->distance(getX(), getY(), m_startX, m_startY) >= m_maxDistance)
-        setDead();
-}
-
-///////////////////////////////////////////////////////////////////////////
-//  PIT IMPLEMENTATION
-///////////////////////////////////////////////////////////////////////////
-
-Pit::Pit(double startX, double startY, StudentWorld* world)
- : Actor(IID_PIT, startX, startY, 0, 1, world)
-{
-    m_bacteriaCount[REGULAR_SALMONELLA_ID] = NUM_REGULAR_SALMONELLA;
-    m_bacteriaCount[AGGRESSIVE_SALMONELLA_ID] = NUM_AGGRESSIVE_SALMONELLA;
-    m_bacteriaCount[ECOLI_ID] = NUM_ECOLI;
-    
-    world->addNumberOfBacteria(NUM_REGULAR_SALMONELLA + NUM_AGGRESSIVE_SALMONELLA + NUM_ECOLI);
-}
-
-void Pit::doSomething()
-{
-    if(isEmpty()) {
-        setDead();
-        return;
-    }
-    
-    int chance = randInt(0, 49);
-    if(chance == 0)
-        generateBacteria();
-}
-
-bool Pit::isEmpty() const
-{
-    for(int i=0; i<NUM_OF_BACTERIA_TYPES; i++)
-        if(m_bacteriaCount[i] != 0)
-            return false;
-    
-    return true;
-}
-
-void Pit::generateBacteria()
-{
-    int bacteriumGenerated;
-    do {
-        bacteriumGenerated = randInt(0, NUM_OF_BACTERIA_TYPES-1);
-    } while(m_bacteriaCount[bacteriumGenerated] < 1);
-    
     StudentWorld* world = getWorld();
-    
-    switch(bacteriumGenerated) {
-        case REGULAR_SALMONELLA_ID:
-            world->addActor(new RegularSalmonella(getX(), getY(), world));
-            break;
-        case AGGRESSIVE_SALMONELLA_ID:
-            world->addActor(new AggressiveSalmonella(getX(), getY(), world));
-            break;
-        case ECOLI_ID:
-            world->addActor(new EColi(getX(), getY(), world));
-            break;
-        default:
-            break;
+    if(world->isOverlappingWithSocrates(getX(), getY())) {
+        world->increaseScore(m_pointValue);
+        setDead();
+        if(m_playSound)
+            getWorld()->playSound(SOUND_GOT_GOODIE);
+        giveReward();
+        return;
     }
     
-    m_bacteriaCount[bacteriumGenerated]--;
-    world->playSound(SOUND_BACTERIUM_BORN);
+    m_tickCount++;
+    if(m_tickCount >= m_lifespan)
+        setDead();
+}
+
+void Expirable::generateLifespan()
+{
+    m_lifespan = max(rand() % (300 - 10 * getWorld()->getLevel()), 50);
+}
+
+void Expirable::takeDamage(int damage)
+{
+    setDead();
+}
+
+RestoreHealthGoodie::RestoreHealthGoodie(double startX, double startY,
+                                         StudentWorld* world)
+: Expirable(IID_RESTORE_HEALTH_GOODIE, startX, startY, world, POINT_VALUE)
+{
+    
+}
+
+void RestoreHealthGoodie::giveReward() const
+{
+    getWorld()->healSocrates(HEAL_AMOUNT);
+}
+
+FlameThrowerGoodie::FlameThrowerGoodie(double startX, double startY,
+                                       StudentWorld* world)
+: Expirable(IID_FLAME_THROWER_GOODIE, startX, startY, world, POINT_VALUE)
+{
+    
+}
+
+void FlameThrowerGoodie::giveReward() const
+{
+    getWorld()->refillSocratesFlames(REFILL_AMOUNT);
+}
+
+ExtraLifeGoodie::ExtraLifeGoodie(double startX, double startY, StudentWorld* world)
+: Expirable(IID_EXTRA_LIFE_GOODIE, startX, startY, world, POINT_VALUE)
+{
+    
+}
+
+void ExtraLifeGoodie::giveReward() const
+{
+    getWorld()->incLives();
+}
+
+Fungus::Fungus(double startX, double startY, StudentWorld* world)
+: Expirable(IID_FUNGUS, startX, startY, world, POINT_VALUE, false)
+{
+    
+}
+
+void Fungus::giveReward() const
+{
+    // There is no reward for a fungus, mwahahaha!
+    getWorld()->damageSocrates(DAMAGE);
 }
 
 ///////////////////////////////////////////////////////////////////////////
 //  BACTERIUM IMPLEMENTATION
 ///////////////////////////////////////////////////////////////////////////
+
+Bacterium::Bacterium(int imageID, double startX, double startY, StudentWorld* world,
+                     int health, int soundHurt, int soundDead, int damage, int movement)
+: Damageable(imageID, startX, startY, 90, 0, world, health)
+{
+    m_soundHurt = soundHurt;
+    m_soundDead = soundDead;
+    m_foodEatenSinceLastDivide = 0;
+    m_movementPlanDistance = 0;
+    m_damage = damage;
+    m_movement = movement;
+}
 
 void Bacterium::doSomething()
 {
@@ -287,6 +270,13 @@ void Bacterium::tryNewDirection()
 //  SALMONELLA AND E. COLI IMPLEMENTATION
 ///////////////////////////////////////////////////////////////////////////
 
+RegularSalmonella::RegularSalmonella(double startX, double startY, StudentWorld* world)
+: Bacterium(IID_SALMONELLA, startX, startY, world, STARTING_HEALTH,
+            SOUND_SALMONELLA_HURT, SOUND_SALMONELLA_DIE, DAMAGE, MOVEMENT)
+{
+    
+}
+
 void RegularSalmonella::doSomething()
 {
     if(isDead())
@@ -300,6 +290,14 @@ void RegularSalmonella::doSomething()
 void RegularSalmonella::divide(double newX, double newY)
 {
     getWorld()->addActor(new RegularSalmonella(newX, newY, getWorld()));
+}
+
+AggressiveSalmonella::AggressiveSalmonella(double startX, double startY,
+                                           StudentWorld* world)
+: Bacterium(IID_SALMONELLA, startX, startY, world, STARTING_HEALTH,
+            SOUND_SALMONELLA_HURT, SOUND_SALMONELLA_DIE, DAMAGE, MOVEMENT)
+{
+    
 }
 
 void AggressiveSalmonella::doSomething()
@@ -339,6 +337,13 @@ void AggressiveSalmonella::divide(double newX, double newY)
     getWorld()->addActor(new AggressiveSalmonella(newX, newY, getWorld()));
 }
 
+EColi::EColi(double startX, double startY, StudentWorld* world)
+: Bacterium(IID_ECOLI, startX, startY, world, STARTING_HEALTH,
+            SOUND_ECOLI_HURT, SOUND_SALMONELLA_DIE, DAMAGE, MOVEMENT)
+{
+    
+}
+
 void EColi::doSomething()
 {
     if(isDead())
@@ -370,66 +375,217 @@ void EColi::divide(double newX, double newY)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-//  EXPIRABLES IMPLEMENTATION
+//  SOCRATES IMPLEMENTATION
 ///////////////////////////////////////////////////////////////////////////
 
-Expirable::Expirable(int imageID, double startX, double startY,
-                     StudentWorld* world, int pointValue, bool playSoundOnTouch)
- : Damageable(imageID, startX, startY, 0, 1, world, 0)
+Socrates::Socrates(double startX, double startY, StudentWorld* world)
+: Damageable(IID_PLAYER, startX, startY, 0, 0, world, STARTING_HEALTH)
 {
-    m_tickCount = 0;
-    m_pointValue = pointValue;
-    m_playSound = playSoundOnTouch;
-    generateLifespan();
+    m_spray_count = STARTING_SPRAY_CHARGES;
+    m_flame_count = STARTING_FLAME_CHARGES;
 }
 
-void Expirable::doSomething()
+int Socrates::getSprayCount() const { return m_spray_count; }
+int Socrates::getFlameCount() const { return m_flame_count; }
+void Socrates::refillFlames(int amount) { m_flame_count += amount; }
+
+void Socrates::doSomething()
+{
+    // handle user input
+    int dir;
+    if(getWorld()->getKey(dir)) {
+        switch(dir) {
+            case KEY_PRESS_SPACE:
+                shootSpray();
+                break;
+            case KEY_PRESS_ENTER:
+                shootFlameCharge();
+                break;
+            case KEY_PRESS_RIGHT:
+                adjustPosition(-MOVE_DEGREES);
+                break;
+            case KEY_PRESS_LEFT:
+                adjustPosition(MOVE_DEGREES);
+                break;
+            default:
+                break;
+        }
+    }
+    else if(m_spray_count < STARTING_SPRAY_CHARGES)
+        m_spray_count++;
+}
+
+void Socrates::takeDamage(int damage)
+{
+    Damageable::takeDamage(damage);
+    getWorld()->playSound(SOUND_PLAYER_HURT);
+}
+
+void Socrates::shootSpray()
+{
+    if(m_spray_count > 0) {
+        StudentWorld* world = getWorld();
+        double sprayStartX, sprayStartY;
+        
+        getPositionInThisDirection(getDirection(), 2*SPRITE_RADIUS, sprayStartX, sprayStartY);
+        world->addActor(new Spray(sprayStartX, sprayStartY, getDirection(), world));
+        m_spray_count--;
+        world->playSound(SOUND_PLAYER_SPRAY);
+    }
+}
+
+void Socrates::shootFlameCharge()
+{
+    if(m_flame_count > 0) {
+        StudentWorld* world = getWorld();
+        int dir = getDirection();
+        double flameStartX, flameStartY;
+        
+        // generate flame charges in circular fashion around Socrates
+        for(int i=0; i<NUMBER_OF_FLAMES_PER_CHARGE; i++) {
+            getPositionInThisDirection(dir+DEGREES_BETWEEN_FLAMES*i, 2*SPRITE_RADIUS,
+                                       flameStartX, flameStartY);
+            world->addActor(new Flame(flameStartX, flameStartY, dir+DEGREES_BETWEEN_FLAMES*i, world));
+        }
+        m_flame_count--;
+        world->playSound(SOUND_PLAYER_FIRE);
+    }
+}
+
+void Socrates::adjustPosition(int degree)
+{
+    int newAngle = (getDirection() + 180 + degree) % 360;
+    double dx, dy;
+    getWorld()->getRadialPosition(newAngle, dx, dy);
+    
+    moveTo(dx, dy);
+    setDirection((newAngle + 180) % 360);
+}
+
+///////////////////////////////////////////////////////////////////////////
+//  PROJECTILE IMPLEMENTATION
+///////////////////////////////////////////////////////////////////////////
+
+Projectile::Projectile(int imageID, double startX, double startY, int dir,
+                       StudentWorld* world, double maxDistance, int damage)
+: Actor(imageID, startX, startY, dir, 1, world)
+{
+    m_startX = startX;
+    m_startY = startY;
+    m_maxDistance = maxDistance;
+    m_damage = damage;
+}
+
+void Projectile::doSomething()
 {
     if(isDead())
         return;
     
-    StudentWorld* world = getWorld();
-    if(world->isOverlappingWithSocrates(getX(), getY())) {
-        world->increaseScore(m_pointValue);
+    // check overlap with damageable object
+    if(getWorld()->damageDamageable(getX(), getY(), m_damage)) {
         setDead();
-        if(m_playSound)
-            getWorld()->playSound(SOUND_GOT_GOODIE);
-        giveReward();
         return;
     }
     
-    m_tickCount++;
-    if(m_tickCount >= m_lifespan)
+    moveForward(SPRITE_RADIUS*2);
+    
+    // check if dissipated
+    if(getWorld()->distance(getX(), getY(), m_startX, m_startY) >= m_maxDistance)
         setDead();
 }
 
-void Expirable::generateLifespan()
+Spray::Spray(double startX, double startY, int dir, StudentWorld* world)
+ : Projectile(IID_SPRAY, startX, startY, dir, world, MAX_DISTANCE, DAMAGE)
 {
-    m_lifespan = max(rand() % (300 - 10 * getWorld()->getLevel()), 50);
+    
 }
 
-void Expirable::takeDamage(int damage)
+Flame::Flame(double startX, double startY, int dir, StudentWorld* world)
+: Projectile(IID_FLAME, startX, startY, dir, world, MAX_DISTANCE, DAMAGE)
 {
-    setDead();
+    
 }
 
-void RestoreHealthGoodie::giveReward() const
+///////////////////////////////////////////////////////////////////////////
+//  PIT IMPLEMENTATION
+///////////////////////////////////////////////////////////////////////////
+
+Pit::Pit(double startX, double startY, StudentWorld* world)
+ : Actor(IID_PIT, startX, startY, 0, 1, world)
 {
-    getWorld()->healSocrates(HEAL_AMOUNT);
+    m_bacteriaCount[REGULAR_SALMONELLA_ID] = NUM_REGULAR_SALMONELLA;
+    m_bacteriaCount[AGGRESSIVE_SALMONELLA_ID] = NUM_AGGRESSIVE_SALMONELLA;
+    m_bacteriaCount[ECOLI_ID] = NUM_ECOLI;
+    
+    world->addNumberOfBacteria(NUM_REGULAR_SALMONELLA + NUM_AGGRESSIVE_SALMONELLA + NUM_ECOLI);
 }
 
-void FlameThrowerGoodie::giveReward() const
+void Pit::doSomething()
 {
-    getWorld()->refillSocratesFlames(REFILL_AMOUNT);
+    if(isEmpty()) {
+        setDead();
+        return;
+    }
+    
+    int chance = randInt(0, 49);
+    if(chance == 0)
+        generateBacteria();
 }
 
-void ExtraLifeGoodie::giveReward() const
+bool Pit::isEmpty() const
 {
-    getWorld()->incLives();
+    for(int i=0; i<NUM_OF_BACTERIA_TYPES; i++)
+        if(m_bacteriaCount[i] != 0)
+            return false;
+    
+    return true;
 }
 
-void Fungus::giveReward() const
+void Pit::generateBacteria()
 {
-    // There is no reward for a fungus, mwahahaha!
-    getWorld()->damageSocrates(DAMAGE);
+    int bacteriumGenerated;
+    do {
+        bacteriumGenerated = randInt(0, NUM_OF_BACTERIA_TYPES-1);
+    } while(m_bacteriaCount[bacteriumGenerated] < 1);
+    
+    StudentWorld* world = getWorld();
+    
+    switch(bacteriumGenerated) {
+        case REGULAR_SALMONELLA_ID:
+            world->addActor(new RegularSalmonella(getX(), getY(), world));
+            break;
+        case AGGRESSIVE_SALMONELLA_ID:
+            world->addActor(new AggressiveSalmonella(getX(), getY(), world));
+            break;
+        case ECOLI_ID:
+            world->addActor(new EColi(getX(), getY(), world));
+            break;
+        default:
+            break;
+    }
+    
+    m_bacteriaCount[bacteriumGenerated]--;
+    world->playSound(SOUND_BACTERIUM_BORN);
 }
+
+///////////////////////////////////////////////////////////////////////////
+//  OTHER IMPLEMENTATIONS
+///////////////////////////////////////////////////////////////////////////
+
+DirtPile::DirtPile(double startX, double startY, StudentWorld* world)
+: Damageable(IID_DIRT, startX, startY, 0, 1, world, 1)
+{
+    
+}
+
+bool DirtPile::isDirtPile() const { return true; }
+void DirtPile::doSomething() { };
+
+Food::Food(double startX, double startY, StudentWorld* world)
+: Actor(IID_FOOD, startX, startY, 90, 1, world)
+{
+    
+}
+
+void Food::doSomething() { }
+bool Food::isFood() const { return true; }

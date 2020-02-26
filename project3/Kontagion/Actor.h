@@ -13,25 +13,21 @@
 class Actor: public GraphObject
 {
 public:
-    Actor(int imageID, double startX, double startY, int dir, int depth, StudentWorld* world)
-    : GraphObject(imageID, startX, startY, dir, depth)
-    {
-        m_dead = false;
-        m_world = world;
-    }
+    Actor(int imageID, double startX, double startY, int dir,
+          int depth, StudentWorld* world);
     virtual ~Actor() { }
     
     virtual void doSomething() = 0;
     
-    virtual bool isFood() const { return false; }
-    virtual bool isDamageable() const { return false; }
-    virtual bool isDirtPile() const { return false; }
+    virtual bool isFood() const;
+    virtual bool isDamageable() const;
+    virtual bool isDirtPile() const;
     
-    bool isDead() const { return m_dead; }
-    void setDead() { m_dead = true; }
+    bool isDead() const;
+    void setDead();
     
 protected:
-    StudentWorld* getWorld() const { return m_world; }
+    StudentWorld* getWorld() const;
     
 private:
     bool          m_dead;
@@ -45,25 +41,16 @@ private:
 class Damageable: public Actor
 {
 public:
-    Damageable(int imageID, double startX, double startY, int dir, int depth,
-               StudentWorld* world, int startHealth)
-    : Actor(imageID, startX, startY, dir, depth, world), m_health(startHealth)
-    {
-        
-    }
+    Damageable(int imageID, double startX, double startY,
+               int dir, int depth, StudentWorld* world, int startHealth);
     virtual ~Damageable() { }
     
     virtual void doSomething() = 0;
-    virtual void takeDamage(int damage)
-    {
-        m_health -= damage;
-        if(m_health <= 0)
-            setDead();
-    }
-    virtual bool isDamageable() const { return true; }
+    virtual void takeDamage(int damage);
+    virtual bool isDamageable() const;
     
-    int getHealth() const { return m_health; }
-    void healToAmount(int amount) { m_health = amount; }
+    int getHealth() const;
+    void healToAmount(int amount);
     
 private:
     int m_health;
@@ -96,11 +83,7 @@ private:
 class RestoreHealthGoodie: public Expirable
 {
 public:
-    RestoreHealthGoodie(double startX, double startY, StudentWorld* world)
-    : Expirable(IID_RESTORE_HEALTH_GOODIE, startX, startY, world, POINT_VALUE)
-    {
-        
-    }
+    RestoreHealthGoodie(double startX, double startY, StudentWorld* world);
     virtual ~RestoreHealthGoodie() { }
     
     virtual void giveReward() const;
@@ -113,11 +96,7 @@ private:
 class FlameThrowerGoodie: public Expirable
 {
 public:
-    FlameThrowerGoodie(double startX, double startY, StudentWorld* world)
-    : Expirable(IID_FLAME_THROWER_GOODIE, startX, startY, world, POINT_VALUE)
-    {
-        
-    }
+    FlameThrowerGoodie(double startX, double startY, StudentWorld* world);
     virtual ~FlameThrowerGoodie() { }
     
     virtual void giveReward() const;
@@ -130,11 +109,7 @@ private:
 class ExtraLifeGoodie: public Expirable
 {
 public:
-    ExtraLifeGoodie(double startX, double startY, StudentWorld* world)
-    : Expirable(IID_EXTRA_LIFE_GOODIE, startX, startY, world, POINT_VALUE)
-    {
-        
-    }
+    ExtraLifeGoodie(double startX, double startY, StudentWorld* world);
     virtual ~ExtraLifeGoodie() { }
     
     virtual void giveReward() const;
@@ -146,11 +121,7 @@ private:
 class Fungus: public Expirable
 {
 public:
-    Fungus(double startX, double startY, StudentWorld* world)
-    : Expirable(IID_FUNGUS, startX, startY, world, POINT_VALUE, false)
-    {
-        
-    }
+    Fungus(double startX, double startY, StudentWorld* world);
     virtual ~Fungus() { }
     
     virtual void giveReward() const;
@@ -168,17 +139,7 @@ class Bacterium: public Damageable
 {
 public:
     Bacterium(int imageID, double startX, double startY, StudentWorld* world,
-              int health, int soundHurt, int soundDead, int movementPlanDistance,
-              int damage, int movement)
-    : Damageable(imageID, startX, startY, 90, 0, world, health)
-    {
-        m_soundHurt = soundHurt;
-        m_soundDead = soundDead;
-        m_foodEatenSinceLastDivide = 0;
-        m_movementPlanDistance = movementPlanDistance;
-        m_damage = damage;
-        m_movement = movement;
-    }
+              int health, int soundHurt, int soundDead, int damage, int movement);
     virtual ~Bacterium() { }
     virtual void doSomething();
     virtual void takeDamage(int damage);
@@ -211,12 +172,7 @@ private:
 class RegularSalmonella: public Bacterium
 {
 public:
-    RegularSalmonella(double startX, double startY, StudentWorld* world)
-    : Bacterium(IID_SALMONELLA, startX, startY, world, STARTING_HEALTH,
-                SOUND_SALMONELLA_HURT, SOUND_SALMONELLA_DIE, 0, DAMAGE, MOVEMENT)
-    {
-        
-    }
+    RegularSalmonella(double startX, double startY, StudentWorld* world);
     virtual ~RegularSalmonella() { }
     
     virtual void doSomething();
@@ -233,12 +189,7 @@ private:
 class AggressiveSalmonella: public Bacterium
 {
 public:
-    AggressiveSalmonella(double startX, double startY, StudentWorld* world)
-    : Bacterium(IID_SALMONELLA, startX, startY, world, STARTING_HEALTH,
-                SOUND_SALMONELLA_HURT, SOUND_SALMONELLA_DIE, 0, DAMAGE, MOVEMENT)
-    {
-        
-    }
+    AggressiveSalmonella(double startX, double startY, StudentWorld* world);
     virtual ~AggressiveSalmonella() { }
     
     virtual void doSomething();
@@ -256,12 +207,7 @@ private:
 class EColi: public Bacterium
 {
 public:
-    EColi(double startX, double startY, StudentWorld* world)
-    : Bacterium(IID_ECOLI, startX, startY, world, STARTING_HEALTH,
-                SOUND_ECOLI_HURT, SOUND_SALMONELLA_DIE, 0, DAMAGE, MOVEMENT)
-    {
-        
-    }
+    EColi(double startX, double startY, StudentWorld* world);
     virtual ~EColi() { }
     
     virtual void doSomething();
@@ -284,20 +230,15 @@ private:
 class Socrates: public Damageable
 {
 public:
-    Socrates(double startX, double startY, StudentWorld* world)
-    : Damageable(IID_PLAYER, startX, startY, 0, 0, world, STARTING_HEALTH)
-    {
-        m_spray_count = STARTING_SPRAY_CHARGES;
-        m_flame_count = STARTING_FLAME_CHARGES;
-    }
+    Socrates(double startX, double startY, StudentWorld* world);
     virtual ~Socrates() { }
     
     virtual void doSomething();
     virtual void takeDamage(int damage);
     
-    int getSprayCount() const { return m_spray_count; }
-    int getFlameCount() const { return m_flame_count; }
-    void refillFlames(int amount) { m_flame_count += amount; }
+    int getSprayCount() const;
+    int getFlameCount() const;
+    void refillFlames(int amount);
     
 private:
     static const int MOVE_DEGREES = 5;
@@ -318,14 +259,11 @@ private:
 class DirtPile: public Damageable
 {
 public:
-    DirtPile(double startX, double startY, StudentWorld* world)
-    : Damageable(IID_DIRT, startX, startY, 0, 1, world, 1)
-    {
-        
-    }
+    DirtPile(double startX, double startY, StudentWorld* world);
     virtual ~DirtPile() { }
-    virtual bool isDirtPile() const { return true; }
-    virtual void doSomething() { };
+    
+    virtual bool isDirtPile() const;
+    virtual void doSomething();
     
 private:
 };
@@ -338,14 +276,7 @@ class Projectile: public Actor
 {
 public:
     Projectile(int imageID, double startX, double startY, int dir, StudentWorld* world,
-               double maxDistance, int damage)
-    : Actor(imageID, startX, startY, dir, 1, world)
-    {
-        m_startX = startX;
-        m_startY = startY;
-        m_maxDistance = maxDistance;
-        m_damage = damage;
-    }
+               double maxDistance, int damage);
     virtual ~Projectile() { }
     
     virtual void doSomething();
@@ -360,11 +291,7 @@ private:
 class Spray: public Projectile
 {
 public:
-    Spray(double startX, double startY, int dir, StudentWorld* world)
-     : Projectile(IID_SPRAY, startX, startY, dir, world, MAX_DISTANCE, DAMAGE)
-    {
-        
-    }
+    Spray(double startX, double startY, int dir, StudentWorld* world);
     virtual ~Spray() { }
     
 private:
@@ -375,11 +302,7 @@ private:
 class Flame: public Projectile
 {
 public:
-    Flame(double startX, double startY, int dir, StudentWorld* world)
-    : Projectile(IID_FLAME, startX, startY, dir, world, MAX_DISTANCE, DAMAGE)
-    {
-        
-    }
+    Flame(double startX, double startY, int dir, StudentWorld* world);
     virtual ~Flame() { }
     
 private:
@@ -394,15 +317,11 @@ private:
 class Food: public Actor
 {
 public:
-    Food(double startX, double startY, StudentWorld* world)
-    : Actor(IID_FOOD, startX, startY, 90, 1, world)
-    {
-        
-    }
+    Food(double startX, double startY, StudentWorld* world);
     virtual ~Food() { }
     
-    virtual void doSomething() { }
-    virtual bool isFood() const { return true; }
+    virtual void doSomething();
+    virtual bool isFood() const;
 };
 
 class Pit: public Actor

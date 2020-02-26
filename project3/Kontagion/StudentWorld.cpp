@@ -27,18 +27,17 @@ int StudentWorld::init()
 {
     // Create new Socrates object
     m_socrates = new Socrates(0, VIEW_HEIGHT/2, this);
-    m_actors.clear();
     
     m_numEnemies = 0;
     int level = getLevel();
     
     // generate pits
-    for(int pitCount=0; pitCount < level; ) {
-        int x = VIEW_WIDTH/2 + randInt(-MAX_OJBECT_DIST_FROM_CENTER, MAX_OJBECT_DIST_FROM_CENTER);
-        int y = VIEW_HEIGHT/2 + randInt(-MAX_OJBECT_DIST_FROM_CENTER, MAX_OJBECT_DIST_FROM_CENTER);
+    int numPits = level;
+    for(int pitCount=0; pitCount < numPits; ) {
+        double x, y;
+        getRandomPointInDish(x, y);
         
-        if(distance(x, y, VIEW_WIDTH/2, VIEW_HEIGHT/2) <= MAX_OJBECT_DIST_FROM_CENTER &&
-           !isOverlappingWithActors(x, y, static_cast<int>(m_actors.size()))) {
+        if(canAddToWorld(x, y, static_cast<int>(m_actors.size()))) {
             addActor(new Pit(x, y, this));
             pitCount++;
         }
@@ -47,11 +46,10 @@ int StudentWorld::init()
     // generate food
     int numFood = min(5 * level, 25);
     for(int foodCount=0; foodCount < numFood; ) {
-        int x = VIEW_WIDTH/2 + randInt(-MAX_OJBECT_DIST_FROM_CENTER, MAX_OJBECT_DIST_FROM_CENTER);
-        int y = VIEW_HEIGHT/2 + randInt(-MAX_OJBECT_DIST_FROM_CENTER, MAX_OJBECT_DIST_FROM_CENTER);
+        double x, y;
+        getRandomPointInDish(x, y);
         
-        if(distance(x, y, VIEW_WIDTH/2, VIEW_HEIGHT/2) <= MAX_OJBECT_DIST_FROM_CENTER &&
-           !isOverlappingWithActors(x, y, static_cast<int>(m_actors.size()))) {
+        if(canAddToWorld(x, y, static_cast<int>(m_actors.size()))) {
             addActor(new Food(x, y, this));
             foodCount++;
         }
@@ -60,11 +58,10 @@ int StudentWorld::init()
     // generate dirt piles
     int numDirt = max(180 - 20 * level, 20);
     for(int dirtCount=0; dirtCount < numDirt; ) {
-        int x = VIEW_WIDTH/2 + randInt(-MAX_OJBECT_DIST_FROM_CENTER, MAX_OJBECT_DIST_FROM_CENTER);
-        int y = VIEW_HEIGHT/2 + randInt(-MAX_OJBECT_DIST_FROM_CENTER, MAX_OJBECT_DIST_FROM_CENTER);
+        double x, y;
+        getRandomPointInDish(x, y);
         
-        if(distance(x, y, VIEW_WIDTH/2, VIEW_HEIGHT/2) <= MAX_OJBECT_DIST_FROM_CENTER &&
-           !isOverlappingWithActors(x, y, numFood + level)) {
+        if(canAddToWorld(x, y, numFood+numPits)) {
             addActor(new DirtPile(x, y, this));
             dirtCount++;
         }
@@ -136,7 +133,6 @@ void StudentWorld::addNewActors()
     
     int chanceGoodie = max(510 - level * 10, 250);
     if(randInt(0, chanceGoodie-1) == 0) {
-        
         double x, y;
         int dir = randInt(0, 359);
         getRadialPosition(dir, x, y);
@@ -153,7 +149,6 @@ void StudentWorld::addNewActors()
 
 void StudentWorld::updateDisplayText()
 {
-    // Score: 004500  Level: 4  Lives: 3  Health: 82  Sprays: 16  Flames: 4
     ostringstream oss;
     const string textDivider = "  ";
     oss.fill('0');
@@ -177,18 +172,26 @@ void StudentWorld::cleanUp()
         delete a;
     }
 
-    if(m_socrates != nullptr)
+    if(m_socrates != nullptr) {
         delete m_socrates;
+        m_socrates = nullptr;
+    
+    }
+    
+    m_actors.clear();
 }
 
-bool StudentWorld::isOverlappingWithActors(double x, double y, int numToCheck) const
+bool StudentWorld::canAddToWorld(double x, double y, int numToCheck) const
 {
+    if(distance(x, y, VIEW_WIDTH/2, VIEW_HEIGHT/2) > MAX_OJBECT_DIST_FROM_CENTER)
+        return false;
+    
     list<Actor*>::const_iterator iter = m_actors.begin();
     for(int i=0; i<numToCheck && iter!=m_actors.end(); iter++, i++)
         if(isOverlapping(x, y, (*iter)->getX(), (*iter)->getY()))
-            return true;
+            return false;
     
-    return false;
+    return true;
 }
 
 void StudentWorld::addActor(Actor *actor)
@@ -306,3 +309,12 @@ bool StudentWorld::isOverlapping(double x1, double y1, double x2, double y2) con
 {
     return (distance(x1, y1, x2, y2) <= SPRITE_WIDTH);
 }
+
+void StudentWorld::getRandomPointInDish(double &x, double &y)
+{
+    x = VIEW_WIDTH/2 + randInt(-MAX_OJBECT_DIST_FROM_CENTER, MAX_OJBECT_DIST_FROM_CENTER);
+    y = VIEW_HEIGHT/2 + randInt(-MAX_OJBECT_DIST_FROM_CENTER, MAX_OJBECT_DIST_FROM_CENTER);
+}
+
+void StudentWorld::addNumberOfBacteria(int amount) { m_numEnemies += amount; }
+void StudentWorld::decrementNumberOfBacteria() { m_numEnemies--; }
