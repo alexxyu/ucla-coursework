@@ -83,7 +83,7 @@ void Expirable::generateLifespan()
     m_lifespan = max(rand() % (300 - 10 * getWorld()->getLevel()), 50);
 }
 
-void Expirable::takeDamage(int damage)
+void Expirable::takeDamage(int)
 {
     setDead();
 }

@@ -45,15 +45,15 @@ public:
                int dir, int depth, StudentWorld* world, int startHealth);
     virtual ~Damageable() { }
     
-    virtual void doSomething() = 0;
     virtual void takeDamage(int damage);
-    virtual bool isDamageable() const;
     
     int getHealth() const;
     void healToAmount(int amount);
     
 private:
     int m_health;
+    
+    virtual bool isDamageable() const;
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -67,9 +67,7 @@ public:
               StudentWorld* world, int pointValue, bool playSoundOnTouch=true);
     virtual ~Expirable() { }
     
-    virtual void doSomething();
     virtual void giveReward() const = 0;
-    virtual void takeDamage(int damage);
     
 private:
     int  m_tickCount;
@@ -78,6 +76,9 @@ private:
     bool m_playSound;
 
     void generateLifespan();
+    
+    virtual void doSomething();
+    virtual void takeDamage(int);
 };
 
 class RestoreHealthGoodie: public Expirable
@@ -86,11 +87,11 @@ public:
     RestoreHealthGoodie(double startX, double startY, StudentWorld* world);
     virtual ~RestoreHealthGoodie() { }
     
-    virtual void giveReward() const;
-    
 private:
     static const int POINT_VALUE = 250;
     static const int HEAL_AMOUNT = 100;
+    
+    virtual void giveReward() const;
 };
 
 class FlameThrowerGoodie: public Expirable
@@ -99,11 +100,11 @@ public:
     FlameThrowerGoodie(double startX, double startY, StudentWorld* world);
     virtual ~FlameThrowerGoodie() { }
     
-    virtual void giveReward() const;
-    
 private:
     static const int POINT_VALUE = 300;
     static const int REFILL_AMOUNT = 5;
+    
+    virtual void giveReward() const;
 };
 
 class ExtraLifeGoodie: public Expirable
@@ -112,10 +113,10 @@ public:
     ExtraLifeGoodie(double startX, double startY, StudentWorld* world);
     virtual ~ExtraLifeGoodie() { }
     
-    virtual void giveReward() const;
-    
 private:
     static const int POINT_VALUE = 500;
+    
+    virtual void giveReward() const;
 };
 
 class Fungus: public Expirable
@@ -124,11 +125,11 @@ public:
     Fungus(double startX, double startY, StudentWorld* world);
     virtual ~Fungus() { }
     
-    virtual void giveReward() const;
-    
 private:
     static const int POINT_VALUE = -50;
     static const int DAMAGE = 20;
+    
+    virtual void giveReward() const;
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -141,8 +142,6 @@ public:
     Bacterium(int imageID, double startX, double startY, StudentWorld* world,
               int health, int soundHurt, int soundDead, int damage, int movement);
     virtual ~Bacterium() { }
-    virtual void doSomething();
-    virtual void takeDamage(int damage);
     
 protected:
     void tryToEatFood();
@@ -150,6 +149,7 @@ protected:
     bool tryToDivide();
     void moveTowardFood();
     
+    virtual void doSomething();
     virtual void divide(double newX, double newY) = 0;
     
 private:
@@ -165,6 +165,8 @@ private:
     int m_damage;
     int m_movement;
     
+    virtual void takeDamage(int damage);
+    
     void calculateNewBacteriumDistance(double& newX, double& newY) const;
     void tryNewDirection();
 };
@@ -175,15 +177,13 @@ public:
     RegularSalmonella(double startX, double startY, StudentWorld* world);
     virtual ~RegularSalmonella() { }
     
-    virtual void doSomething();
-    
-protected:
-    virtual void divide(double newX, double newY);
-    
 private:
     static const int STARTING_HEALTH = 4;
     static const int DAMAGE = 1;
     static const int MOVEMENT = 3;
+    
+    virtual void doSomething();
+    virtual void divide(double newX, double newY);
 };
 
 class AggressiveSalmonella: public Bacterium
@@ -192,16 +192,14 @@ public:
     AggressiveSalmonella(double startX, double startY, StudentWorld* world);
     virtual ~AggressiveSalmonella() { }
     
-    virtual void doSomething();
-    
-protected:
-    virtual void divide(double newX, double newY);
-    
 private:
     static const int STARTING_HEALTH = 10;
     static const int DAMAGE = 2;
     static const int MAX_DISTANCE_TO_SOCRATES = 72;
     static const int MOVEMENT = 3;
+    
+    virtual void doSomething();
+    virtual void divide(double newX, double newY);
 };
 
 class EColi: public Bacterium
@@ -209,18 +207,16 @@ class EColi: public Bacterium
 public:
     EColi(double startX, double startY, StudentWorld* world);
     virtual ~EColi() { }
-    
-    virtual void doSomething();
-    
-protected:
-    virtual void divide(double newX, double newY);
-    
+
 private:
     static const int STARTING_HEALTH = 5;
     static const int DAMAGE = 4;
     static const int MOVEMENT = 2;
     static const int MOVEMENT_TRIES = 10;
     static const int MAX_DISTANCE_TO_SOCRATES = 256;
+    
+    virtual void doSomething();
+    virtual void divide(double newX, double newY);
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -262,10 +258,9 @@ public:
     DirtPile(double startX, double startY, StudentWorld* world);
     virtual ~DirtPile() { }
     
+private:
     virtual bool isDirtPile() const;
     virtual void doSomething();
-    
-private:
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -278,14 +273,14 @@ public:
     Projectile(int imageID, double startX, double startY, int dir, StudentWorld* world,
                double maxDistance, int damage);
     virtual ~Projectile() { }
-    
-    virtual void doSomething();
 
 private:
     double m_startX;
     double m_startY;
     double m_maxDistance;
     int m_damage;
+    
+    virtual void doSomething();
 };
 
 class Spray: public Projectile
@@ -320,6 +315,7 @@ public:
     Food(double startX, double startY, StudentWorld* world);
     virtual ~Food() { }
     
+private:
     virtual void doSomething();
     virtual bool isFood() const;
 };
@@ -329,8 +325,6 @@ class Pit: public Actor
 public:
     Pit(double startX, double startY, StudentWorld* world);
     virtual ~Pit() { }
-    
-    virtual void doSomething();
     
 private:
     static const int NUM_REGULAR_SALMONELLA = 5;
@@ -344,6 +338,8 @@ private:
     static const int NUM_OF_BACTERIA_TYPES = 3;
     
     int m_bacteriaCount[NUM_OF_BACTERIA_TYPES];
+    
+    virtual void doSomething();
     
     bool isEmpty() const;
     void generateBacteria();
