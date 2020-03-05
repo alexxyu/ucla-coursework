@@ -1,4 +1,4 @@
-// main.cpp
+// tester.cpp
 
 #include "ExpandableHashMap.h"
 #include <iostream>

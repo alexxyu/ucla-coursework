@@ -3,6 +3,9 @@
 // Skeleton for the ExpandableHashMap class template.  You must implement the first six
 // member functions.
 
+#ifndef EXPANDABLE_HASH_MAP
+#define EXPANDABLE_HASH_MAP
+
 #include <vector>
 #include <list>
 #include <iostream>
@@ -168,3 +171,5 @@ void ExpandableHashMap<KeyType, ValueType>::dump() const
     }
     std::cerr << std::endl;
 }
+
+#endif
