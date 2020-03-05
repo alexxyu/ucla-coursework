@@ -46,7 +46,7 @@ private:
     double m_currentLoadFactor;
     double m_maxLoadFactor;
     
-    unsigned int getBucketNumber(const KeyType& key) const;
+    unsigned int getBucketNumber(const KeyType& key, size_t size) const;
     void rehash();
 };
 
@@ -68,11 +68,13 @@ ExpandableHashMap<KeyType, ValueType>::~ExpandableHashMap()
 template<typename KeyType, typename ValueType>
 void ExpandableHashMap<KeyType, ValueType>::reset()
 {
-    for(int i=0; i<m_map.size(); i++)
-        for(auto iter = m_map[i].begin(); iter != m_map[i].end(); iter++)
-            delete *iter;
+    for(int i=0; i<m_map.size(); i++) {
+        std::list<Entry*>* bucket = &m_map[i];
+        for(Entry* entry: *bucket)
+            delete entry;
+        bucket->clear();
+    }
     
-    m_map.clear();
     m_size = 0;
     m_currentLoadFactor = 0;
 }
@@ -86,27 +88,30 @@ int ExpandableHashMap<KeyType, ValueType>::size() const
 template<typename KeyType, typename ValueType>
 void ExpandableHashMap<KeyType, ValueType>::associate(const KeyType& key, const ValueType& value)
 {
-    int idx = getBucketNumber(key);
+    int idx = getBucketNumber(key, m_map.size());
     std::list<Entry*>* bucket = &(m_map[idx]);
     
-    bool shouldInsertNewNode = true;
+    bool shouldInsertNewEntry = true;
     for(Entry* entry: *(bucket)) {
         
         // replace value of entry that has same key
         if(entry->key == key) {
             entry->value = value;
-            shouldInsertNewNode = false;
+            shouldInsertNewEntry = false;
             break;
         }
     
     }
     
-    if(shouldInsertNewNode) {
-        Entry newEntry = {key, value};
-        bucket->push_front(&newEntry);
+    // inserts new entry if no entry with key already contained
+    if(shouldInsertNewEntry) {
+        Entry* newEntry = new Entry;
+        *newEntry = {key, value};
+        bucket->push_front(newEntry);
         m_size++;
     }
     
+    // adjust load factor and rehash if needed
     m_currentLoadFactor = (1.0 * m_size) / m_map.size();
     if(m_currentLoadFactor > m_maxLoadFactor)
         rehash();
@@ -115,10 +120,11 @@ void ExpandableHashMap<KeyType, ValueType>::associate(const KeyType& key, const 
 template<typename KeyType, typename ValueType>
 const ValueType* ExpandableHashMap<KeyType, ValueType>::find(const KeyType& key) const
 {
-    int idx = getBucketNumber(key);
-    const std::list<Entry*>* bucket = &(m_map[idx]);
+    int idx = getBucketNumber(key, m_map.size());
+    const std::list<Entry*>* bucket = &m_map[idx];
     
-    for(Entry* entry: *(bucket))
+    // iterate through bucket searching for key
+    for(Entry* entry: *bucket)
         if(entry->key == key)
             return &(entry->value);
     
@@ -132,10 +138,9 @@ void ExpandableHashMap<KeyType, ValueType>::rehash()
     
     for(int i=0; i<m_map.size(); i++) {
         std::list<Entry*> bucket = m_map[i];
-        for(auto iter = bucket.begin(); iter != bucket.end(); iter++) {
-            Entry* currEntry = *iter;
-            
-            int idx = getBucketNumber(currEntry->key); // change map size
+        for(Entry* currEntry: bucket) {
+            // rehash current entry and re-insert into new map
+            int idx = getBucketNumber(currEntry->key, newMap.size());
             newMap[idx].push_back(currEntry);
         }
     }
@@ -144,23 +149,22 @@ void ExpandableHashMap<KeyType, ValueType>::rehash()
 }
 
 template<typename KeyType, typename ValueType>
-unsigned int ExpandableHashMap<KeyType, ValueType>::getBucketNumber(const KeyType& key) const
+unsigned int ExpandableHashMap<KeyType, ValueType>::getBucketNumber(const KeyType& key, size_t size) const
 {
     unsigned int hash(const KeyType& k); // prototype
     unsigned int h = hash(key);
-    return h % m_map.size();
+    return h % size;
 }
 
 template<typename KeyType, typename ValueType>
 void ExpandableHashMap<KeyType, ValueType>::dump() const
 {
-    std::cout << "The entries in this map are:" << std::endl;
+    std::cerr << "The entries in this map are:" << std::endl;
     for(int i=0; i<m_map.size(); i++) {
-        
-        const std::list<Entry*>* bucket = &m_map[i];
-        for(Entry* e: *(bucket)) {
-            std::cout << e->key << "\t" << e->value << std::endl;
+        const std::list<Entry*> bucket = m_map[i];
+        for(Entry* e: bucket) {
+            std::cerr << e->key << "\t" << e->value << std::endl;
         }
     }
-    std::cout << std::endl;
+    std::cerr << std::endl;
 }
