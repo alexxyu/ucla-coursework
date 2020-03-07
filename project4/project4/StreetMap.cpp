@@ -5,74 +5,100 @@
 #include <sstream>
 #include <vector>
 #include <list>
+#include <functional>
 #include "ExpandableHashMap.h"
+#include "provided.h"
+using namespace std;
 
-struct GeoCoord;
-struct StreetSegment;
+unsigned int hash(const GeoCoord& g)
+{
+    return hash<string>()(g.latitudeText + g.longitudeText);
+}
 
-class StreetMap
+class StreetMapImpl
 {
 public:
-    StreetMap();
-    ~StreetMap();
-    bool load(std::string mapFile);
+    StreetMapImpl();
+    ~StreetMapImpl();
+    bool load(string mapFile);
     bool getSegmentsThatStartWith(const GeoCoord& gc,
-                                  std::vector<StreetSegment>& segs) const;
+                                  vector<StreetSegment>& segs) const;
     
 private:
-    ExpandableHashMap<GeoCoord, std::list<StreetSegment*>> m_streetMap;
+    ExpandableHashMap<GeoCoord, list<StreetSegment*>> m_StreetMapImpl;
+    
+    void loadSegment(string streetName, GeoCoord start, GeoCoord end);
+    
 };
 
-StreetMap::StreetMap()
+StreetMapImpl::StreetMapImpl()
 {
     
 }
 
-StreetMap::~StreetMap()
+StreetMapImpl::~StreetMapImpl()
 {
     
 }
 
-bool StreetMap::load(std::string mapFile)
+bool StreetMapImpl::load(string mapFile)
 {
-    std::ifstream infile(mapFile);
+    ifstream infile(mapFile);
     if(!infile) {
-        std::cerr << "Data file does not exist!" << std::endl;
+        cerr << "Data file does not exist!" << endl;
         return false;
     }
     
-    std::string line;
-    while(std::getline(infile, line)) {
-        std::string streetName = line;
+    string line;
+    while(getline(infile, line)) {
+        string streetName = line;
         streetName.pop_back();
         
         // process number of segments
         int numSegments;
         infile >> numSegments;
         infile.ignore(10000, '\n');
-        std::cout << "Processing data for " << streetName << "." << std::endl;
+        cout << "Processing data for " << streetName << "." << endl;
         
         for(int i=1; i<=numSegments; i++) {
             
+            // parse street segment information from line
             getline(infile, line);
-            std::istringstream iss(line);
-            double startLatitude, startLongitude, endLatitude, endLongitude;
+            istringstream iss(line);
+            string startLatitude, startLongitude, endLatitude, endLongitude;
             if( !(iss >> startLatitude >> startLongitude >> endLatitude >> endLongitude) ) {
-                std::cerr  << "Data file not formatted appropriately." << std::endl;
+                cerr  << "Data file not formatted appropriately." << endl;
                 return false;
             }
             
-            // add street segment to map
+            GeoCoord start(startLatitude, startLongitude);
+            GeoCoord end(endLatitude, endLongitude);
             
+            loadSegment(streetName, start, end);
+            loadSegment(streetName, end, start);
         }
     }
     
     return true;
 }
 
-bool StreetMap::getSegmentsThatStartWith(const GeoCoord& gc, std::vector<StreetSegment>& segs) const
+void StreetMapImpl::loadSegment(string streetName, GeoCoord start, GeoCoord end)
 {
-    const std::list<StreetSegment*>* segments = m_streetMap.find(gc);
+    StreetSegment* seg = new StreetSegment(start, end, streetName);
+    
+    list<StreetSegment*>* segmentList = m_StreetMapImpl.find(start);
+    if(segmentList != nullptr) {
+        segmentList->push_back(seg);
+    } else {
+        list<StreetSegment*> newSegmentList;
+        newSegmentList.push_back(seg);
+        m_StreetMapImpl.associate(start, newSegmentList);
+    }
+}
+
+bool StreetMapImpl::getSegmentsThatStartWith(const GeoCoord& gc, vector<StreetSegment>& segs) const
+{
+    const list<StreetSegment*>* segments = m_StreetMapImpl.find(gc);
     if(segments != nullptr && segments->size() > 0) {
         segs.clear();
         for(StreetSegment* seg: *segments)
@@ -86,6 +112,31 @@ bool StreetMap::getSegmentsThatStartWith(const GeoCoord& gc, std::vector<StreetS
 
 int main()
 {
-    StreetMap map;
+    StreetMapImpl map;
     assert(map.load("/Users/alexyu/Desktop/Projects/cs32/project4/project4/mapdata.txt"));
+}
+
+//******************** StreetMap functions ************************************
+
+// These functions simply delegate to StreetMapImpl's functions.
+// You probably don't want to change any of this code.
+
+StreetMap::StreetMap()
+{
+    m_impl = new StreetMapImpl;
+}
+
+StreetMap::~StreetMap()
+{
+    delete m_impl;
+}
+
+bool StreetMap::load(string mapFile)
+{
+    return m_impl->load(mapFile);
+}
+
+bool StreetMap::getSegmentsThatStartWith(const GeoCoord& gc, vector<StreetSegment>& segs) const
+{
+   return m_impl->getSegmentsThatStartWith(gc, segs);
 }
