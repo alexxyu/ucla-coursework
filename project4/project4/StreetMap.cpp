@@ -26,6 +26,7 @@ public:
     
 private:
     ExpandableHashMap<GeoCoord, list<StreetSegment*>> m_StreetMapImpl;
+    list<StreetSegment*> allSegments;
     
     void loadSegment(string streetName, GeoCoord start, GeoCoord end);
     
@@ -38,7 +39,8 @@ StreetMapImpl::StreetMapImpl()
 
 StreetMapImpl::~StreetMapImpl()
 {
-    
+    for(StreetSegment* seg: allSegments)
+        delete seg;
 }
 
 bool StreetMapImpl::load(string mapFile)
@@ -85,6 +87,7 @@ bool StreetMapImpl::load(string mapFile)
 void StreetMapImpl::loadSegment(string streetName, GeoCoord start, GeoCoord end)
 {
     StreetSegment* seg = new StreetSegment(start, end, streetName);
+    allSegments.push_front(seg);
     
     list<StreetSegment*>* segmentList = m_StreetMapImpl.find(start);
     if(segmentList != nullptr) {

@@ -53,7 +53,6 @@ private:
             return n1.gc == n2.gc;
         }
     };
-    
 };
 
 PointToPointRouterImpl::PointToPointRouterImpl(const StreetMap* sm)
@@ -91,13 +90,13 @@ DeliveryResult PointToPointRouterImpl::generatePointToPointRoute(const GeoCoord&
     unordered_set<PathNode, PathNodeHasher, PathNodeEqual> openList;
     unordered_set<PathNode, PathNodeHasher, PathNodeEqual> closedList;
     
-    vector<PathNode*> toBeDeleted;
+    list<PathNode*> toBeDeleted;
     
     PathNode* startNode = new PathNode;
     *startNode = {start, nullptr, 0, 0, 0};
     open.push(startNode);
     openList.insert(*startNode);
-    toBeDeleted.push_back(startNode);
+    toBeDeleted.push_front(startNode);
     
     while(!open.empty()) {
         PathNode* curr = open.top();
@@ -135,7 +134,7 @@ DeliveryResult PointToPointRouterImpl::generatePointToPointRoute(const GeoCoord&
         for(StreetSegment path: connectingPaths) {
             PathNode* child = new PathNode;
             *child = {path.end, curr, 0, 0, 0};
-            toBeDeleted.push_back(child);
+            toBeDeleted.push_front(child);
             
             // skip node if already in closed list
             if(closedList.find(*child) != closedList.end())
