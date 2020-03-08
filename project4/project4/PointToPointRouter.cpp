@@ -22,18 +22,18 @@ private:
     
     struct PathNode
     {
+        GeoCoord gc;
+        PathNode* parent;
         double totalCost;       // f
         double distCost;        // g
         double heuristicCost;   // h
-        GeoCoord gc;
-        GeoCoord parent;
     };
     
     struct PathNodeComparator
     {
-        bool operator()(const PathNode& n1, const PathNode& n2) const
+        bool operator()(const PathNode* n1, const PathNode* n2) const
         {
-            return n1.totalCost > n2.totalCost;
+            return n1->totalCost > n2->totalCost;
         }
     };
     
@@ -83,57 +83,76 @@ DeliveryResult PointToPointRouterImpl::generatePointToPointRoute(const GeoCoord&
     if(start == end) {
         route.clear();
         totalDistanceTravelled = 0;
+        return DELIVERY_SUCCESS;
     }
     
     // beginning of A* pathfinding algorithm
-    priority_queue<PathNode, vector<PathNode>, PathNodeComparator> open;
+    priority_queue<PathNode*, vector<PathNode*>, PathNodeComparator> open;
     unordered_set<PathNode, PathNodeHasher, PathNodeEqual> openList;
     unordered_set<PathNode, PathNodeHasher, PathNodeEqual> closedList;
     
-    GeoCoord rootCoord("-1", "-1");
-    PathNode startNode = {0, 0, 0, start, rootCoord};
+    vector<PathNode*> toBeDeleted;
+    
+    PathNode* startNode = new PathNode;
+    *startNode = {start, nullptr, 0, 0, 0};
     open.push(startNode);
-    openList.insert(startNode);
+    openList.insert(*startNode);
+    toBeDeleted.push_back(startNode);
     
     while(!open.empty()) {
-        
-        PathNode curr = open.top();
+        PathNode* curr = open.top();
         open.pop();
-        openList.erase(curr);
-        closedList.insert(curr);
+        openList.erase(*curr);
+        closedList.insert(*curr);
         
         // end of path found, backtrack and return
-        if(curr.gc == end) {
-        
+        if(curr->gc == end) {
             route.clear();
-            totalDistanceTravelled = curr.distCost;
+            totalDistanceTravelled = curr->distCost;
+            
+            vector<StreetSegment> segs;
+            while(curr->parent != nullptr) {
+                m_streetMap->getSegmentsThatStartWith(curr->parent->gc, segs);
+                for(StreetSegment s: segs) {
+                    if(s.end == curr->gc) {
+                        route.push_front(s);
+                        break;
+                    }
+                }
+                
+                curr = curr->parent;
+            }
+            
+            for(PathNode* n: toBeDeleted)
+                delete n;
             
             return DELIVERY_SUCCESS;
         }
         
         // otherwise, process connecting nodes
         vector<StreetSegment> connectingPaths;
-        m_streetMap->getSegmentsThatStartWith(curr.gc, connectingPaths);
+        m_streetMap->getSegmentsThatStartWith(curr->gc, connectingPaths);
         for(StreetSegment path: connectingPaths) {
-            PathNode child = {0, 0, 0, path.end, curr.gc};
+            PathNode* child = new PathNode;
+            *child = {path.end, curr, 0, 0, 0};
+            toBeDeleted.push_back(child);
             
             // skip node if already in closed list
-            if(closedList.find(child) != closedList.end())
+            if(closedList.find(*child) != closedList.end())
                 continue;
             
-            child.distCost = curr.distCost + distanceEarthMiles(curr.gc, child.gc);
-            child.heuristicCost = distanceEarthMiles(child.gc, end);
-            child.totalCost = child.distCost + child.heuristicCost;
+            child->distCost = curr->distCost + distanceEarthMiles(curr->gc, child->gc);
+            child->heuristicCost = distanceEarthMiles(child->gc, end);
+            child->totalCost = child->distCost + child->heuristicCost;
         
-            // skip node if it has higher cost that another path
-            auto openListChild = openList.find(child);
-            if(openListChild != openList.end() && child.distCost > (*openListChild).distCost)
+            // skip node if it has higher cost than another path
+            auto openListChild = openList.find(*child);
+            if(openListChild != openList.end() && child->distCost >= (*openListChild).distCost)
                 continue;
         
             open.push(child);
-            openList.insert(child);
+            openList.insert(*child);
         }
-        
     }
     
     return NO_ROUTE;
@@ -177,6 +196,10 @@ int main()
     ppr.generatePointToPointRoute(start, end, path, distance);
     
     cout << "Distance traveled: " << distance << endl;
+    cout << "Route:" << endl;
+    for(StreetSegment seg: path)
+        cout << "Travel from " << seg.start.latitude << ", " << seg.start.longitude << " to "
+             << seg.end.latitude << ", " << seg.end.longitude << " on " << seg.name << "." << endl;
     
     delete map;
 }
