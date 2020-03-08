@@ -47,14 +47,15 @@ DeliveryResult DeliveryPlannerImpl::generateDeliveryPlan(
     totalDistanceTravelled = 0;
     
     for(int i=0; i<deliveries.size()+1; i++) {
-        DeliveryRequest req = deliveries[i];
         double distanceTravelled = 0;
         DeliveryResult res;
         list<StreetSegment> currRoute;
         
         if(i == 0) {
+            DeliveryRequest req = deliveries[i];
             res = router.generatePointToPointRoute(depot, req.location, currRoute, distanceTravelled);
-        } else if(i != deliveries.size()) {
+        } else if(i < deliveries.size()) {
+            DeliveryRequest req = deliveries[i];
             res = router.generatePointToPointRoute(deliveries[i-1].location, req.location, currRoute, distanceTravelled);
         } else {
             res = router.generatePointToPointRoute(deliveries[i-1].location, depot, currRoute, distanceTravelled);
@@ -68,23 +69,21 @@ DeliveryResult DeliveryPlannerImpl::generateDeliveryPlan(
     
     // create delivery commands based on path
     commands.clear();
-    bool onNewStreet = true;
+    bool startProceed = true;
     int currRequestNo = 0;
     for(auto iter = route.begin(); iter != route.end(); iter++) {
         StreetSegment segment = *iter;
         
-        if(onNewStreet) {
+        if(startProceed) {
             
             DeliveryCommand first;
             string dir = getDirection(angleOfLine(segment));
             first.initAsProceedCommand(dir, segment.name,
                                        distanceEarthMiles(segment.start, segment.end));
             commands.push_back(first);
-            onNewStreet = false;
+            startProceed = false;
             
         } else {
-            bool shouldProceed = true;
-            
             StreetSegment previousSegment = *(--iter);
             iter++;
             if(segment.name != previousSegment.name) {
@@ -93,26 +92,31 @@ DeliveryResult DeliveryPlannerImpl::generateDeliveryPlan(
                 double angle = angleBetween2Lines(previousSegment, segment);
                 
                 if(getTurn(angle, turn)) {
-                    DeliveryCommand command;
-                    command.initAsTurnCommand(turn, segment.name);
-                    commands.push_back(command);
-                    shouldProceed = false;
-                    onNewStreet = true;
+                    DeliveryCommand turnCommand;
+                    turnCommand.initAsTurnCommand(turn, segment.name);
+                    commands.push_back(turnCommand);
                 }
-            }
-            
-            if(shouldProceed) {
+                
+                DeliveryCommand proceedCommand;
+                string dir = getDirection(angleOfLine(segment));
+                proceedCommand.initAsProceedCommand(dir, segment.name, distanceEarthMiles(segment.start, segment.end));
+                commands.push_back(proceedCommand);
+                
+            } else {
                 // otherwise, proceed
-                DeliveryCommand prev = commands[commands.size()-1];
-                prev.increaseDistance(distanceEarthMiles(segment.start, segment.end));
+                DeliveryCommand* prev = &commands[commands.size()-1];
+                prev->increaseDistance(distanceEarthMiles(segment.start, segment.end));
             }
-            
-            if(segment.end == deliveries[currRequestNo].location) {
-                // deliver the item
-                DeliveryCommand command;
-                command.initAsDeliverCommand(deliveries[currRequestNo].item);
-                commands.push_back(command);
-            }
+        }
+        
+        if(currRequestNo < deliveries.size() &&
+           segment.end == deliveries[currRequestNo].location) {
+            // deliver the item
+            DeliveryCommand command;
+            command.initAsDeliverCommand(deliveries[currRequestNo].item);
+            commands.push_back(command);
+            startProceed = true;
+            currRequestNo++;
         }
     }
     
