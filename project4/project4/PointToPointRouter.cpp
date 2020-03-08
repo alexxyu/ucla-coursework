@@ -65,10 +65,11 @@ PointToPointRouterImpl::~PointToPointRouterImpl()
     
 }
 
-DeliveryResult PointToPointRouterImpl::generatePointToPointRoute(const GeoCoord& start,
-                                                                 const GeoCoord& end,
-                                                                 list<StreetSegment>& route,
-                                                                 double& totalDistanceTravelled) const
+DeliveryResult PointToPointRouterImpl::generatePointToPointRoute(
+     const GeoCoord& start,
+     const GeoCoord& end,
+     list<StreetSegment>& route,
+     double& totalDistanceTravelled) const
 {
     // check for validity of start and end coordinates
     vector<StreetSegment> temp;
@@ -181,24 +182,24 @@ DeliveryResult PointToPointRouter::generatePointToPointRoute(
     return m_impl->generatePointToPointRoute(start, end, route, totalDistanceTravelled);
 }
 
-int main()
-{
-    StreetMap* map = new StreetMap();
-    assert(map->load("/Users/alexyu/Desktop/Projects/cs32/project4/project4/mapdata.txt"));
-    PointToPointRouterImpl ppr(map);
-    
-    GeoCoord start("34.0625329", "-118.4470263");
-    GeoCoord end("34.0712323", "-118.4505969");
-    
-    list<StreetSegment> path;
-    double distance;
-    ppr.generatePointToPointRoute(start, end, path, distance);
-    
-    cout << "Distance traveled: " << distance << endl;
-    cout << "Route:" << endl;
-    for(StreetSegment seg: path)
-        cout << "Travel from " << seg.start.latitude << ", " << seg.start.longitude << " to "
-             << seg.end.latitude << ", " << seg.end.longitude << " on " << seg.name << "." << endl;
-    
-    delete map;
-}
+//int main()
+//{
+//    StreetMap* map = new StreetMap();
+//    assert(map->load("/Users/alexyu/Desktop/Projects/cs32/project4/project4/mapdata.txt"));
+//    PointToPointRouterImpl ppr(map);
+//
+//    GeoCoord start("34.0625329", "-118.4470263");
+//    GeoCoord end("34.0712323", "-118.4505969");
+//
+//    list<StreetSegment> path;
+//    double distance;
+//    ppr.generatePointToPointRoute(start, end, path, distance);
+//
+//    cout << "Distance traveled: " << distance << endl;
+//    cout << "Route:" << endl;
+//    for(StreetSegment seg: path)
+//        cout << "Travel from " << seg.start.latitude << ", " << seg.start.longitude << " to "
+//             << seg.end.latitude << ", " << seg.end.longitude << " on " << seg.name << "." << endl;
+//
+//    delete map;
+//}
