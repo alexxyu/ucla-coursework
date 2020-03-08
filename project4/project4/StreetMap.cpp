@@ -6,11 +6,11 @@
 #include <vector>
 #include <list>
 #include <functional>
-#include "ExpandableHashMap.h"
 #include "provided.h"
+#include "ExpandableHashMap.h"
 using namespace std;
 
-unsigned int hash(const GeoCoord& g)
+unsigned int hasher(const GeoCoord& g)
 {
     return hash<string>()(g.latitudeText + g.longitudeText);
 }
@@ -58,7 +58,7 @@ bool StreetMapImpl::load(string mapFile)
         int numSegments;
         infile >> numSegments;
         infile.ignore(10000, '\n');
-        cout << "Processing data for " << streetName << "." << endl;
+        // cout << "Processing data for " << streetName << "." << endl;
         
         for(int i=1; i<=numSegments; i++) {
             
@@ -110,12 +110,6 @@ bool StreetMapImpl::getSegmentsThatStartWith(const GeoCoord& gc, vector<StreetSe
     return false;
 }
 
-int main()
-{
-    StreetMapImpl map;
-    assert(map.load("/Users/alexyu/Desktop/Projects/cs32/project4/project4/mapdata.txt"));
-}
-
 //******************** StreetMap functions ************************************
 
 // These functions simply delegate to StreetMapImpl's functions.
@@ -140,3 +134,9 @@ bool StreetMap::getSegmentsThatStartWith(const GeoCoord& gc, vector<StreetSegmen
 {
    return m_impl->getSegmentsThatStartWith(gc, segs);
 }
+
+//int main()
+//{
+//    StreetMapImpl map;
+//    assert(map.load("/Users/alexyu/Desktop/Projects/cs32/project4/project4/mapdata.txt"));
+//}

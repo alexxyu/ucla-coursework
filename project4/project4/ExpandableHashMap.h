@@ -154,8 +154,8 @@ void ExpandableHashMap<KeyType, ValueType>::rehash()
 template<typename KeyType, typename ValueType>
 unsigned int ExpandableHashMap<KeyType, ValueType>::getBucketNumber(const KeyType& key, size_t size) const
 {
-    unsigned int hash(const KeyType& k); // prototype
-    unsigned int h = hash(key);
+    unsigned int hasher(const KeyType& k); // prototype
+    unsigned int h = hasher(key);
     return h % size;
 }
 
