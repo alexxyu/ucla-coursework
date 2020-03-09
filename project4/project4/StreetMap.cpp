@@ -1,11 +1,11 @@
 // StreetMap.cpp
 
-#include <iostream>
-#include <fstream>
-#include <sstream>
 #include <vector>
 #include <list>
 #include <functional>
+#include <iostream>
+#include <fstream>
+#include <sstream>
 #include "provided.h"
 #include "ExpandableHashMap.h"
 using namespace std;
@@ -60,7 +60,6 @@ bool StreetMapImpl::load(string mapFile)
         int numSegments;
         infile >> numSegments;
         infile.ignore(10000, '\n');
-        // cout << "Processing data for " << streetName << "." << endl;
         
         for(int i=1; i<=numSegments; i++) {
             
@@ -137,9 +136,3 @@ bool StreetMap::getSegmentsThatStartWith(const GeoCoord& gc, vector<StreetSegmen
 {
    return m_impl->getSegmentsThatStartWith(gc, segs);
 }
-
-//int main()
-//{
-//    StreetMapImpl map;
-//    assert(map.load("/Users/alexyu/Desktop/Projects/cs32/project4/project4/mapdata.txt"));
-//}

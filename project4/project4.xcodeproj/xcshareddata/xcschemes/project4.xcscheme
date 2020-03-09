@@ -52,11 +52,11 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "mapdata.txt"
+            argument = "/Users/alexyu/Desktop/Projects/cs32/project4/project4/mapdata.txt"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "deliveries.txt"
+            argument = "/Users/alexyu/Desktop/Projects/cs32/project4/project4/deliveries.txt"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>

@@ -15,12 +15,13 @@ public:
         
 private:
     PointToPointRouter router;
+    DeliveryOptimizer optimizer;
     
     string getDirection(double angle) const;
     bool getTurn(double angle, string& turn) const;
 };
 
-DeliveryPlannerImpl::DeliveryPlannerImpl(const StreetMap* sm) : router(sm)
+DeliveryPlannerImpl::DeliveryPlannerImpl(const StreetMap* sm) : router(sm), optimizer(sm)
 {
 }
 
@@ -34,31 +35,31 @@ DeliveryResult DeliveryPlannerImpl::generateDeliveryPlan(
     vector<DeliveryCommand>& commands,
     double& totalDistanceTravelled) const
 {
-    for(DeliveryRequest req: deliveries) {
-        
-        
-        
-    }
+    if(deliveries.size() < 1)
+        return DELIVERY_SUCCESS;
     
     // optimize delivery order
-    
+    double oldDist, newDist;
+    vector<DeliveryRequest> optimizedDeliveries = deliveries;
+    optimizer.optimizeDeliveryOrder(depot, optimizedDeliveries, oldDist, newDist);
+
     // generate path for deliveries
     list<StreetSegment> route;
     totalDistanceTravelled = 0;
     
-    for(int i=0; i<deliveries.size()+1; i++) {
+    for(int i=0; i<optimizedDeliveries.size()+1; i++) {
         double distanceTravelled = 0;
         DeliveryResult res;
         list<StreetSegment> currRoute;
         
         if(i == 0) {
-            DeliveryRequest req = deliveries[i];
+            DeliveryRequest req = optimizedDeliveries[i];
             res = router.generatePointToPointRoute(depot, req.location, currRoute, distanceTravelled);
-        } else if(i < deliveries.size()) {
-            DeliveryRequest req = deliveries[i];
-            res = router.generatePointToPointRoute(deliveries[i-1].location, req.location, currRoute, distanceTravelled);
+        } else if(i < optimizedDeliveries.size()) {
+            DeliveryRequest req = optimizedDeliveries[i];
+            res = router.generatePointToPointRoute(optimizedDeliveries[i-1].location, req.location, currRoute, distanceTravelled);
         } else {
-            res = router.generatePointToPointRoute(deliveries[i-1].location, depot, currRoute, distanceTravelled);
+            res = router.generatePointToPointRoute(optimizedDeliveries[i-1].location, depot, currRoute, distanceTravelled);
         }
         
         route.splice(route.end(), currRoute);
@@ -74,6 +75,7 @@ DeliveryResult DeliveryPlannerImpl::generateDeliveryPlan(
     for(auto iter = route.begin(); iter != route.end(); iter++) {
         StreetSegment segment = *iter;
         
+        // should begin new proceed command
         if(startProceed) {
             
             DeliveryCommand first;
@@ -87,7 +89,7 @@ DeliveryResult DeliveryPlannerImpl::generateDeliveryPlan(
             StreetSegment previousSegment = *(--iter);
             iter++;
             if(segment.name != previousSegment.name) {
-                // turn
+                // turn onto new street
                 string turn;
                 double angle = angleBetween2Lines(previousSegment, segment);
                 
@@ -97,23 +99,24 @@ DeliveryResult DeliveryPlannerImpl::generateDeliveryPlan(
                     commands.push_back(turnCommand);
                 }
                 
+                // proceed on new street
                 DeliveryCommand proceedCommand;
                 string dir = getDirection(angleOfLine(segment));
                 proceedCommand.initAsProceedCommand(dir, segment.name, distanceEarthMiles(segment.start, segment.end));
                 commands.push_back(proceedCommand);
                 
             } else {
-                // otherwise, proceed
+                // otherwise, proceed on current street
                 DeliveryCommand* prev = &commands[commands.size()-1];
                 prev->increaseDistance(distanceEarthMiles(segment.start, segment.end));
             }
         }
         
-        if(currRequestNo < deliveries.size() &&
-           segment.end == deliveries[currRequestNo].location) {
+        if(currRequestNo < optimizedDeliveries.size() &&
+           segment.end == optimizedDeliveries[currRequestNo].location) {
             // deliver the item
             DeliveryCommand command;
-            command.initAsDeliverCommand(deliveries[currRequestNo].item);
+            command.initAsDeliverCommand(optimizedDeliveries[currRequestNo].item);
             commands.push_back(command);
             startProceed = true;
             currRequestNo++;

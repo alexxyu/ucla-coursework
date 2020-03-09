@@ -32,8 +32,6 @@ public:
       // C++11 syntax for preventing copying and assignment
     ExpandableHashMap(const ExpandableHashMap&) = delete;
     ExpandableHashMap& operator=(const ExpandableHashMap&) = delete;
-    
-    void dump() const;
 
 private:
     static const int STARTING_BUCKETS = 8;
@@ -157,19 +155,6 @@ unsigned int ExpandableHashMap<KeyType, ValueType>::getBucketNumber(const KeyTyp
     unsigned int hasher(const KeyType& k); // prototype
     unsigned int h = hasher(key);
     return h % size;
-}
-
-template<typename KeyType, typename ValueType>
-void ExpandableHashMap<KeyType, ValueType>::dump() const
-{
-    std::cerr << "The entries in this map are:" << std::endl;
-    for(int i=0; i<m_map.size(); i++) {
-        const std::list<Entry*> bucket = m_map[i];
-        for(Entry* e: bucket) {
-            std::cerr << e->key << "\t" << e->value << std::endl;
-        }
-    }
-    std::cerr << std::endl;
 }
 
 #endif
