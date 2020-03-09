@@ -29,7 +29,6 @@ private:
     list<StreetSegment*> allSegments;
     
     void loadSegment(string streetName, GeoCoord start, GeoCoord end);
-    
 };
 
 StreetMapImpl::StreetMapImpl()
@@ -53,10 +52,11 @@ bool StreetMapImpl::load(string mapFile)
     
     string line;
     while(getline(infile, line)) {
+        // process street name
         string streetName = line;
         streetName.pop_back();
         
-        // process number of segments
+        // process number of street segments
         int numSegments;
         infile >> numSegments;
         infile.ignore(10000, '\n');
@@ -72,9 +72,9 @@ bool StreetMapImpl::load(string mapFile)
                 return false;
             }
             
+            // load forward and reverse street segments
             GeoCoord start(startLatitude, startLongitude);
             GeoCoord end(endLatitude, endLongitude);
-            
             loadSegment(streetName, start, end);
             loadSegment(streetName, end, start);
         }
@@ -90,8 +90,10 @@ void StreetMapImpl::loadSegment(string streetName, GeoCoord start, GeoCoord end)
     
     list<StreetSegment*>* segmentList = m_StreetMapImpl.find(start);
     if(segmentList != nullptr) {
+        // add street segment to existing entry
         segmentList->push_back(seg);
     } else {
+        // add street segment to new entry
         list<StreetSegment*> newSegmentList;
         newSegmentList.push_back(seg);
         m_StreetMapImpl.associate(start, newSegmentList);
@@ -101,11 +103,11 @@ void StreetMapImpl::loadSegment(string streetName, GeoCoord start, GeoCoord end)
 bool StreetMapImpl::getSegmentsThatStartWith(const GeoCoord& gc, vector<StreetSegment>& segs) const
 {
     const list<StreetSegment*>* segments = m_StreetMapImpl.find(gc);
+    
     if(segments != nullptr && segments->size() > 0) {
         segs.clear();
         for(StreetSegment* seg: *segments)
             segs.push_back(*seg);
-        
         return true;
     }
     

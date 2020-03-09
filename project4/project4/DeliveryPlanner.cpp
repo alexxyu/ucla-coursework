@@ -21,7 +21,8 @@ private:
     bool getTurn(double angle, string& turn) const;
 };
 
-DeliveryPlannerImpl::DeliveryPlannerImpl(const StreetMap* sm) : router(sm), optimizer(sm)
+DeliveryPlannerImpl::DeliveryPlannerImpl(const StreetMap* sm)
+: router(sm), optimizer(sm)
 {
 }
 
@@ -38,6 +39,14 @@ DeliveryResult DeliveryPlannerImpl::generateDeliveryPlan(
     if(deliveries.size() < 1)
         return DELIVERY_SUCCESS;
     
+    commands.clear();
+    if(deliveries.size() == 1 && deliveries[0].location == depot) {
+        DeliveryCommand command;
+        command.initAsDeliverCommand(deliveries[0].item);
+        commands.push_back(command);
+        return DELIVERY_SUCCESS;
+    }
+    
     // optimize delivery order
     double oldDist, newDist;
     vector<DeliveryRequest> optimizedDeliveries = deliveries;
@@ -53,23 +62,27 @@ DeliveryResult DeliveryPlannerImpl::generateDeliveryPlan(
         list<StreetSegment> currRoute;
         
         if(i == 0) {
+            // depot to first delivery location
             DeliveryRequest req = optimizedDeliveries[i];
             res = router.generatePointToPointRoute(depot, req.location, currRoute, distanceTravelled);
         } else if(i < optimizedDeliveries.size()) {
+            // between delivery locations
             DeliveryRequest req = optimizedDeliveries[i];
             res = router.generatePointToPointRoute(optimizedDeliveries[i-1].location, req.location, currRoute, distanceTravelled);
         } else {
+            // last delivery location to depot
             res = router.generatePointToPointRoute(optimizedDeliveries[i-1].location, depot, currRoute, distanceTravelled);
         }
         
-        route.splice(route.end(), currRoute);
-        totalDistanceTravelled += distanceTravelled;
         if(res != DELIVERY_SUCCESS)
             return res;
+        
+        // add current route to total route
+        route.splice(route.end(), currRoute);
+        totalDistanceTravelled += distanceTravelled;
     }
     
     // create delivery commands based on path
-    commands.clear();
     bool startProceed = true;
     int currRequestNo = 0;
     for(auto iter = route.begin(); iter != route.end(); iter++) {

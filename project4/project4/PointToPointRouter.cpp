@@ -99,17 +99,19 @@ DeliveryResult PointToPointRouterImpl::generatePointToPointRoute(
     openList.insert(*startNode);
     toBeDeleted.push_front(startNode);
     
+    // continue searching until no more paths to check
     while(!open.empty()) {
         PathNode* curr = open.top();
         open.pop();
         openList.erase(*curr);
         closedList.insert(*curr);
         
-        // end of path found, backtrack and return
+        // path found from start to end GeoCoord
         if(curr->gc == end) {
             route.clear();
             totalDistanceTravelled = curr->distCost;
             
+            // backtrack path and add StreetSegments to route
             vector<StreetSegment> segs;
             while(curr->parent != nullptr) {
                 m_streetMap->getSegmentsThatStartWith(curr->parent->gc, segs);
@@ -119,10 +121,10 @@ DeliveryResult PointToPointRouterImpl::generatePointToPointRoute(
                         break;
                     }
                 }
-                
                 curr = curr->parent;
             }
             
+            // cleanup dynamically allocated PathNodes
             for(PathNode* n: toBeDeleted)
                 delete n;
             
@@ -141,6 +143,7 @@ DeliveryResult PointToPointRouterImpl::generatePointToPointRoute(
             if(closedList.find(*child) != closedList.end())
                 continue;
             
+            // update costs
             child->distCost = curr->distCost + distanceEarthMiles(curr->gc, child->gc);
             child->heuristicCost = distanceEarthMiles(child->gc, end);
             child->totalCost = child->distCost + child->heuristicCost;
@@ -155,6 +158,7 @@ DeliveryResult PointToPointRouterImpl::generatePointToPointRoute(
         }
     }
     
+    // no possible route found
     return NO_ROUTE;
 }
 
