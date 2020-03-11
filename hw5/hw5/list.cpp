@@ -27,9 +27,11 @@ Class::~Class()
 
 void listAll(string path, const Class* c)  // two-parameter overload
 {
-    cout << path << c->name() << endl;
-    for(Class* subclass: c->subclasses()) {
-        listAll(path + c->name() + "=>", subclass);
+    if(c != nullptr) {
+        cout << path << c->name() << endl;
+        for(Class* subclass: c->subclasses()) {
+            listAll(path + c->name() + "=>", subclass);
+        }
     }
 }
 
