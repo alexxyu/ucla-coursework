@@ -125,7 +125,7 @@ DeliveryResult DeliveryPlannerImpl::generateDeliveryPlan(
             }
         }
         
-        if(currRequestNo < optimizedDeliveries.size() &&
+        while(currRequestNo < optimizedDeliveries.size() &&
            segment.end == optimizedDeliveries[currRequestNo].location) {
             // deliver the item
             DeliveryCommand command;

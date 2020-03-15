@@ -17,7 +17,7 @@ public:
         double& newCrowDistance) const;
     
 private:
-    const int MAX_ITERS = 1000;
+    const int MAX_ITERS = 10000;
     const StreetMap* m_streetMap;
     
     double calculateDistanceForDeliveries(
