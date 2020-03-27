@@ -54,7 +54,8 @@ bool StreetMapImpl::load(string mapFile)
     while(getline(infile, line)) {
         // process street name
         string streetName = line;
-        streetName.pop_back();
+        if(streetName.at(streetName.size()-1) == '\n')
+            streetName.pop_back();
         
         // process number of street segments
         int numSegments;

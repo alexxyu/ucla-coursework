@@ -1,5 +1,6 @@
 //  PointToPointRouter.cpp
 
+#include <iostream>
 #include <list>
 #include <queue>
 #include <unordered_set>
@@ -73,11 +74,9 @@ DeliveryResult PointToPointRouterImpl::generatePointToPointRoute(
 {
     // check for validity of start and end coordinates
     vector<StreetSegment> temp;
-    m_streetMap->getSegmentsThatStartWith(start, temp);
-    if(temp.size() == 0)
+    if(!m_streetMap->getSegmentsThatStartWith(start, temp))
         return BAD_COORD;
-    m_streetMap->getSegmentsThatStartWith(end, temp);
-    if(temp.size() == 0)
+    if(!m_streetMap->getSegmentsThatStartWith(end, temp))
         return BAD_COORD;
 
     if(start == end) {
