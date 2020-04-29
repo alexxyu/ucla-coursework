@@ -1,0 +1,11 @@
+I used the git log command with the -S flag, which searches for commits that
+added or removed the given string. After that, I then used the same command
+and added the -p flag, which shows the diff in the commit, which allowed me to
+figure out where exactly the string was introduced.
+
+From my investigation, I found that the commit that introduced this statement 
+was authored by Arthur David Olson on December 21, 1995 with the commit
+message "Eggert changes". Upon examination of the diff, the statement is part of
+a comment from Paul Eggert, dated December 19, 1995 as a quote from Thomas G. 
+Shanks about timekeeping in Indiana.
+

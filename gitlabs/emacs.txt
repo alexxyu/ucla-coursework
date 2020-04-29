@@ -1,0 +1,14 @@
+1. The latest merge not newer that 2015-01-25 shows a mergepoint of the master
+branch into xwidget.
+
+The upper subwindow gives a graphical representation of the branches and 
+also provides commit information such as the commit message, the committer, 
+and the commit time. The bottom left subwindow allows you to view the diff
+between files, the old version of a file, and the new version of the file. The
+bottom right subwindow allows you to navigate changed files as well as the 
+entire tree structure of the files.
+
+2. The difference between my repository and the one in ~eggert/src/gnu/emacs
+is two comments. The single 'l' in "signaled" and "signaling" was changed to
+double 'l's in these two comments.
+  

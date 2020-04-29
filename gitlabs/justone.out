@@ -1,0 +1,95 @@
+diff --git a/Makefile b/Makefile
+index 610bf19..107f67e 100644
+--- a/Makefile
++++ b/Makefile
+@@ -333,9 +333,8 @@ GCC_DEBUG_FLAGS = -DGCC_LINT -g3 -O3 -fno-common \
+ # add
+ #	-DSTD_INSPIRED
+ # to the end of the "CFLAGS=" line.  This arranges for the functions
+-# "tzsetwall", "offtime", "timelocal", "timegm", "timeoff",
++# "offtime", "timelocal", "timegm", "timeoff",
+ # "posix2time", and "time2posix" to be added to the time conversion library.
+-# "tzsetwall" is deprecated and is intended to be removed soon; see NEWS.
+ # "offtime" is like "gmtime" except that it accepts a second (long) argument
+ # that gives an offset to add to the time_t when converting it.
+ # "timelocal" is equivalent to "mktime".
+diff --git a/NEWS b/NEWS
+index 321e090..ac491e1 100644
+--- a/NEWS
++++ b/NEWS
+@@ -1,5 +1,13 @@
+ News for the tz database
+ 
++Unreleased, experimental changes
++
++  Changes to code
++
++    The undocumented and ineffective tzsetwall function has been
++    removed.
++
++
+ Release 2020a - 2020-04-23 16:03:47 -0700
+ 
+   Briefly:
+diff --git a/localtime.c b/localtime.c
+index 6623eac..d3e406b 100644
+--- a/localtime.c
++++ b/localtime.c
+@@ -1355,8 +1355,9 @@ zoneinit(struct state *sp, char const *name)
+ }
+ 
+ static void
+-tzsetlcl(char const *name)
++tzset_unlocked(void)
+ {
++  char const *name = getenv("TZ");
+   struct state *sp = lclptr;
+   int lcl = name ? strlen(name) < sizeof lcl_TZname : -1;
+   if (lcl < 0
+@@ -1377,23 +1378,6 @@ tzsetlcl(char const *name)
+   lcl_is_set = lcl;
+ }
+ 
+-#ifdef STD_INSPIRED
+-void
+-tzsetwall(void)
+-{
+-  if (lock() != 0)
+-    return;
+-  tzsetlcl(NULL);
+-  unlock();
+-}
+-#endif
+-
+-static void
+-tzset_unlocked(void)
+-{
+-  tzsetlcl(getenv("TZ"));
+-}
+-
+ void
+ tzset(void)
+ {
+diff --git a/private.h b/private.h
+index 8513663..9efcd78 100644
+--- a/private.h
++++ b/private.h
+@@ -477,8 +477,6 @@ typedef time_tz tz_time_t;
+ # define tzfree tz_tzfree
+ # undef  tzset
+ # define tzset tz_tzset
+-# undef  tzsetwall
+-# define tzsetwall tz_tzsetwall
+ # if HAVE_STRFTIME_L
+ #  undef  strftime_l
+ #  define strftime_l tz_strftime_l
+@@ -551,9 +549,6 @@ extern long altzone;
+ */
+ 
+ #ifdef STD_INSPIRED
+-# if TZ_TIME_T || !defined tzsetwall
+-void tzsetwall(void);
+-# endif
+ # if TZ_TIME_T || !defined offtime
+ struct tm *offtime(time_t const *, long);
+ # endif
