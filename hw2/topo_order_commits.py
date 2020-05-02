@@ -21,9 +21,9 @@ def build_graph(root_commits, commits):
     # Iterate through each branch in the directory and backtrack through commit nodes
     local_branches = os.listdir('.git/refs/heads/')
     for branch in local_branches:
-        if branch == 'dev':
-            branch = 'dev/branch'
-        with open(f'.git/refs/heads/{branch}') as branch_file:
+        if os.path.isdir('.git/refs/heads/%s' % branch):
+            branch += '/branch'
+        with open('.git/refs/heads/%s' % branch) as branch_file:
             
             branch_head = branch_file.read().replace('\n','') 
 
@@ -44,7 +44,7 @@ def build_graph(root_commits, commits):
                     child.branches.add(branch)
                 
                 # Get commit data for current node
-                compressed_object = open(f'.git/objects/{hash[:2]}/{hash[2:]}', 'rb')
+                compressed_object = open('.git/objects/%s/%s' % (hash[:2], hash[2:]), 'rb')
                 decompressed_data = zlib.decompress(compressed_object.read()).decode()
                 compressed_object.close()
 
@@ -102,7 +102,9 @@ def print_ordering(sorted, commits):
 
         # Print sticky start
         if just_printed_space:
-            print(f"={' '.join([p.commit_hash for p in list(commits[curr].children)])}")
+            sticky_start = [p.commit_hash for p in list(commits[curr].children)]
+            sticky_start.sort()
+            print(f"={' '.join(sticky_start)}")
             just_printed_space = False
         
         # Print current commit (with branches if a branch head)
@@ -110,7 +112,9 @@ def print_ordering(sorted, commits):
         
         # Print sticky end
         if i < len(sorted) - 1 and commits[curr] not in commits[sorted[i+1]].children:
-            print(f"{' '.join([p.commit_hash for p in list(commits[curr].copy_parents)])}=")
+            sticky_end = [p.commit_hash for p in list(commits[curr].copy_parents)]
+            sticky_end.sort()
+            print(f"{' '.join(sticky_end)}=")
             print()
             just_printed_space = True
         else:
