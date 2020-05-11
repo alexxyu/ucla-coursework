@@ -1,0 +1,37 @@
+DEVELOPMENT LOG:
+
+I first started a new project using the command npx create-react-app. 
+I deleted everything from within the src directory and created index.js 
+and index.css from the provided resources.
+
+I created the constructor for Square to instantiate its state, and changed 
+the render function to respond to clicking on the Square component. I also 
+made the Board component pass an integer i to the Square component on render.
+
+I added the constructor for the Board component to instantiate its state with 
+an empty array that keeps track of the Squares. I changed the renderSquare 
+function to pass a function as a property from within the Board component 
+to the Square. It is called handleClick, which updates the state of the Board 
+accordingly when a Square is clicked. Then, I changed the Square component 
+from a class to a function.
+
+I implemented the turn-based system as a boolean in the Board's state. It 
+updates in the handleClick function, and determines whether the value of 
+the Square is set as an 'X' or an 'O'.
+
+I copied and pasted the given function that calculates if there is a winner. 
+This function was used in the render function of the Board component to 
+update the text shown about next turn and winner.
+
+I restructured the components such that the Game component now passed 
+handleClick and the squares as properties to the Board component, whose 
+primary job is now to graphically render the board itself. I added a 
+constructor to Game that instantiated its state: a boolean to keep track 
+of whose turn it is and an array that keeps track of all the turn histories.
+
+Finally, in the render function of the Game component, I created a dynamic 
+list of button elements that, when clicked, would set the Game's state to a 
+previous move using the available turn history. The Game component now had a 
+stepCounter in its state that essentially acted as an index to a certain 
+turn in the history. The Game component would use this stepCounter to render
+the specific turn, and such. With that, the game was complete.

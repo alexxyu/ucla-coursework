@@ -1,0 +1,43 @@
+DEVELOPMENT LOG
+
+I created a new project using the command npx create-react-app. I removed 
+everything in the src directory. I created index.css, and copied and pasted 
+the index.css file provided by the React tutorial. To this, I added a 
+separate styling for an id called 'selected', which would be used for the 
+movement of X's and O's in the game later. For this styling, I set the 
+background color to a light gray so that players can tell when a square has
+been selected.
+
+I created index.js, and imported necessary files (React, React-DOM, and 
+index.css). I created a function Square that returns a button with className
+'square' and an id determined by a boolean prop. I.e., if the boolean is
+true, then the id is 'selected'.
+
+Then, I made a Board component. Its renderSquare function returns a Square
+component with either 'X' or 'O' based on its props, a handleClick function,
+and a boolean selected determined by whether the Square's index matches its
+own selected prop. The Board's render function returns 3 rows of 3 Square 
+components, each created by the renderSquare function.
+
+I created the Game component. The constructor initializes the state with 
+a boolean for which player is next, an array to keep track of turn histories,
+and a selected attribute.
+
+Within the Game component, I coded the handleClick function. If the current 
+player has less than 3 squares filled, then the game proceeds like in 
+tic-tac-toe, where the clicked square is set to an 'X' or 'O'. Then, the 
+current array of squares is appended to the histories, and the state of the
+game is updated accordingly. Otherwise, if the player has 3 squares filled,
+then the Game allows the player to select one of his/her own squares by 
+clicking. Another square that is his/her own can be selected by clicking too. 
+Once the player has selected a square, then when the player clicks on an empty
+square AND the move is valid, then the empty square is set to the player's 
+symbol. A move is checked to be valid by seeing if the last clicked square is 
+adjacent (horizontally, vertically, or diagonally) to the previously 
+selected square.
+
+Then, I added the render function, which displays the winner or whose turn it 
+is, a list of buttons that allow the players to jump to a specific turn, and
+the board itself. I added the calculateWinner function from the React 
+tutorial, which is used to figure out whether the render function should 
+display the winner.
