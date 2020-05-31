@@ -38,7 +38,7 @@ int processOptions(int argc, char *argv[ ], long long* nbytes,
   /* There must be exactly one non-optional argument specifying number of bytes */
   if (argc-optind != 1) 
   {
-    fprintf(stderr, "%s usage: %s NBYTES [-i input] [-o output]\n", argv[0], argv[0]);
+    fprintf(stderr, "%s usage: %s [-i input] [-o output] NBYTES\n", argv[0], argv[0]);
     return 1;
   }
 
