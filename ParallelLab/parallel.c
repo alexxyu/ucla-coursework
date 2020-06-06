@@ -30,14 +30,12 @@ double work_it_par(long *old, long *new, long *super, long *simple, long *fibona
     int simple_val = simple[i];
     super[i] = super[i] + simple_val;
     dot_product += super[i]*simple_val;
+  }
     
-    if (i==DIM-2) {
-      moving_average = 0;
-      for(ton=i;ton<DIM-1-WINDOW_SIZE;ton++)
-      {
-        moving_average += simple[ton];
-      }
-    }
+  moving_average = 0;
+  for(ton=DIM-2;ton<DIM-1-WINDOW_SIZE;ton++)
+  {
+    moving_average += simple[ton];
   }
 
   int a_secret = 5;
