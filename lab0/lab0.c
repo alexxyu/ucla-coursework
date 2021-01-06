@@ -14,6 +14,11 @@ ID: 105295708
 #include <errno.h>
 #include <limits.h>
 
+static void handleSegFault() {
+    fprintf(stderr, "Caught and received segfault.\n");
+    exit(4);
+}
+
 void printUsageAndExit(char* exec) {
     fprintf(stderr, "Usage: %s [--input INFILE] [--output OUTFILE] [--segfault] [--catch]\n", exec);
     exit(1);
@@ -22,11 +27,6 @@ void printUsageAndExit(char* exec) {
 void forceSegFault() {
     char* ptr = NULL;
     *ptr = 'a';
-}
-
-void handleSegFault() {
-    fprintf(stderr, "Caught and received segfault.\n");
-    exit(4);
 }
 
 int main(int argc, char *argv[]) {
@@ -101,8 +101,12 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    if(catchflag) 
-        signal(SIGSEGV, handleSegFault);
+    if(catchflag) {
+        struct sigaction sa;
+        sa.sa_handler = handleSegFault;
+        
+        sigaction(SIGSEGV, &sa, NULL);
+    }
 
     if(segflag) 
         forceSegFault();
