@@ -61,11 +61,15 @@ int main(int argc, char *argv[]) {
                 catchflag = 1;
                 break;
             default:
-                // Unrecognized option
+                // Handle unrecognized argument
                 printUsageAndExit(argv[0]);
         }
 
     }
+
+    // Handle extra arguments
+    if(optind < argc)
+        printUsageAndExit(argv[0]);
 
     // Handle input file redirection
     if(fin) {
