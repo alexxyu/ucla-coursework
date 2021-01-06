@@ -5,6 +5,7 @@ ID: 105295708
 */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <getopt.h>
 #include <string.h>
@@ -15,7 +16,7 @@ ID: 105295708
 
 void printUsageAndExit(char* exec) {
     printf("Usage: %s [--input INFILE] [--output OUTFILE] [--segfault] [--catch]\n", exec);
-    _exit(1);
+    exit(1);
 }
 
 void forceSegFault() {
@@ -25,7 +26,7 @@ void forceSegFault() {
 
 void handleSegFault() {
     fprintf(stderr, "Caught and received segfault.\n");
-    _exit(4);
+    exit(4);
 }
 
 int main(int argc, char *argv[]) {
@@ -77,7 +78,7 @@ int main(int argc, char *argv[]) {
         } else {
             // Cannot open given input file
             fprintf(stderr, "Unable to open input file %s: %s\n", fin, strerror(errno));
-            _exit(2);
+            exit(2);
         }
     } 
 
@@ -92,7 +93,7 @@ int main(int argc, char *argv[]) {
         } else {
             // Cannot create given output file
             fprintf(stderr, "Unable to create output file %s: %s\n", fout, strerror(errno));
-            _exit(3);
+            exit(3);
         }
     }
 
@@ -107,11 +108,20 @@ int main(int argc, char *argv[]) {
     size_t size_read;
     
     // Continuously read from input and write to output until EOF
-    while((size_read = read(0, buffer, BUFF_SIZE)) > 0)
-        write(1, buffer, size_read);
+    while((size_read = read(0, buffer, BUFF_SIZE)) > 0) {
+        if( write(1, buffer, size_read) < 0 ) {
+            fprintf(stderr, "Error writing to output: %s\n", strerror(errno));
+            exit(3);
+        }
+    }
+
+    if(size_read < 0) {
+        fprintf(stderr, "Error reading from input: %s\n", strerror(errno));
+        exit(2);
+    }
 
     close(0);
     close(1);
-    _exit(0);
-    
+    exit(0);
+
 }
