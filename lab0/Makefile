@@ -9,7 +9,7 @@ OBJS = lab0.o
 TARGET = lab0
 
 TAR = tar
-TARFLAGS = --xz
+TARFLAGS = -z
 TAREXT = tar.gz
 DISTNAME = lab0-105295708.$(TAREXT)
 
@@ -21,7 +21,7 @@ $(TARGET): $(OBJS)
 lab0.o: lab0.c
 	$(CC) $(CFLAGS) -c lab0.c
 
-check: $(TARGET) setup simple_case infile_case outfile_case segfault_case badarg_case bad_infile_case clean
+check: $(TARGET) setup simple_case infile_case outfile_case segfault_case badarg_case bad_infile_case
 	if [[ -s log.txt ]] ; then \
 		echo "One or more test cases failed."; \
 	else \

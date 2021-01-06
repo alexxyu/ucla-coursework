@@ -123,7 +123,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    if(size_read < 0) {
+    if(size_read == 0) {
         fprintf(stderr, "Error reading from input: %s\n", strerror(errno));
         exit(2);
     }
