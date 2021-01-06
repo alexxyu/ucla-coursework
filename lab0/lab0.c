@@ -66,10 +66,8 @@ int main(int argc, char *argv[]) {
 
     }
 
-    // printf("fin: %s\tfout: %s\tsegflag: %d\tcatchflag: %d\n", fin, fout, segflag, catchflag);
-
+    // Handle input file redirection
     if(fin) {
-        // Handle input file redirection
         int ifd_rd = open(fin, O_RDONLY);
 
         if(ifd_rd >= 0) {
@@ -83,8 +81,8 @@ int main(int argc, char *argv[]) {
         }
     } 
 
+    // Handle output file redirection
     if(fout) {
-        // Handle output file redirection
         int ifd_wr = creat(fout, 0666);
 
         if(ifd_wr >= 0) {
@@ -108,13 +106,12 @@ int main(int argc, char *argv[]) {
     char buffer[BUFF_SIZE];
     size_t size_read;
     
-    // Read from input
-    size_read = read(0, buffer, BUFF_SIZE);
+    // Continuously read from input and write to output until EOF
+    while((size_read = read(0, buffer, BUFF_SIZE)) > 0)
+        write(1, buffer, size_read);
+
     close(0);
-
-    // Write to output
-    write(1, buffer, size_read);
     close(1);
-
     _exit(0);
+    
 }
