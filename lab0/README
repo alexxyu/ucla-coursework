@@ -2,10 +2,6 @@ NAME: Alex Yu
 EMAIL: alexy23@g.ucla.edu
 ID: 105295708
 
-TODO: 
-make check
-handle extra operands for flags that take no arguments like catch
-
 The following files are included:
 * lab0.c: the C source module
 * Makefile that builds the program, creates the tarball, and tests the program
