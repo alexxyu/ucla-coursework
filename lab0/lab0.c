@@ -113,7 +113,7 @@ int main(int argc, char *argv[]) {
 
     int BUFF_SIZE = 512;
     char buffer[BUFF_SIZE];
-    size_t size_read;
+    int size_read;
     
     // Continuously read from input and write to output until EOF
     while((size_read = read(0, buffer, BUFF_SIZE)) > 0) {
@@ -123,7 +123,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    if(size_read == 0) {
+    if(size_read < 0) {
         fprintf(stderr, "Error reading from input: %s\n", strerror(errno));
         exit(2);
     }
