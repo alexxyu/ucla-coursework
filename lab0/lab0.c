@@ -15,7 +15,7 @@ ID: 105295708
 #include <limits.h>
 
 void printUsageAndExit(char* exec) {
-    printf("Usage: %s [--input INFILE] [--output OUTFILE] [--segfault] [--catch]\n", exec);
+    fprintf(stderr, "Usage: %s [--input INFILE] [--output OUTFILE] [--segfault] [--catch]\n", exec);
     exit(1);
 }
 
