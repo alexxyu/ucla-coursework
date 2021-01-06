@@ -13,13 +13,18 @@ ID: 105295708
 #include <errno.h>
 #include <limits.h>
 
+void printUsageAndExit(char* exec) {
+    printf("Usage: %s [--input INFILE] [--output OUTFILE] [--segfault] [--catch]\n", exec);
+    _exit(1);
+}
+
 void forceSegFault() {
     char* ptr = NULL;
     *ptr = 'a';
 }
 
 void handleSegFault() {
-    fprintf(stderr, "Forced segfault.\n");
+    fprintf(stderr, "Caught and received segfault.\n");
     _exit(4);
 }
 
@@ -56,8 +61,7 @@ int main(int argc, char *argv[]) {
                 break;
             default:
                 // Unrecognized option
-                printf("Usage: %s [--input INFILE] [--output OUTFILE] [--segfault] [--catch]\n", argv[0]);
-                _exit(1);
+                printUsageAndExit(argv[0]);
         }
 
     }
