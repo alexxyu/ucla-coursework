@@ -9,7 +9,7 @@ OBJS = lab0.o
 TARGET = lab0
 
 TAR = tar
-TARFLAGS = -z
+TARFLAGS = -czvf
 TAREXT = tar.gz
 DISTNAME = lab0-105295708.$(TAREXT)
 
@@ -90,7 +90,7 @@ bad_infile_case:
 dist: $(DISTNAME)
 dist-files = lab0.c Makefile README backtrace.png breakpoint.png
 $(DISTNAME): $(dist-files)
-	$(TAR) $(TARFLAGS) -cf $@ $(dist-files)
+	$(TAR) $(TARFLAGS) $@ $(dist-files)
 
 clean:
 	rm -f *.o *.$(TAREXT) $(TARGET)
