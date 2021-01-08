@@ -3,26 +3,32 @@ EMAIL: alexy23@g.ucla.edu
 ID: 105295708
 
 The following files are included:
-* lab0.c: the C source module
-* Makefile that builds the program, creates the tarball, and tests the program
-* Two screenshots of a gdb session inspecting a forced segfault
-* README that documents the included files, test cases, and other info
+* lab0.c is the C source module
+* Makefile builds the program, creates the tarball, tests the program, and
+cleans the current directory
+* Two screenshots, backtrace.png and breakpoint.png, of a gdb session inspecting 
+a forced segfault
+* README documents the included files, test cases, and other info
+* check.sh contains the smoke-test cases that tests for basic functionality of 
+the program
 
-The following smoke-test cases were included in the check target:
-* simple_case checks that the program works correctly reading from standard 
-input and writing to standard output
-* infile_case checks that the program works correctly reading from a specified 
-input file
-* outfile_case checks that the program works correctly writing to a specified 
-output file
-* segfault_case checks that the program catches a segfault and exits with the
-correct exit code
-* badarg_case checks that the program correctly handles an unrecognized 
+The following smoke-test cases were included in check.sh:
+* simple case checks that the program works correctly reading from standard 
+input and writing to standard output and exits with the correct exit code
+* infile case checks that the program works correctly reading from a specified 
+input file and exits with the correct exit code
+* outfile case checks that the program works correctly writing to a specified 
+output file and exits with the correct exit code
+* segfault case checks that the program catches a segfault and exits with the
+correct exit code and exits with the correct exit code
+* badarg case checks that the program correctly handles an unrecognized 
 argument and exits with the correct exit code
-* bad_infile_case checks that the program correctly handles a nonexistant
+* bad infile case checks that the program correctly handles a nonexistant
 specified input file and exits with the correct exit code
 
 The Linux man pages to research and study the different operations like 
-open(2), creat(2), and close(2). I looked up how to compare files in order to
-create the smoke-test cases, which led me to the reference pages on the cmp
-command.
+open(2), creat(2), and close(2). I also looked up getopt_long(3) from the
+Linux man page (https://linux.die.net/man/3/getopt_long) and used the 
+provided example as a reference for usage. I also looked up how to compare 
+files in order to create the smoke-test cases, which led me to the Linux 
+man page on the cmp command.
