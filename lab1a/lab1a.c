@@ -9,10 +9,10 @@
 #include <signal.h>
 
 const int BUFF_SIZE = 256;
-const int CR_CODE = 0x0D;
-const int LF_CODE = 0x0A;
-const int EOF_CODE = 0x04;
-const int INT_CODE = 0x03;
+const char CR_CODE = 0x0D;
+const char LF_CODE = 0x0A;
+const char EOF_CODE = 0x04;
+const char INT_CODE = 0x03;
 
 const short POLL_EVENTS = POLLIN | POLLHUP | POLLERR;
 
@@ -46,6 +46,15 @@ void set_terminal_mode() {
 
 }
 
+void write_char(int fd, const char* ch) {
+
+    if(write(fd, ch, 1) < 0) {
+        fprintf(stderr, "Write failed: %s\n", strerror(errno));
+        exit(1);
+    }
+
+}
+
 void process_input(struct pollfd* pollfds) {
 
     char buffer[BUFF_SIZE];
@@ -73,30 +82,16 @@ void process_input(struct pollfd* pollfds) {
                 } else if(c == INT_CODE) {
                     kill(0, SIGINT);
                 } else if(c == LF_CODE || c == CR_CODE) {
-                    if(write(1, &(CR_CODE), 1) < 0) {
-                        fprintf(stderr, "Write failed: %s\n", strerror(errno));
-                        exit(1);
-                    }
+                    write_char(1, &(CR_CODE));
+                    write_char(1, &(LF_CODE));
                     
-                    if(write(1, &(LF_CODE), 1) < 0) {
-                        fprintf(stderr, "Write failed: %s\n", strerror(errno));
-                        exit(1);
-                    }
-
-                    if(write_to_shell && write(pipe_from_terminal[1], &(LF_CODE), 1) < 0) {
-                        fprintf(stderr, "Write failed: %s\n", strerror(errno));
-                        exit(1);
-                    }
+                    if(write_to_shell) 
+                        write_char(pipe_from_terminal[1], &(LF_CODE));
                 } else {
-                    if(write(1, &c, 1) < 0) {
-                        fprintf(stderr, "Write failed: %s\n", strerror(errno));
-                        exit(1);
-                    }
-
-                    if(write_to_shell && write(pipe_from_terminal[1], &c, 1) < 0) {
-                        fprintf(stderr, "Write failed: %s\n", strerror(errno));
-                        exit(1);
-                    }
+                    write_char(1, &c);
+                    
+                    if(write_to_shell) 
+                        write_char(pipe_from_terminal[1], &c);                
                 }
             }
         }
