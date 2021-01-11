@@ -55,7 +55,40 @@ void write_char(int fd, const char* ch) {
 
 }
 
-void process_input(struct pollfd* pollfds) {
+void process_input() {
+
+    char buffer[BUFF_SIZE];
+    int read_size;
+
+    int exit_flag = 0;
+
+    while( (read_size = read(0, buffer, BUFF_SIZE)) >= 0 && !exit_flag ) {
+
+        for(int i=0; i<read_size && !exit_flag; i++) {
+            char c = buffer[i];
+
+            if(c == EOF_CODE) {
+                exit_flag = 1;
+            } else if(c == INT_CODE) {
+                kill(0, SIGINT);
+            } else if(c == LF_CODE || c == CR_CODE) {
+                write_char(1, &(CR_CODE));
+                write_char(1, &(LF_CODE));
+            } else {
+                write_char(1, &c);   
+            }
+        }
+
+    }
+
+    if(read_size < 0) {
+        fprintf(stderr, "Read failed: %s\n", strerror(errno));
+        exit(1);
+    }
+
+}
+
+void process_input_with_shell(struct pollfd* pollfds) {
 
     char buffer[BUFF_SIZE];
     int read_size;
@@ -66,12 +99,15 @@ void process_input(struct pollfd* pollfds) {
     while( (n_ready = poll(pollfds, 2, 1000)) >= 0 && !exit_flag ) {
 
         if(n_ready > 0) {
-            if(pollfds[0].revents != 0) {
-                read_size = read(pollfds[0].fd, buffer, BUFF_SIZE);
-                write_to_shell = 1;
-            } else if(pollfds[1].revents != 0) {
-                read_size = read(pollfds[1].fd, buffer, BUFF_SIZE);
-                write_to_shell = 0;
+            for(int i=0; i<2; i++) {
+                if(pollfds[i].revents == POLLIN) {
+                    read_size = read(pollfds[i].fd, buffer, BUFF_SIZE);
+                    write_to_shell = 1-i;
+                    break;
+                } else if(pollfds[i].revents == POLLHUP || pollfds[i].revents == POLLERR) {
+                    fprintf(stderr, "Polling error: %s", strerror(errno));
+                    exit(1);
+                }
             }
 
             for(int i=0; i<read_size && !exit_flag; i++) {
@@ -130,6 +166,7 @@ int main(int argc, char *argv[]) {
         
     }
     
+    set_terminal_mode();
     if(shellflag) {
         
         pipe(pipe_from_shell);
@@ -168,14 +205,16 @@ int main(int argc, char *argv[]) {
                 close(pipe_from_terminal[0]);
                 close(pipe_from_shell[1]);
 
-                set_terminal_mode();
-                process_input(pollfds);
-                restore_terminal_mode();
+                process_input_with_shell(pollfds);
                 break;
 
         }
 
+    } else {
+        process_input();
     }
+
+    restore_terminal_mode();
 
     if(shellflag) {
         close(pipe_from_terminal[1]);   
