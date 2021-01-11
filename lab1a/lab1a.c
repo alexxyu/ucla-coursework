@@ -46,9 +46,9 @@ void set_terminal_mode() {
 
 }
 
-void write_char(int fd, const char* ch) {
+void write_char(int fd, const char ch) {
 
-    if(write(fd, ch, 1) < 0) {
+    if(write(fd, &ch, 1) < 0) {
         fprintf(stderr, "Write failed: %s\n", strerror(errno));
         exit(1);
     }
@@ -62,20 +62,20 @@ void process_input() {
 
     int exit_flag = 0;
 
-    while( (read_size = read(0, buffer, BUFF_SIZE)) >= 0 && !exit_flag ) {
+    while( !exit_flag && (read_size = read(0, buffer, BUFF_SIZE)) >= 0 ) {
 
         for(int i=0; i<read_size && !exit_flag; i++) {
             char c = buffer[i];
 
             if(c == EOF_CODE) {
+                write_char(1, '^');
+                write_char(1, 'D');
                 exit_flag = 1;
-            } else if(c == INT_CODE) {
-                kill(0, SIGINT);
             } else if(c == LF_CODE || c == CR_CODE) {
-                write_char(1, &(CR_CODE));
-                write_char(1, &(LF_CODE));
+                write_char(1, CR_CODE);
+                write_char(1, LF_CODE);
             } else {
-                write_char(1, &c);   
+                write_char(1, c);   
             }
         }
 
@@ -96,7 +96,7 @@ void process_input_with_shell(struct pollfd* pollfds) {
     int exit_flag = 0;
 
     int n_ready, write_to_shell;
-    while( (n_ready = poll(pollfds, 2, 1000)) >= 0 && !exit_flag ) {
+    while( !exit_flag && (n_ready = poll(pollfds, 2, 1000)) >= 0 ) {
 
         if(n_ready > 0) {
             for(int i=0; i<2; i++) {
@@ -114,20 +114,24 @@ void process_input_with_shell(struct pollfd* pollfds) {
                 char c = buffer[i];
 
                 if(c == EOF_CODE) {
+                    write_char(1, '^');
+                    write_char(1, 'D');
                     exit_flag = 1;
                 } else if(c == INT_CODE) {
+                    write_char(1, '^');
+                    write_char(1, 'C');
                     kill(0, SIGINT);
                 } else if(c == LF_CODE || c == CR_CODE) {
-                    write_char(1, &(CR_CODE));
-                    write_char(1, &(LF_CODE));
-                    
+                    write_char(1, CR_CODE);
+                    write_char(1, LF_CODE);
+
                     if(write_to_shell) 
-                        write_char(pipe_from_terminal[1], &(LF_CODE));
+                        write_char(pipe_from_terminal[1], LF_CODE);
                 } else {
-                    write_char(1, &c);
+                    write_char(1, c);
                     
                     if(write_to_shell) 
-                        write_char(pipe_from_terminal[1], &c);                
+                        write_char(pipe_from_terminal[1], c);                
                 }
             }
         }
