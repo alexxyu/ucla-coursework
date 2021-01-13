@@ -32,21 +32,21 @@ void print_usage_and_exit(char* exec) {
 }
 
 void restore_terminal_mode() {
-    tcsetattr(0, TCSANOW, &currmode);
+    tcsetattr(STDIN_FILENO, TCSANOW, &currmode);
 }
 
 void set_terminal_mode() {
 
     int res;
 
-    res = tcgetattr(0, &newmode);
+    res = tcgetattr(STDIN_FILENO, &newmode);
 
     memcpy(&currmode, &newmode, sizeof(newmode));
     newmode.c_iflag = ISTRIP;	/* only lower 7 bits	*/
     newmode.c_oflag = 0;		/* no processing	*/
     newmode.c_lflag = 0;		/* no processing	*/
     
-    tcsetattr(0, TCSANOW, &newmode);
+    tcsetattr(STDIN_FILENO, TCSANOW, &newmode);
 
 }
 
@@ -68,20 +68,20 @@ void process_input() {
 
     int exit_flag = 0;
 
-    while( !exit_flag && (read_size = read(0, buffer, BUFF_SIZE)) >= 0 ) {
+    while( !exit_flag && (read_size = read(STDIN_FILENO, buffer, BUFF_SIZE)) >= 0 ) {
 
         for(int i=0; i<read_size && !exit_flag; i++) {
             char c = buffer[i];
 
             if(c == EOF_CODE) {
-                write_char(1, '^');
-                write_char(1, 'D');
+                write_char(STDOUT_FILENO, '^');
+                write_char(STDOUT_FILENO, 'D');
                 exit_flag = 1;
             } else if(c == LF_CODE || c == CR_CODE) {
-                write_char(1, CR_CODE);
-                write_char(1, LF_CODE);
+                write_char(STDOUT_FILENO, CR_CODE);
+                write_char(STDOUT_FILENO, LF_CODE);
             } else {
-                write_char(1, c);   
+                write_char(STDOUT_FILENO, c);   
             }
         }
 
@@ -108,7 +108,7 @@ void cleanup() {
                 for(int i=0; i<read_size; i++) {
                     char c = buffer[i];
 
-                    write_char(1, c);
+                    write_char(STDOUT_FILENO, c);
                 }
             }
         }
@@ -166,21 +166,21 @@ void process_input_with_shell() {
                 char c = buffer[i];
 
                 if(c == EOF_CODE) {
-                    write_char(1, '^');
-                    write_char(1, 'D');
+                    write_char(STDOUT_FILENO, '^');
+                    write_char(STDOUT_FILENO, 'D');
                     exit_flag = 1;
                 } else if(c == INT_CODE) {
-                    write_char(1, '^');
-                    write_char(1, 'C');
+                    write_char(STDOUT_FILENO, '^');
+                    write_char(STDOUT_FILENO, 'C');
                     kill(child_pid, SIGINT);
                 } else if(c == LF_CODE || c == CR_CODE) {
-                    write_char(1, CR_CODE);
-                    write_char(1, LF_CODE);
+                    write_char(STDOUT_FILENO, CR_CODE);
+                    write_char(STDOUT_FILENO, LF_CODE);
 
                     if(write_to_shell) 
                         write_char(pipe_from_terminal[1], LF_CODE);
                 } else {
-                    write_char(1, c);
+                    write_char(STDOUT_FILENO, c);
                     
                     if(write_to_shell) 
                         write_char(pipe_from_terminal[1], c);                
@@ -241,13 +241,13 @@ int main(int argc, char *argv[]) {
                 close(pipe_from_terminal[1]);   
                 close(pipe_from_shell[0]);
 
-                close(0);
+                close(STDIN_FILENO);
                 dup(pipe_from_terminal[0]);
                 close(pipe_from_terminal[0]);
 
-                close(1);
+                close(STDOUT_FILENO);
                 dup(pipe_from_shell[1]);
-                close(2);
+                close(STDERR_FILENO);
                 dup(pipe_from_shell[1]);
                 close(pipe_from_shell[1]);
 
