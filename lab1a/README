@@ -1,0 +1,8 @@
+NAME: Alex Yu
+EMAIL: alexy23@g.ucla.edu
+ID: 105295708
+
+The following files are included:
+* lab1a.c is the C source module
+* Makefile builds the program, creates the tarball, and cleans the working directory
+* README documents the included files and other info
