@@ -22,7 +22,7 @@ lab1a.o: lab1a.c
 	$(CC) $(CFLAGS) -c lab1a.c
 
 dist: $(DISTNAME)
-dist-files = lab1a.c Makefile
+dist-files = lab1a.c Makefile README
 $(DISTNAME): $(dist-files)
 	$(TAR) $(TARFLAGS) $@ $(dist-files)
 
