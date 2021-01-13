@@ -7,6 +7,7 @@
 #include <getopt.h>
 #include <poll.h>
 #include <signal.h>
+#include <sys/wait.h>
 
 const int BUFF_SIZE = 256;
 const char CR_CODE = 0x0D;
@@ -32,27 +33,33 @@ void print_usage_and_exit(char* exec) {
 }
 
 void restore_terminal_mode() {
-    tcsetattr(STDIN_FILENO, TCSANOW, &currmode);
+    if(tcsetattr(STDIN_FILENO, TCSANOW, &currmode) < 0) {
+        fprintf(stderr, "Error while setting terminal mode attributes: %s", strerror(errno));
+        exit(1);
+    }
 }
 
 void set_terminal_mode() {
 
-    int res;
-
-    res = tcgetattr(STDIN_FILENO, &newmode);
+    if(tcgetattr(STDIN_FILENO, &newmode) < 0) {
+        fprintf(stderr, "Error while getting terminal mode attributes: %s", strerror(errno));
+        exit(1);
+    }
 
     memcpy(&currmode, &newmode, sizeof(newmode));
     newmode.c_iflag = ISTRIP;	/* only lower 7 bits	*/
     newmode.c_oflag = 0;		/* no processing	*/
     newmode.c_lflag = 0;		/* no processing	*/
     
-    tcsetattr(STDIN_FILENO, TCSANOW, &newmode);
+    if(tcsetattr(STDIN_FILENO, TCSANOW, &newmode) < 0) {
+        fprintf(stderr, "Error while setting terminal mode attributes: %s", strerror(errno));
+        exit(1);
+    }
+    atexit(restore_terminal_mode);
 
 }
 
 void write_char(int fd, const char ch) {
-
-    // write(2, &ch, 1);
 
     if(write(fd, &ch, 1) < 0) {
         fprintf(stderr, "Write failed: %s\n", strerror(errno));
@@ -115,11 +122,13 @@ void cleanup() {
     }
 
     close(pipe_from_shell[0]);
-    restore_terminal_mode();
 
     int status;
-    waitpid(child_pid, &status, 0);
-    fprintf(stderr, "SHELL EXIT SIGNAL=%d STATUS=%d\n", status & 0x007f, status & 0xff00);
+    if(waitpid(child_pid, &status, 0) < 0) {
+        fprintf(stderr, "Error while waiting for child process: %s", strerror(errno));
+        exit(1);
+    }
+    fprintf(stderr, "SHELL EXIT SIGNAL=%d STATUS=%d\n", WTERMSIG(status), WEXITSTATUS(status));
 
     exit(0);
 
@@ -145,6 +154,12 @@ void process_input_with_shell() {
 
         if(n_ready > 0) {
             for(int i=0; i<2; i++) {
+                if(pollfds[i].revents & POLLHUP || pollfds[i].revents & POLLERR) {
+                    // fprintf(stderr, "Polling error: %s", strerror(errno));
+                    // exit(1);
+                    exit_flag = 1;
+                }
+
                 if(pollfds[i].revents & POLLIN) {
                     read_size = read(pollfds[i].fd, buffer, BUFF_SIZE);
                     if(read_size < 0) {
@@ -156,10 +171,6 @@ void process_input_with_shell() {
                     break;
                 } 
             
-                if(pollfds[i].revents & POLLHUP || pollfds[i].revents & POLLERR) {
-                    fprintf(stderr, "Polling error: %s", strerror(errno));
-                    exit(1);
-                }
             }
 
             for(int i=0; !exit_flag && i<read_size; i++) {
@@ -172,7 +183,10 @@ void process_input_with_shell() {
                 } else if(c == INT_CODE) {
                     write_char(STDOUT_FILENO, '^');
                     write_char(STDOUT_FILENO, 'C');
-                    kill(child_pid, SIGINT);
+                    if(kill(child_pid, SIGINT) < 0) {
+                        fprintf(stderr, "Error while interrupting child process: %s", strerror(errno));
+                        exit(1);
+                    }
                 } else if(c == LF_CODE || c == CR_CODE) {
                     write_char(STDOUT_FILENO, CR_CODE);
                     write_char(STDOUT_FILENO, LF_CODE);
@@ -237,7 +251,7 @@ int main(int argc, char *argv[]) {
                 fprintf(stderr, "Error while forking: %s", strerror(errno));
                 break;
             case 0:
-                // child process
+                // child process: redirect stdio to pipes and replace with bash
                 close(pipe_from_terminal[1]);   
                 close(pipe_from_shell[0]);
 
@@ -251,10 +265,11 @@ int main(int argc, char *argv[]) {
                 dup(pipe_from_shell[1]);
                 close(pipe_from_shell[1]);
 
-                execv("/bin/bash", NULL);
+                char *args[] = { "/bin/bash", NULL };
+                execv("/bin/bash", args);
                 break;
             default:
-                // parent process
+                // parent process: begin processing keyboard input
                 close(pipe_from_terminal[0]);
                 close(pipe_from_shell[1]);
 
@@ -266,8 +281,6 @@ int main(int argc, char *argv[]) {
     } else {
         process_input();
     }
-
-    restore_terminal_mode();
 
     exit(0);
 
