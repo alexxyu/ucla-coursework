@@ -109,7 +109,7 @@ void cleanup() {
     close(pipe_from_terminal[1]);   
 
     // Process any remaining input from shell
-    if((n_ready = poll(pollfds+1, 1, POLL_TIMEOUT)) >= 0 && pollfds[1].revents & POLLIN) {
+    while((n_ready = poll(pollfds+1, 1, POLL_TIMEOUT)) >= 0 && !(pollfds[1].revents & POLLHUP)) {
         if(n_ready > 0) {
             while((read_size = read(pipe_from_shell[0], buffer, BUFF_SIZE)) > 0) {
                 for(int i=0; i<read_size; i++) {
@@ -153,26 +153,39 @@ void process_input_with_shell() {
     while( !exit_flag && (n_ready = poll(pollfds, 2, POLL_TIMEOUT)) >= 0 ) {
 
         if(n_ready > 0) {
-            for(int i=0; i<2; i++) {
-                if(pollfds[i].revents & POLLHUP || pollfds[i].revents & POLLERR) {
-                    // fprintf(stderr, "Polling error: %s", strerror(errno));
-                    // exit(1);
-                    exit_flag = 1;
+            if(pollfds[0].revents & POLLIN) {
+                // Handle keyboard input
+                read_size = read(pollfds[0].fd, buffer, BUFF_SIZE);
+                if(read_size < 0) {
+                    fprintf(stderr, "Read failed: %s\n", strerror(errno));
+                    exit(1);
                 }
 
-                if(pollfds[i].revents & POLLIN) {
-                    read_size = read(pollfds[i].fd, buffer, BUFF_SIZE);
-                    if(read_size < 0) {
-                        fprintf(stderr, "Read failed: %s\n", strerror(errno));
-                        exit(1);
-                    }
-
-                    write_to_shell = 1-i;
-                    break;
-                } 
-            
+                write_to_shell = 1;
             }
 
+            if(pollfds[0].revents & POLLHUP || pollfds[0].revents & POLLERR) {
+                fprintf(stderr, "Error polling from keyboard: %s", strerror(errno));
+                exit(1);
+            }
+
+            if(pollfds[1].revents & POLLIN) {
+                // Handle shell input
+                read_size = read(pollfds[1].fd, buffer, BUFF_SIZE);
+                if(read_size < 0) {
+                    fprintf(stderr, "Read failed: %s\n", strerror(errno));
+                    exit(1);
+                }
+
+                write_to_shell = 0;
+            }
+
+            if(pollfds[1].revents & POLLHUP || pollfds[1].revents & POLLERR) {
+                // Receipt of polling error means no more output from shell
+                exit_flag = 1;
+            }
+
+            // Write character to terminal stdout + shell if applicable
             for(int i=0; !exit_flag && i<read_size; i++) {
                 char c = buffer[i];
 
@@ -240,7 +253,7 @@ int main(int argc, char *argv[]) {
         pipe(pipe_from_terminal);
 
         struct pollfd p[2] = {
-            {0, POLL_EVENTS, 0},
+            {STDIN_FILENO, POLL_EVENTS, 0},
             {pipe_from_shell[0], POLL_EVENTS, 0}
         };
         pollfds = p;
