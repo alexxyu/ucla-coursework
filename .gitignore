@@ -6,6 +6,11 @@
 *.exe
 *.o
 *.so
+*
+!/**/
+!Makefile
+!README
+!*.*
 
 # Packages #
 ############
