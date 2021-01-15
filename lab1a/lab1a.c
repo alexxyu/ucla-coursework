@@ -226,7 +226,6 @@ int main(int argc, char *argv[]) {
 
     const struct option long_options[] = {
         {"shell", no_argument, 0, 's'},
-        {"debug", no_argument, 0, 'd'},
         {0, 0, 0, 0}
     };
 
@@ -237,8 +236,6 @@ int main(int argc, char *argv[]) {
         switch(c) {
             case 's':
                 shellflag = 1;
-                break;
-            case 'd':
                 break;
             default:
                 // Handle unrecognized argument
