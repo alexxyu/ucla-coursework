@@ -163,14 +163,7 @@ void process_input_with_shell() {
                 }
 
                 write_to_shell = 1;
-            }
-
-            if(pollfds[0].revents & POLLHUP || pollfds[0].revents & POLLERR) {
-                fprintf(stderr, "Error polling from keyboard: %s", strerror(errno));
-                exit(1);
-            }
-
-            if(pollfds[1].revents & POLLIN) {
+            } else if(pollfds[1].revents & POLLIN) {
                 // Handle shell input
                 read_size = read(pollfds[1].fd, buffer, BUFF_SIZE);
                 if(read_size < 0) {
@@ -179,6 +172,11 @@ void process_input_with_shell() {
                 }
 
                 write_to_shell = 0;
+            }
+
+            if(pollfds[0].revents & POLLHUP || pollfds[0].revents & POLLERR) {
+                fprintf(stderr, "Error polling from keyboard: %s", strerror(errno));
+                exit(1);
             }
 
             if(pollfds[1].revents & POLLHUP || pollfds[1].revents & POLLERR) {
