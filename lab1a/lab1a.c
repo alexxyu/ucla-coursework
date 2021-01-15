@@ -103,14 +103,15 @@ void process_input() {
 
 void cleanup() {
 
-    int read_size, n_ready;
+    int read_size;
     char buffer[BUFF_SIZE];
 
     close(pipe_from_terminal[1]);   
 
     // Process any remaining input from shell
-    while((n_ready = poll(pollfds+1, 1, POLL_TIMEOUT)) >= 0 && !(pollfds[1].revents & POLLHUP)) {
-        if(n_ready > 0) {
+    while(poll(pollfds+1, 1, POLL_TIMEOUT) >= 0 && !(pollfds[1].revents & POLLHUP) 
+          && !(pollfds[1].revents & POLLERR)) {
+        if(pollfds[1].revents & POLLIN) {
             while((read_size = read(pipe_from_shell[0], buffer, BUFF_SIZE)) > 0) {
                 for(int i=0; i<read_size; i++) {
                     char c = buffer[i];
