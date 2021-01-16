@@ -28,7 +28,7 @@ int pipe_from_terminal[2];      // [0] = read end of terminal to shell, [1] = wr
 int child_pid;
 
 void print_usage_and_exit(char* exec) {
-    fprintf(stderr, "Usage: %s [--input INFILE] [--output OUTFILE] [--segfault] [--catch]\n", exec);
+    fprintf(stderr, "Usage: %s [--shell]\n", exec);
     exit(1);
 }
 
