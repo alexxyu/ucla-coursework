@@ -103,13 +103,13 @@ void process_input() {
 
 void cleanup() {
 
-    int read_size;
+    int read_size, n_ready;
     char buffer[BUFF_SIZE];
 
     close(pipe_from_terminal[1]);   
 
     // Process any remaining input from shell
-    while(poll(pollfds+1, 1, POLL_TIMEOUT) >= 0 && !(pollfds[1].revents & POLLHUP) 
+    while((n_ready = poll(pollfds+1, 1, POLL_TIMEOUT)) >= 0 && !(pollfds[1].revents & POLLHUP) 
           && !(pollfds[1].revents & POLLERR)) {
         if(pollfds[1].revents & POLLIN) {
             while((read_size = read(pipe_from_shell[0], buffer, BUFF_SIZE)) > 0) {
@@ -120,6 +120,11 @@ void cleanup() {
                 }
             }
         }
+    }
+
+    if(n_ready < 0) {
+        fprintf(stderr, "Error while polling: %s", strerror(errno));
+        exit(1);
     }
 
     close(pipe_from_shell[0]);
@@ -214,6 +219,11 @@ void process_input_with_shell() {
             }
         }
 
+    }
+
+    if(n_ready < 0) {
+        fprintf(stderr, "Error while polling: %s", strerror(errno));
+        exit(1);
     }
 
     cleanup();
