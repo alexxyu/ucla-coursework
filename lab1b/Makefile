@@ -8,23 +8,21 @@ CFLAGS = -Wextra -Wall
 SERVEROBJS = lab1b-server.o
 CLIENTOBJS = lab1b-client.o
 
-TARGET = lab1b
+SERVERTARGET = lab1b-server
+CLIENTTARGET = lab1b-client
 
 TAR = tar
 TARFLAGS = -czvf
 TAREXT = tar.gz
 DISTNAME = lab1b-105295708.$(TAREXT)
 
-default: $(TARGET)
-
-$(TARGET): $(SERVEROBJS) $(CLIENTOBJS)
-	$(CC) $(CFLAGS) $(SERVEROBJS) $(CLIENTOBJS) -o $@
+default: server client
 
 server: $(SERVEROBJS)
-	$(CC) $(CFLAGS) $(SERVEROBJS) -o $@
+	$(CC) $(CFLAGS) $(SERVEROBJS) -o $(SERVERTARGET)
 
 client: $(CLIENTOBJS)
-	$(CC) $(CFLAGS) l$(CLIENTOBJS) -o $@
+	$(CC) $(CFLAGS) $(CLIENTOBJS) -o $(CLIENTTARGET)
 
 lab1b-server.o: lab1b-server.c
 	$(CC) $(CFLAGS) -c lab1b-server.c
@@ -38,4 +36,4 @@ $(DISTNAME): $(dist-files)
 	$(TAR) $(TARFLAGS) $@ $(dist-files)
 
 clean:
-	rm -rf *.o *.$(TAREXT) $(CLIENTOBJS) $(SERVEROBJS) $(TARGET)
+	rm -rf *.o *.$(TAREXT) $(CLIENTOBJS) $(SERVEROBJS) $(SERVERTARGET) $(CLIENTTARGET)

@@ -7,13 +7,11 @@
 #include <getopt.h>
 #include <poll.h>
 #include <signal.h>
+#include <netinet/in.h>
 #include <sys/wait.h>
-
-const int BUFF_SIZE = 256;
-const char CR_CODE = 0x0D;
-const char LF_CODE = 0x0A;
-const char EOF_CODE = 0x04;
-const char INT_CODE = 0x03;
+#include <sys/socket.h>
+#include <sys/types.h>
+#include "constants.h"
 
 struct pollfd* pollfds;
 const int POLL_TIMEOUT = 0;
@@ -25,6 +23,7 @@ struct termios currmode;
 int pipe_from_shell[2];         // [0] = read end of shell to terminal, [1] = write end
 int pipe_from_terminal[2];      // [0] = read end of terminal to shell, [1] = write end
 
+int serv_sockfd, cli_sockfd;
 int child_pid;
 
 void print_usage_and_exit(char* exec) {
@@ -222,23 +221,56 @@ void process_input_with_shell() {
 
 }
 
+void connect_to_client(int port) {
+
+    struct sockaddr_in serv_addr, cli_addr;
+
+    serv_sockfd = socket(AF_INET /*protocol domain*/, SOCK_STREAM /*type*/, 0 /*protocol*/);
+    if(serv_sockfd < 0) {
+        fprintf(stderr, "Error creating socket: %s", strerror(errno));
+        exit(1);
+    }
+
+    bzero(&serv_addr, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(port);
+    serv_addr.sin_addr.s_addr = INADDR_ANY;
+
+    if(bind(serv_sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
+        fprintf(stderr, "Error binding socket to address: %s", strerror(errno));
+        exit(1);
+    }
+
+    listen(serv_sockfd, 5);
+
+    socklen_t cli_len = sizeof(cli_addr);
+    cli_sockfd = accept(serv_sockfd, (struct sockaddr *) &cli_addr, &cli_len);
+    if(cli_sockfd < 0) {
+        fprintf(stderr, "Error accepting client connection: %s", strerror(errno));
+        exit(1);
+    }
+
+    fprintf(stderr, "ACCEPTED CLIENT CONNECTION\n");
+
+}
+
 int main(int argc, char *argv[]) {
 
     const struct option long_options[] = {
-        {"shell", no_argument, 0, 's'},
-        {"debug", no_argument, 0, 'd'},
+        {"port", required_argument, 0, 'p'},
+        {"compress", no_argument, 0, 'c'},
         {0, 0, 0, 0}
     };
 
-    int c, opt_index;
-    int shellflag = 0;
+    int c, opt_index, port, compress = 0;
     while( (c = getopt_long(argc, argv, "", long_options, &opt_index)) != -1 ) {
 
         switch(c) {
-            case 's':
-                shellflag = 1;
+            case 'p':
+                port = atoi(optarg);
                 break;
-            case 'd':
+            case 'c':
+                compress = 1;
                 break;
             default:
                 // Handle unrecognized argument
@@ -247,53 +279,49 @@ int main(int argc, char *argv[]) {
         
     }
     
+    connect_to_client(port);
+
     set_terminal_mode();
-    if(shellflag) {
-        
-        pipe(pipe_from_shell);
-        pipe(pipe_from_terminal);
+    pipe(pipe_from_shell);
+    pipe(pipe_from_terminal);
 
-        struct pollfd p[2] = {
-            {STDIN_FILENO, POLL_EVENTS, 0},
-            {pipe_from_shell[0], POLL_EVENTS, 0}
-        };
-        pollfds = p;
+    struct pollfd p[2] = {
+        {STDIN_FILENO, POLL_EVENTS, 0},
+        {pipe_from_shell[0], POLL_EVENTS, 0}
+    };
+    pollfds = p;
 
-        switch(child_pid = fork()) {
+    switch(child_pid = fork()) {
 
-            case -1:
-                fprintf(stderr, "Error while forking: %s", strerror(errno));
-                break;
-            case 0:
-                // child process: redirect stdio to pipes and replace with bash
-                close(pipe_from_terminal[1]);   
-                close(pipe_from_shell[0]);
+        case -1:
+            fprintf(stderr, "Error while forking: %s", strerror(errno));
+            break;
+        case 0:
+            // child process: redirect stdio to pipes and replace with bash
+            close(pipe_from_terminal[1]);   
+            close(pipe_from_shell[0]);
 
-                close(STDIN_FILENO);
-                dup(pipe_from_terminal[0]);
-                close(pipe_from_terminal[0]);
+            close(STDIN_FILENO);
+            dup(pipe_from_terminal[0]);
+            close(pipe_from_terminal[0]);
 
-                close(STDOUT_FILENO);
-                dup(pipe_from_shell[1]);
-                close(STDERR_FILENO);
-                dup(pipe_from_shell[1]);
-                close(pipe_from_shell[1]);
+            close(STDOUT_FILENO);
+            dup(pipe_from_shell[1]);
+            close(STDERR_FILENO);
+            dup(pipe_from_shell[1]);
+            close(pipe_from_shell[1]);
 
-                char *args[] = { "/bin/bash", NULL };
-                execv("/bin/bash", args);
-                break;
-            default:
-                // parent process: begin processing keyboard input
-                close(pipe_from_terminal[0]);
-                close(pipe_from_shell[1]);
+            char *args[] = { "/bin/bash", NULL };
+            execv("/bin/bash", args);
+            break;
+        default:
+            // parent process: begin processing keyboard input
+            close(pipe_from_terminal[0]);
+            close(pipe_from_shell[1]);
 
-                process_input_with_shell();
-                break;
+            process_input_with_shell();
+            break;
 
-        }
-
-    } else {
-        process_input();
     }
 
     exit(0);
