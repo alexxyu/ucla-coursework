@@ -24,7 +24,7 @@ struct termios currmode;
 int cli_sockfd;
 
 void print_usage_and_exit(char* exec) {
-    fprintf(stderr, "Usage: %s [--input INFILE] [--output OUTFILE] [--segfault] [--catch]\n", exec);
+    fprintf(stderr, "Usage: %s --port=INT [--log=FILENAME] [--compress]\n", exec);
     exit(1);
 }
 
@@ -64,55 +64,10 @@ void write_char(int fd, const char ch) {
 
 }
 
-void cleanup() {
-
-    /*
-    int read_size, n_ready;
-    char buffer[BUFF_SIZE];
-
-    close(pipe_from_terminal[1]);   
-
-    // Process any remaining input from shell
-    while((n_ready = poll(pollfds+1, 1, POLL_TIMEOUT)) >= 0 && !(pollfds[1].revents & POLLHUP) 
-          && !(pollfds[1].revents & POLLERR)) {
-        if(n_ready > 0 && (pollfds[1].revents & POLLIN)) {
-            while((read_size = read(pipe_from_shell[0], buffer, BUFF_SIZE)) > 0) {
-                for(int i=0; i<read_size; i++) {
-                    char c = buffer[i];
-
-                    write_char(STDOUT_FILENO, c);
-                }
-            }
-        }
-    }
-
-    close(pipe_from_shell[0]);
-
-    int status;
-    if(waitpid(child_pid, &status, 0) < 0) {
-        fprintf(stderr, "Error while waiting for child process: %s", strerror(errno));
-        exit(1);
-    }
-    fprintf(stderr, "SHELL EXIT SIGNAL=%d STATUS=%d\n", WTERMSIG(status), WEXITSTATUS(status));
-
-    exit(0);
-    */
-
-}
-
-void handle_sigpipe() {
-    // fprintf(stderr, "\nSTATUS: %d\t%d\t%d\n", pollfds[1].revents & POLLIN, 
-    //                                           pollfds[1].revents & POLLHUP, 
-    //                                           pollfds[1].revents & POLLERR);
-    cleanup();
-}
-
 void process_input() {
 
     char buffer[BUFF_SIZE];
     int read_size;
-
-    signal(SIGPIPE, handle_sigpipe);
 
     int exit_flag = 0;
     int n_ready, write_to_socket;
@@ -158,22 +113,37 @@ void process_input() {
                 if(c == EOF_CODE) {
                     write_char(STDIN_FILENO, '^');
                     write_char(STDIN_FILENO, 'D');
+
                     exit_flag = 1;
+                    if(write_to_socket) 
+                        write_char(cli_sockfd, EOF_CODE);
                 } else if(c == INT_CODE) {
                     write_char(STDIN_FILENO, '^');
                     write_char(STDIN_FILENO, 'C');
+
+                    if(write_to_socket) 
+                        write_char(cli_sockfd, INT_CODE);
                 } else if(c == LF_CODE || c == CR_CODE) {
                     write_char(STDIN_FILENO, CR_CODE);
                     write_char(STDIN_FILENO, LF_CODE);
+
+                    if(write_to_socket) 
+                        write_char(cli_sockfd, LF_CODE);
                 } else {
                     write_char(STDIN_FILENO, c);
+
+                    if(write_to_socket) 
+                        write_char(cli_sockfd, c);
                 }
             }
         }
 
     }
 
-    cleanup();
+    if(n_ready < 0) {
+        fprintf(stderr, "Error while polling: %s", strerror(errno));
+        exit(1);
+    }
 
 }
 
@@ -182,17 +152,20 @@ void connect_to_server(int port) {
     struct sockaddr_in serv_addr;
     struct hostent* server;
 
+    // Create socket
     cli_sockfd = socket(AF_INET /*protocol domain*/, SOCK_STREAM /*type*/, 0 /*protocol*/);
     if(cli_sockfd < 0) {
         fprintf(stderr, "Error creating socket: %s", strerror(errno));
         exit(1);
     }
 
+    // Initialize server address struct
     server = gethostbyname("localhost");
     bzero((char *) &serv_addr, sizeof(serv_addr));
     bcopy((char *) server->h_addr, (char *) &serv_addr.sin_addr.s_addr, server->h_length);
     serv_addr.sin_port = htons(port);
 
+    // Connect to server
     if(connect(cli_sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
         fprintf(stderr, "Error connecting to server: %s", strerror(errno));
         exit(1);
@@ -212,7 +185,7 @@ int main(int argc, char *argv[]) {
     };
 
     char* logfile;
-    int c, opt_index, port, compress = 0;
+    int c, opt_index, port = -1, compress = 0;
     while( (c = getopt_long(argc, argv, "", long_options, &opt_index)) != -1 ) {
 
         switch(c) {
@@ -231,6 +204,11 @@ int main(int argc, char *argv[]) {
         }
         
     }
+
+    if(port < 0) {
+        fprintf(stderr, "Need valid port number\n");
+        print_usage_and_exit(argv[0]);
+    }
     
     connect_to_server(port);
 
@@ -239,6 +217,7 @@ int main(int argc, char *argv[]) {
         {STDIN_FILENO, POLL_EVENTS, 0},
         {cli_sockfd, POLL_EVENTS, 0}
     };
+    pollfds = p;
 
     set_terminal_mode();
     process_input();

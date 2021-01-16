@@ -23,11 +23,11 @@ struct termios currmode;
 int pipe_from_shell[2];         // [0] = read end of shell to terminal, [1] = write end
 int pipe_from_terminal[2];      // [0] = read end of terminal to shell, [1] = write end
 
-int serv_sockfd, cli_sockfd;
+int serv_sockfd, serv_sockfd_new;
 int child_pid;
 
 void print_usage_and_exit(char* exec) {
-    fprintf(stderr, "Usage: %s [--input INFILE] [--output OUTFILE] [--segfault] [--catch]\n", exec);
+    fprintf(stderr, "Usage: %s --port=INT [--compress]\n", exec);
     exit(1);
 }
 
@@ -67,39 +67,6 @@ void write_char(int fd, const char ch) {
 
 }
 
-void process_input() {
-
-    char buffer[BUFF_SIZE];
-    int read_size;
-
-    int exit_flag = 0;
-
-    while( !exit_flag && (read_size = read(STDIN_FILENO, buffer, BUFF_SIZE)) >= 0 ) {
-
-        for(int i=0; i<read_size && !exit_flag; i++) {
-            char c = buffer[i];
-
-            if(c == EOF_CODE) {
-                write_char(STDOUT_FILENO, '^');
-                write_char(STDOUT_FILENO, 'D');
-                exit_flag = 1;
-            } else if(c == LF_CODE || c == CR_CODE) {
-                write_char(STDOUT_FILENO, CR_CODE);
-                write_char(STDOUT_FILENO, LF_CODE);
-            } else {
-                write_char(STDOUT_FILENO, c);   
-            }
-        }
-
-    }
-
-    if(read_size < 0) {
-        fprintf(stderr, "Read failed: %s\n", strerror(errno));
-        exit(1);
-    }
-
-}
-
 void cleanup() {
 
     int read_size, n_ready;
@@ -122,6 +89,7 @@ void cleanup() {
     }
 
     close(pipe_from_shell[0]);
+    close(serv_sockfd_new);
 
     int status;
     if(waitpid(child_pid, &status, 0) < 0) {
@@ -225,27 +193,31 @@ void connect_to_client(int port) {
 
     struct sockaddr_in serv_addr, cli_addr;
 
+    // Create socket
     serv_sockfd = socket(AF_INET /*protocol domain*/, SOCK_STREAM /*type*/, 0 /*protocol*/);
     if(serv_sockfd < 0) {
         fprintf(stderr, "Error creating socket: %s", strerror(errno));
         exit(1);
     }
 
+    // Initialize server addr struct
     bzero(&serv_addr, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(port);
     serv_addr.sin_addr.s_addr = INADDR_ANY;
 
+    // Bind socket to server address
     if(bind(serv_sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
         fprintf(stderr, "Error binding socket to address: %s", strerror(errno));
         exit(1);
     }
 
+    // Listen for connection and accept
     listen(serv_sockfd, 5);
 
     socklen_t cli_len = sizeof(cli_addr);
-    cli_sockfd = accept(serv_sockfd, (struct sockaddr *) &cli_addr, &cli_len);
-    if(cli_sockfd < 0) {
+    serv_sockfd_new = accept(serv_sockfd, (struct sockaddr *) &cli_addr, &cli_len);
+    if(serv_sockfd_new < 0) {
         fprintf(stderr, "Error accepting client connection: %s", strerror(errno));
         exit(1);
     }
@@ -262,7 +234,7 @@ int main(int argc, char *argv[]) {
         {0, 0, 0, 0}
     };
 
-    int c, opt_index, port, compress = 0;
+    int c, opt_index, port = -1, compress = 0;
     while( (c = getopt_long(argc, argv, "", long_options, &opt_index)) != -1 ) {
 
         switch(c) {
@@ -279,6 +251,11 @@ int main(int argc, char *argv[]) {
         
     }
     
+    if(port < 0) {
+        fprintf(stderr, "Need valid port number\n");
+        print_usage_and_exit(argv[0]);
+    }
+
     connect_to_client(port);
 
     set_terminal_mode();
@@ -286,7 +263,7 @@ int main(int argc, char *argv[]) {
     pipe(pipe_from_terminal);
 
     struct pollfd p[2] = {
-        {STDIN_FILENO, POLL_EVENTS, 0},
+        {serv_sockfd_new, POLL_EVENTS, 0},
         {pipe_from_shell[0], POLL_EVENTS, 0}
     };
     pollfds = p;
