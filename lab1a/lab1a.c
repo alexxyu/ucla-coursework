@@ -1,3 +1,9 @@
+/*
+NAME: Alex Yu
+EMAIL: alexy23@g.ucla.edu
+ID: 105295708
+*/
+
 #include <termios.h>
 #include <unistd.h>
 #include <stdlib.h>
