@@ -22,7 +22,7 @@ const char EOF_CODE = 0x04;
 const char INT_CODE = 0x03;
 
 struct pollfd* pollfds;
-const int POLL_TIMEOUT = 0;
+const int POLL_TIMEOUT = -1;
 const short POLL_EVENTS = POLLIN | POLLHUP | POLLERR;
 
 struct termios newmode;
