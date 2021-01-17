@@ -14,7 +14,7 @@
 #include "constants.h"
 
 struct pollfd* pollfds;
-const int POLL_TIMEOUT = 0;
+const int POLL_TIMEOUT = -1;
 const short POLL_EVENTS = POLLIN | POLLHUP | POLLERR;
 
 struct termios newmode;
@@ -77,7 +77,7 @@ void cleanup() {
     // Process any remaining input from shell
     while((n_ready = poll(pollfds+1, 1, POLL_TIMEOUT)) >= 0 && !(pollfds[1].revents & POLLHUP) 
           && !(pollfds[1].revents & POLLERR)) {
-        if(n_ready > 0 && (pollfds[1].revents & POLLIN)) {
+        if(pollfds[1].revents & POLLIN) {
             while((read_size = read(pipe_from_shell[0], buffer, BUFF_SIZE)) > 0) {
                 for(int i=0; i<read_size; i++) {
                     char c = buffer[i];
@@ -86,6 +86,11 @@ void cleanup() {
                 }
             }
         }
+    }
+
+    if(n_ready < 0) {
+        fprintf(stderr, "Error while polling: %s", strerror(errno));
+        exit(1);
     }
 
     close(pipe_from_shell[0]);
@@ -153,32 +158,32 @@ void process_input_with_shell() {
                 exit_flag = 1;
             }
 
-            // Write character to terminal stdout + shell if applicable
+            // Write character to socket + shell if applicable
             for(int i=0; !exit_flag && i<read_size; i++) {
                 char c = buffer[i];
 
                 if(c == EOF_CODE) {
-                    write_char(STDOUT_FILENO, '^');
-                    write_char(STDOUT_FILENO, 'D');
+                    write_char(serv_sockfd_new, '^');
+                    write_char(serv_sockfd_new, 'D');
                     exit_flag = 1;
                 } else if(c == INT_CODE) {
-                    write_char(STDOUT_FILENO, '^');
-                    write_char(STDOUT_FILENO, 'C');
+                    write_char(serv_sockfd_new, '^');
+                    write_char(serv_sockfd_new, 'C');
                     if(kill(child_pid, SIGINT) < 0) {
                         fprintf(stderr, "Error while interrupting child process: %s", strerror(errno));
                         exit(1);
                     }
                 } else if(c == LF_CODE || c == CR_CODE) {
-                    write_char(STDOUT_FILENO, CR_CODE);
-                    write_char(STDOUT_FILENO, LF_CODE);
-
+                    write_char(serv_sockfd_new, CR_CODE);
+                    write_char(serv_sockfd_new, LF_CODE);
+                    
                     if(write_to_shell) 
                         write_char(pipe_from_terminal[1], LF_CODE);
                 } else {
-                    write_char(STDOUT_FILENO, c);
-                    
                     if(write_to_shell) 
-                        write_char(pipe_from_terminal[1], c);                
+                        write_char(pipe_from_terminal[1], c); 
+                    else               
+                        write_char(serv_sockfd_new, c);
                 }
             }
         }
@@ -239,7 +244,7 @@ int main(int argc, char *argv[]) {
 
         switch(c) {
             case 'p':
-                port = atoi(optarg);
+                port = (int) strtol(optarg, NULL, 10);
                 break;
             case 'c':
                 compress = 1;
@@ -251,8 +256,8 @@ int main(int argc, char *argv[]) {
         
     }
     
-    if(port < 0) {
-        fprintf(stderr, "Need valid port number\n");
+    if(port <= 0) {
+        fprintf(stderr, "Please enter a valid port number.\n");
         print_usage_and_exit(argv[0]);
     }
 

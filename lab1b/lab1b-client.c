@@ -15,7 +15,7 @@
 #include "constants.h"
 
 struct pollfd* pollfds;
-const int POLL_TIMEOUT = 0;
+const int POLL_TIMEOUT = -1;
 const short POLL_EVENTS = POLLIN | POLLHUP | POLLERR;
 
 struct termios newmode;
@@ -106,35 +106,14 @@ void process_input() {
                 exit_flag = 1;
             }
 
-            // Write character to terminal stdout + shell if applicable
+            // Write character to terminal stdout + socket if applicable
             for(int i=0; !exit_flag && i<read_size; i++) {
                 char c = buffer[i];
 
-                if(c == EOF_CODE) {
-                    write_char(STDIN_FILENO, '^');
-                    write_char(STDIN_FILENO, 'D');
+                write_char(STDIN_FILENO, c);
 
-                    exit_flag = 1;
-                    if(write_to_socket) 
-                        write_char(cli_sockfd, EOF_CODE);
-                } else if(c == INT_CODE) {
-                    write_char(STDIN_FILENO, '^');
-                    write_char(STDIN_FILENO, 'C');
-
-                    if(write_to_socket) 
-                        write_char(cli_sockfd, INT_CODE);
-                } else if(c == LF_CODE || c == CR_CODE) {
-                    write_char(STDIN_FILENO, CR_CODE);
-                    write_char(STDIN_FILENO, LF_CODE);
-
-                    if(write_to_socket) 
-                        write_char(cli_sockfd, LF_CODE);
-                } else {
-                    write_char(STDIN_FILENO, c);
-
-                    if(write_to_socket) 
-                        write_char(cli_sockfd, c);
-                }
+                if(write_to_socket) 
+                    write_char(cli_sockfd, c);
             }
         }
 
@@ -190,7 +169,7 @@ int main(int argc, char *argv[]) {
 
         switch(c) {
             case 'p':
-                port = atoi(optarg);
+                port = (int) strtol(optarg, NULL, 10);
                 break;
             case 'l':
                 logfile = optarg;
@@ -205,8 +184,8 @@ int main(int argc, char *argv[]) {
         
     }
 
-    if(port < 0) {
-        fprintf(stderr, "Need valid port number\n");
+    if(port <= 0) {
+        fprintf(stderr, "Please enter a valid port number.\n");
         print_usage_and_exit(argv[0]);
     }
     
