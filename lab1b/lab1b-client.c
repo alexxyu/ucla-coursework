@@ -8,6 +8,8 @@
 #include <poll.h>
 #include <signal.h>
 #include <netdb.h>
+#include <fcntl.h>
+#include <ulimit.h>
 #include <netinet/in.h>
 #include <sys/wait.h>
 #include <sys/socket.h>
@@ -18,10 +20,15 @@ struct pollfd* pollfds;
 const int POLL_TIMEOUT = -1;
 const short POLL_EVENTS = POLLIN | POLLHUP | POLLERR;
 
+const long FLIMIT = 10000;
+
 struct termios newmode;
 struct termios currmode;
 
 int cli_sockfd;
+
+int logfd;
+char* logfile;
 
 void print_usage_and_exit(char* exec) {
     fprintf(stderr, "Usage: %s --port=INT [--log=FILENAME] [--compress]\n", exec);
@@ -33,6 +40,8 @@ void restore_terminal_mode() {
         fprintf(stderr, "Error while setting terminal mode attributes: %s", strerror(errno));
         exit(1);
     }
+
+    if(logfile) close(logfd);
 }
 
 void set_terminal_mode() {
@@ -82,15 +91,18 @@ void process_input() {
                     exit(1);
                 }
 
+                if(logfile) {
+                    char log_buffer[BUFF_SIZE];
+                    buffer[read_size] = '\0';
+                    int log_size = sprintf(log_buffer, "SENT %d bytes: %s\n", read_size, buffer);
+                    if(write(logfd, log_buffer, log_size) < 0) {
+                        fprintf(stderr, "Error writing to log file: %s", strerror(errno));
+                        exit(1);
+                    }
+                }
+
                 write_to_socket = 1;
-            }
-
-            if(pollfds[0].revents & POLLHUP || pollfds[0].revents & POLLERR) {
-                fprintf(stderr, "Error polling from keyboard: %s", strerror(errno));
-                exit(1);
-            }
-
-            if(pollfds[1].revents & POLLIN) {
+            } else if(pollfds[1].revents & POLLIN) {
                 // Handle socket input
                 read_size = read(pollfds[1].fd, buffer, BUFF_SIZE);
                 if(read_size < 0) {
@@ -98,7 +110,21 @@ void process_input() {
                     exit(1);
                 }
 
+                if(logfile) {
+                    char log_buffer[BUFF_SIZE];
+                    int log_size = sprintf(log_buffer, "RECEIVED %d bytes: %s\n", read_size, buffer);
+                    if(write(logfd, log_buffer, log_size) < 0) {
+                        fprintf(stderr, "Error writing to log file: %s", strerror(errno));
+                        exit(1);
+                    }
+                }
+
                 write_to_socket = 0;
+            }
+
+            if(pollfds[0].revents & POLLHUP || pollfds[0].revents & POLLERR) {
+                fprintf(stderr, "Error polling from keyboard: %s", strerror(errno));
+                exit(1);
             }
 
             if(pollfds[1].revents & POLLHUP || pollfds[1].revents & POLLERR) {
@@ -156,6 +182,8 @@ void connect_to_server(int port) {
 
 int main(int argc, char *argv[]) {
 
+    logfile = NULL;
+
     const struct option long_options[] = {
         {"port", required_argument, 0, 'p'},
         {"log", required_argument, 0, 'l'},
@@ -163,7 +191,6 @@ int main(int argc, char *argv[]) {
         {0, 0, 0, 0}
     };
 
-    char* logfile;
     int c, opt_index, port = -1, compress = 0;
     while( (c = getopt_long(argc, argv, "", long_options, &opt_index)) != -1 ) {
 
@@ -197,6 +224,15 @@ int main(int argc, char *argv[]) {
         {cli_sockfd, POLL_EVENTS, 0}
     };
     pollfds = p;
+
+    if(logfile) {
+        ulimit(UL_SETFSIZE, FLIMIT);
+        logfd = creat(logfile, 0666);
+        if(logfd < 0) {
+            fprintf(stderr, "Error creating log file: %s", strerror(errno));
+            exit(1);
+        }
+    }
 
     set_terminal_mode();
     process_input();
