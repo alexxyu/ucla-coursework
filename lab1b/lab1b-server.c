@@ -1,3 +1,9 @@
+/*
+NAME: Alex Yu
+EMAIL: alexy23@g.ucla.edu
+ID: 105295708
+*/
+
 #include <termios.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -11,6 +17,7 @@
 #include <sys/wait.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include "zlib.h"
 #include "constants.h"
 
 struct pollfd* pollfds;
@@ -25,6 +32,8 @@ int pipe_from_terminal[2];      // [0] = read end of terminal to shell, [1] = wr
 
 int serv_sockfd, serv_sockfd_new;
 int child_pid;
+
+int compressflag;
 
 void print_usage_and_exit(char* exec) {
     fprintf(stderr, "Usage: %s --port=INT [--compress]\n", exec);
@@ -64,6 +73,71 @@ void write_char(int fd, const char ch) {
         fprintf(stderr, "Write failed: %s\n", strerror(errno));
         exit(1);
     }
+
+}
+
+int compress_message(char* buffer, int read_size, char* compressed_buffer, int cbuffer_size) {
+
+    int ret;
+    z_stream strm;
+
+    strm.zalloc = Z_NULL;
+    strm.zfree = Z_NULL;
+    strm.opaque = Z_NULL;
+
+    ret = deflateInit(&strm, Z_DEFAULT_COMPRESSION);
+    if(ret != Z_OK) {
+        fprintf(stderr, "Error initializing zlib\n");
+        exit(1);
+    }
+
+    strm.avail_in = read_size;
+    strm.next_in = (Bytef*) buffer;
+    strm.avail_out = cbuffer_size;
+    strm.next_out = (Bytef*) compressed_buffer;
+
+    ret = deflate(&strm, Z_SYNC_FLUSH);
+    if(ret == Z_STREAM_ERROR) {
+        fprintf(stderr, "Error compressing message\n");
+        deflateEnd(&strm);
+    }
+
+    deflateEnd(&strm);
+    return cbuffer_size - strm.avail_out;
+
+}
+
+int decompress_message(char* buffer, int read_size, char* decompressed_buffer, int dbuffer_size) {
+
+    int ret;
+
+    z_stream strm;
+    strm.zalloc = Z_NULL;
+    strm.zfree = Z_NULL;
+    strm.opaque = Z_NULL;
+    strm.avail_in = 0;
+    strm.next_in = Z_NULL;
+
+    ret = inflateInit(&strm);
+    if(ret != Z_OK) {
+        fprintf(stderr, "Error initializing zlib\n");
+        exit(1);
+    }
+
+    strm.avail_in = read_size;
+    strm.next_in = (Bytef*) buffer;
+    strm.avail_out = dbuffer_size;
+    strm.next_out = (Bytef*) decompressed_buffer;
+
+    ret = inflate(&strm, Z_SYNC_FLUSH);
+    if(ret == Z_STREAM_ERROR) {
+        fprintf(stderr, "Error decompressing message\n");
+        inflateEnd(&strm);
+    }
+
+    inflateEnd(&strm);
+
+    return dbuffer_size - strm.avail_out;
 
 }
 
@@ -121,28 +195,43 @@ void process_input_with_shell() {
 
     signal(SIGPIPE, handle_sigpipe);
 
-    int exit_flag = 0;
-    int n_ready, write_to_shell;
+    int n_ready, exit_flag = 0;
     while( !exit_flag && (n_ready = poll(pollfds, 2, POLL_TIMEOUT)) >= 0 ) {
 
         if(n_ready > 0) {
             if(pollfds[0].revents & POLLIN) {
-                // Handle keyboard input
+                // Handle input from client
                 read_size = read(pollfds[0].fd, buffer, BUFF_SIZE);
                 if(read_size < 0) {
                     fprintf(stderr, "Read failed: %s\n", strerror(errno));
                     exit(1);
                 }
 
-                write_to_shell = 1;
-            }
+                // Decompress if specified
+                if(compressflag) {
+                    char tmp[BUFF_SIZE];
+                    memcpy(tmp, buffer, read_size);
+                    read_size = decompress_message(tmp, read_size, buffer, BUFF_SIZE);
+                }
 
-            if(pollfds[0].revents & POLLHUP || pollfds[0].revents & POLLERR) {
-                fprintf(stderr, "Error polling from keyboard: %s", strerror(errno));
-                exit(1);
-            }
+                // Handle special input and send to shell
+                for(int i=0; !exit_flag && i<read_size; i++) {
+                    char c = buffer[i];
 
-            if(pollfds[1].revents & POLLIN) {
+                    if(c == EOF_CODE) {
+                        exit_flag = 1;
+                    } else if(c == INT_CODE) {
+                        if(kill(child_pid, SIGINT) < 0) {
+                            fprintf(stderr, "Error while interrupting child process: %s", strerror(errno));
+                            exit(1);
+                        }
+                    } else if(c == LF_CODE || c == CR_CODE) {
+                        write_char(pipe_from_terminal[1], LF_CODE);
+                    } else {
+                        write_char(pipe_from_terminal[1], c); 
+                    }
+                }
+            } else if(pollfds[1].revents & POLLIN) {
                 // Handle shell input
                 read_size = read(pollfds[1].fd, buffer, BUFF_SIZE);
                 if(read_size < 0) {
@@ -150,7 +239,21 @@ void process_input_with_shell() {
                     exit(1);
                 }
 
-                write_to_shell = 0;
+                // Compress if specified and send shell input back to client
+                if(compressflag) {
+                    char tmp[BUFF_SIZE];
+                    memcpy(tmp, buffer, read_size);
+                    read_size = compress_message(tmp, read_size, buffer, BUFF_SIZE);
+
+                    write(serv_sockfd_new, buffer, read_size);
+                } else {
+                    write(serv_sockfd_new, buffer, read_size);
+                }
+            }
+
+            if(pollfds[0].revents & POLLHUP || pollfds[0].revents & POLLERR) {
+                fprintf(stderr, "Error polling from the client: %s", strerror(errno));
+                exit(1);
             }
 
             if(pollfds[1].revents & POLLHUP || pollfds[1].revents & POLLERR) {
@@ -158,34 +261,7 @@ void process_input_with_shell() {
                 exit_flag = 1;
             }
 
-            // Write character to socket + shell if applicable
-            for(int i=0; !exit_flag && i<read_size; i++) {
-                char c = buffer[i];
-
-                if(c == EOF_CODE) {
-                    write_char(serv_sockfd_new, '^');
-                    write_char(serv_sockfd_new, 'D');
-                    exit_flag = 1;
-                } else if(c == INT_CODE) {
-                    write_char(serv_sockfd_new, '^');
-                    write_char(serv_sockfd_new, 'C');
-                    if(kill(child_pid, SIGINT) < 0) {
-                        fprintf(stderr, "Error while interrupting child process: %s", strerror(errno));
-                        exit(1);
-                    }
-                } else if(c == LF_CODE || c == CR_CODE) {
-                    write_char(serv_sockfd_new, CR_CODE);
-                    write_char(serv_sockfd_new, LF_CODE);
-                    
-                    if(write_to_shell) 
-                        write_char(pipe_from_terminal[1], LF_CODE);
-                } else {
-                    if(write_to_shell) 
-                        write_char(pipe_from_terminal[1], c); 
-                    else               
-                        write_char(serv_sockfd_new, c);
-                }
-            }
+            // fprintf(stderr, buffer, read_size);
         }
 
     }
@@ -233,13 +309,15 @@ void connect_to_client(int port) {
 
 int main(int argc, char *argv[]) {
 
+    compressflag = 0;
+
     const struct option long_options[] = {
         {"port", required_argument, 0, 'p'},
         {"compress", no_argument, 0, 'c'},
         {0, 0, 0, 0}
     };
 
-    int c, opt_index, port = -1, compress = 0;
+    int c, opt_index, port = -1;
     while( (c = getopt_long(argc, argv, "", long_options, &opt_index)) != -1 ) {
 
         switch(c) {
@@ -247,7 +325,7 @@ int main(int argc, char *argv[]) {
                 port = (int) strtol(optarg, NULL, 10);
                 break;
             case 'c':
-                compress = 1;
+                compressflag = 1;
                 break;
             default:
                 // Handle unrecognized argument

@@ -19,10 +19,10 @@ DISTNAME = lab1b-105295708.$(TAREXT)
 default: server client
 
 server: $(SERVEROBJS)
-	$(CC) $(CFLAGS) $(SERVEROBJS) -o $(SERVERTARGET)
+	$(CC) $(CFLAGS) -lz $(SERVEROBJS) -o $(SERVERTARGET)
 
 client: $(CLIENTOBJS)
-	$(CC) $(CFLAGS) $(CLIENTOBJS) -o $(CLIENTTARGET)
+	$(CC) $(CFLAGS) -lz $(CLIENTOBJS) -o $(CLIENTTARGET)
 
 lab1b-server.o: lab1b-server.c
 	$(CC) $(CFLAGS) -c lab1b-server.c
