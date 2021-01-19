@@ -109,28 +109,30 @@ void process_input() {
 
 void cleanup() {
 
-    int read_size, n_ready;
+    int read_size, n_ready, exit_flag = 0;
     char buffer[BUFF_SIZE];
 
     close(pipe_from_terminal[1]);   
 
     // Process any remaining input from shell
-    while((n_ready = poll(pollfds+1, 1, POLL_TIMEOUT)) >= 0 && !(pollfds[1].revents & POLLHUP) 
+    while(!exit_flag && (n_ready = poll(pollfds+1, 1, POLL_TIMEOUT)) >= 0 && !(pollfds[1].revents & POLLHUP) 
           && !(pollfds[1].revents & POLLERR)) {
-        if(pollfds[1].revents & POLLIN) {
-            while((read_size = read(pipe_from_shell[0], buffer, BUFF_SIZE)) > 0) {
-                for(int i=0; i<read_size; i++) {
-                    char c = buffer[i];
+        if(pollfds[1].revents & POLLIN && (read_size = read(pipe_from_shell[0], buffer, BUFF_SIZE)) > 0) {
+            for(int i=0; !exit_flag && i<read_size; i++) {
+                char c = buffer[i];
 
-                    if(c == LF_CODE || c == CR_CODE) {
-                        write_char(STDOUT_FILENO, CR_CODE);
-                        write_char(STDOUT_FILENO, LF_CODE);
-                    } else {
-                        write_char(STDOUT_FILENO, c);
-                    }
-
+                if(c == EOF_CODE) {
+                    exit_flag = 1;
+                } else if(c == LF_CODE || c == CR_CODE) {
+                    write_char(STDOUT_FILENO, CR_CODE);
+                    write_char(STDOUT_FILENO, LF_CODE);
+                } else {
+                    write_char(STDOUT_FILENO, c);
                 }
+
             }
+
+            bzero(buffer, BUFF_SIZE);
         }
     }
 
