@@ -122,7 +122,13 @@ void cleanup() {
                 for(int i=0; i<read_size; i++) {
                     char c = buffer[i];
 
-                    write_char(STDOUT_FILENO, c);
+                    if(c == LF_CODE || c == CR_CODE) {
+                        write_char(STDOUT_FILENO, CR_CODE);
+                        write_char(STDOUT_FILENO, LF_CODE);
+                    } else {
+                        write_char(STDOUT_FILENO, c);
+                    }
+
                 }
             }
         }
