@@ -34,13 +34,13 @@ int pipe_from_terminal[2];      // [0] = read end of terminal to shell, [1] = wr
 int child_pid;
 
 void print_usage_and_exit(char* exec) {
-    fprintf(stderr, "Usage: %s [--shell]\n", exec);
+    fprintf(stderr, "Usage: %s\r\n [--shell]\n", exec);
     exit(1);
 }
 
 void restore_terminal_mode() {
     if(tcsetattr(STDIN_FILENO, TCSANOW, &currmode) < 0) {
-        fprintf(stderr, "Error while setting terminal mode attributes: %s", strerror(errno));
+        fprintf(stderr, "Error while setting terminal mode attributes: %s\r\n", strerror(errno));
         exit(1);
     }
 }
@@ -48,7 +48,7 @@ void restore_terminal_mode() {
 void set_terminal_mode() {
 
     if(tcgetattr(STDIN_FILENO, &newmode) < 0) {
-        fprintf(stderr, "Error while getting terminal mode attributes: %s", strerror(errno));
+        fprintf(stderr, "Error while getting terminal mode attributes: %s\r\n", strerror(errno));
         exit(1);
     }
 
@@ -58,7 +58,7 @@ void set_terminal_mode() {
     newmode.c_lflag = 0;		/* no processing	*/
     
     if(tcsetattr(STDIN_FILENO, TCSANOW, &newmode) < 0) {
-        fprintf(stderr, "Error while setting terminal mode attributes: %s", strerror(errno));
+        fprintf(stderr, "Error while setting terminal mode attributes: %s\r\n", strerror(errno));
         exit(1);
     }
     atexit(restore_terminal_mode);
@@ -68,7 +68,7 @@ void set_terminal_mode() {
 void write_char(int fd, const char ch) {
 
     if(write(fd, &ch, 1) < 0) {
-        fprintf(stderr, "Write failed: %s\n", strerror(errno));
+        fprintf(stderr, "Write failed: %s\r\n", strerror(errno));
         exit(1);
     }
 
@@ -101,7 +101,7 @@ void process_input() {
     }
 
     if(read_size < 0) {
-        fprintf(stderr, "Read failed: %s\n", strerror(errno));
+        fprintf(stderr, "Read failed: %s\r\n", strerror(errno));
         exit(1);
     }
 
@@ -135,7 +135,7 @@ void cleanup() {
     }
 
     if(n_ready < 0) {
-        fprintf(stderr, "Error while polling: %s", strerror(errno));
+        fprintf(stderr, "Error while polling: %s\r\n", strerror(errno));
         exit(1);
     }
 
@@ -143,10 +143,10 @@ void cleanup() {
 
     int status;
     if(waitpid(child_pid, &status, 0) < 0) {
-        fprintf(stderr, "Error while waiting for child process: %s", strerror(errno));
+        fprintf(stderr, "Error while waiting for child process: %s\r\n", strerror(errno));
         exit(1);
     }
-    fprintf(stderr, "SHELL EXIT SIGNAL=%d STATUS=%d\n", WTERMSIG(status), WEXITSTATUS(status));
+    fprintf(stderr, "SHELL EXIT SIGNAL=%d STATUS=%d\r\n", WTERMSIG(status), WEXITSTATUS(status));
 
     exit(0);
 
@@ -175,7 +175,7 @@ void process_input_with_shell() {
                 // Handle keyboard input
                 read_size = read(pollfds[0].fd, buffer, BUFF_SIZE);
                 if(read_size < 0) {
-                    fprintf(stderr, "Read failed: %s\n", strerror(errno));
+                    fprintf(stderr, "Read failed: %s\r\n", strerror(errno));
                     exit(1);
                 }
 
@@ -184,7 +184,7 @@ void process_input_with_shell() {
                 // Handle shell input
                 read_size = read(pollfds[1].fd, buffer, BUFF_SIZE);
                 if(read_size < 0) {
-                    fprintf(stderr, "Read failed: %s\n", strerror(errno));
+                    fprintf(stderr, "Read failed: %s\r\n", strerror(errno));
                     exit(1);
                 }
 
@@ -192,7 +192,7 @@ void process_input_with_shell() {
             }
 
             if(pollfds[0].revents & POLLHUP || pollfds[0].revents & POLLERR) {
-                fprintf(stderr, "Error polling from keyboard: %s", strerror(errno));
+                fprintf(stderr, "Error polling from keyboard: %s\r\n", strerror(errno));
                 exit(1);
             }
 
@@ -213,7 +213,7 @@ void process_input_with_shell() {
                     write_char(STDOUT_FILENO, '^');
                     write_char(STDOUT_FILENO, 'C');
                     if(kill(child_pid, SIGINT) < 0) {
-                        fprintf(stderr, "Error while interrupting child process: %s", strerror(errno));
+                        fprintf(stderr, "Error while interrupting child process: %s\r\n", strerror(errno));
                         exit(1);
                     }
                 } else if(c == LF_CODE || c == CR_CODE) {
@@ -229,12 +229,14 @@ void process_input_with_shell() {
                         write_char(pipe_from_terminal[1], c);                
                 }
             }
+
+            bzero(buffer, BUFF_SIZE);
         }
 
     }
 
     if(n_ready < 0) {
-        fprintf(stderr, "Error while polling: %s", strerror(errno));
+        fprintf(stderr, "Error while polling: %s\r\n", strerror(errno));
         exit(1);
     }
 
@@ -279,7 +281,7 @@ int main(int argc, char *argv[]) {
         switch(child_pid = fork()) {
 
             case -1:
-                fprintf(stderr, "Error while forking: %s", strerror(errno));
+                fprintf(stderr, "Error while forking: %s\r\n", strerror(errno));
                 break;
             case 0:
                 // child process: redirect stdio to pipes and replace with bash
