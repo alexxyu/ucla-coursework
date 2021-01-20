@@ -34,7 +34,7 @@ int pipe_from_terminal[2];      // [0] = read end of terminal to shell, [1] = wr
 int child_pid;
 
 void print_usage_and_exit(char* exec) {
-    fprintf(stderr, "Usage: %s\r\n [--shell]\n", exec);
+    fprintf(stderr, "Usage: %s [--shell]\n", exec);
     exit(1);
 }
 
@@ -199,7 +199,6 @@ void process_input_with_shell() {
             }
 
             if(pollfds[1].revents & POLLHUP || pollfds[1].revents & POLLERR) {
-                // Receipt of polling error means no more output from shell
                 exit_flag = 1;
             }
 
@@ -267,6 +266,10 @@ int main(int argc, char *argv[]) {
         }
         
     }
+
+    // Handle extra arguments
+    if(optind < argc)
+        print_usage_and_exit(argv[0]);
     
     set_terminal_mode();
     if(shellflag) {
