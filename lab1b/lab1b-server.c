@@ -42,7 +42,7 @@ void print_usage_and_exit(char* exec) {
 
 void restore_terminal_mode() {
     if(tcsetattr(STDIN_FILENO, TCSANOW, &currmode) < 0) {
-        fprintf(stderr, "Error while setting terminal mode attributes: %s", strerror(errno));
+        fprintf(stderr, "Error while setting terminal mode attributes: %s\r\n", strerror(errno));
         exit(1);
     }
 }
@@ -50,7 +50,7 @@ void restore_terminal_mode() {
 void set_terminal_mode() {
 
     if(tcgetattr(STDIN_FILENO, &newmode) < 0) {
-        fprintf(stderr, "Error while getting terminal mode attributes: %s", strerror(errno));
+        fprintf(stderr, "Error while getting terminal mode attributes: %s\r\n", strerror(errno));
         exit(1);
     }
 
@@ -60,7 +60,7 @@ void set_terminal_mode() {
     newmode.c_lflag = 0;		/* no processing	*/
     
     if(tcsetattr(STDIN_FILENO, TCSANOW, &newmode) < 0) {
-        fprintf(stderr, "Error while setting terminal mode attributes: %s", strerror(errno));
+        fprintf(stderr, "Error while setting terminal mode attributes: %s\r\n", strerror(errno));
         exit(1);
     }
     atexit(restore_terminal_mode);
@@ -70,7 +70,7 @@ void set_terminal_mode() {
 void write_char(int fd, const char ch) {
 
     if(write(fd, &ch, 1) < 0) {
-        fprintf(stderr, "Write failed: %s\n", strerror(errno));
+        fprintf(stderr, "Write failed: %s\r\n", strerror(errno));
         exit(1);
     }
 
@@ -143,27 +143,35 @@ int decompress_message(char* buffer, int read_size, char* decompressed_buffer, i
 
 void cleanup() {
 
-    int read_size, n_ready;
+    int read_size, n_ready, exit_flag = 0;
     char buffer[BUFF_SIZE];
 
     close(pipe_from_terminal[1]);   
 
     // Process any remaining input from shell
-    while((n_ready = poll(pollfds+1, 1, POLL_TIMEOUT)) >= 0 && !(pollfds[1].revents & POLLHUP) 
+    while(!exit_flag && (n_ready = poll(pollfds+1, 1, POLL_TIMEOUT)) >= 0 && !(pollfds[1].revents & POLLHUP) 
           && !(pollfds[1].revents & POLLERR)) {
-        if(pollfds[1].revents & POLLIN) {
-            while((read_size = read(pipe_from_shell[0], buffer, BUFF_SIZE)) > 0) {
-                for(int i=0; i<read_size; i++) {
-                    char c = buffer[i];
+        if(pollfds[1].revents & POLLIN && (read_size = read(pipe_from_shell[0], buffer, BUFF_SIZE)) > 0) {
+            for(int i=0; !exit_flag && i<read_size; i++) {
+                char c = buffer[i];
 
+                if(c == EOF_CODE) {
+                    exit_flag = 1;
+                } else if(c == LF_CODE || c == CR_CODE) {
+                    write_char(STDOUT_FILENO, CR_CODE);
+                    write_char(STDOUT_FILENO, LF_CODE);
+                } else {
                     write_char(STDOUT_FILENO, c);
                 }
+
             }
+
+            bzero(buffer, BUFF_SIZE);
         }
     }
 
     if(n_ready < 0) {
-        fprintf(stderr, "Error while polling: %s", strerror(errno));
+        fprintf(stderr, "Error while polling: %s\r\n", strerror(errno));
         exit(1);
     }
 
@@ -172,7 +180,7 @@ void cleanup() {
 
     int status;
     if(waitpid(child_pid, &status, 0) < 0) {
-        fprintf(stderr, "Error while waiting for child process: %s", strerror(errno));
+        fprintf(stderr, "Error while waiting for child process: %s\r\n", strerror(errno));
         exit(1);
     }
     fprintf(stderr, "SHELL EXIT SIGNAL=%d STATUS=%d\n", WTERMSIG(status), WEXITSTATUS(status));
@@ -203,7 +211,7 @@ void process_input_with_shell() {
                 // Handle input from client
                 read_size = read(pollfds[0].fd, buffer, BUFF_SIZE);
                 if(read_size < 0) {
-                    fprintf(stderr, "Read failed: %s\n", strerror(errno));
+                    fprintf(stderr, "Read failed: %s\r\n", strerror(errno));
                     exit(1);
                 }
 
@@ -222,7 +230,7 @@ void process_input_with_shell() {
                         exit_flag = 1;
                     } else if(c == INT_CODE) {
                         if(kill(child_pid, SIGINT) < 0) {
-                            fprintf(stderr, "Error while interrupting child process: %s", strerror(errno));
+                            fprintf(stderr, "Error while interrupting child process: %s\r\n", strerror(errno));
                             exit(1);
                         }
                     } else if(c == LF_CODE || c == CR_CODE) {
@@ -235,7 +243,7 @@ void process_input_with_shell() {
                 // Handle shell input
                 read_size = read(pollfds[1].fd, buffer, BUFF_SIZE);
                 if(read_size < 0) {
-                    fprintf(stderr, "Read failed: %s\n", strerror(errno));
+                    fprintf(stderr, "Read failed: %s\r\n", strerror(errno));
                     exit(1);
                 }
 
@@ -252,7 +260,7 @@ void process_input_with_shell() {
             }
 
             if(pollfds[0].revents & POLLHUP || pollfds[0].revents & POLLERR) {
-                fprintf(stderr, "Error polling from the client: %s", strerror(errno));
+                fprintf(stderr, "Error polling from the client: %s\r\n", strerror(errno));
                 exit(1);
             }
 
@@ -260,8 +268,6 @@ void process_input_with_shell() {
                 // Receipt of polling error means no more output from shell
                 exit_flag = 1;
             }
-
-            // fprintf(stderr, buffer, read_size);
         }
 
     }
@@ -277,7 +283,7 @@ void connect_to_client(int port) {
     // Create socket
     serv_sockfd = socket(AF_INET /*protocol domain*/, SOCK_STREAM /*type*/, 0 /*protocol*/);
     if(serv_sockfd < 0) {
-        fprintf(stderr, "Error creating socket: %s", strerror(errno));
+        fprintf(stderr, "Error creating socket: %s\r\n", strerror(errno));
         exit(1);
     }
 
@@ -289,7 +295,7 @@ void connect_to_client(int port) {
 
     // Bind socket to server address
     if(bind(serv_sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-        fprintf(stderr, "Error binding socket to address: %s", strerror(errno));
+        fprintf(stderr, "Error binding socket to address: %s\r\n", strerror(errno));
         exit(1);
     }
 
@@ -299,11 +305,11 @@ void connect_to_client(int port) {
     socklen_t cli_len = sizeof(cli_addr);
     serv_sockfd_new = accept(serv_sockfd, (struct sockaddr *) &cli_addr, &cli_len);
     if(serv_sockfd_new < 0) {
-        fprintf(stderr, "Error accepting client connection: %s", strerror(errno));
+        fprintf(stderr, "Error accepting client connection: %s\r\n", strerror(errno));
         exit(1);
     }
 
-    fprintf(stderr, "ACCEPTED CLIENT CONNECTION\n");
+    fprintf(stderr, "ACCEPTED CLIENT CONNECTION\r\n");
 
 }
 
@@ -354,7 +360,7 @@ int main(int argc, char *argv[]) {
     switch(child_pid = fork()) {
 
         case -1:
-            fprintf(stderr, "Error while forking: %s", strerror(errno));
+            fprintf(stderr, "Error while forking: %s\r\n", strerror(errno));
             break;
         case 0:
             // child process: redirect stdio to pipes and replace with bash

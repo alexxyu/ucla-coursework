@@ -44,7 +44,7 @@ void print_usage_and_exit(char* exec) {
 
 void restore_terminal_mode() {
     if(tcsetattr(STDIN_FILENO, TCSANOW, &currmode) < 0) {
-        fprintf(stderr, "Error while setting terminal mode attributes: %s", strerror(errno));
+        fprintf(stderr, "Error while setting terminal mode attributes: %s\r\n", strerror(errno));
         exit(1);
     }
 
@@ -54,7 +54,7 @@ void restore_terminal_mode() {
 void set_terminal_mode() {
 
     if(tcgetattr(STDIN_FILENO, &newmode) < 0) {
-        fprintf(stderr, "Error while getting terminal mode attributes: %s", strerror(errno));
+        fprintf(stderr, "Error while getting terminal mode attributes: %s\r\n", strerror(errno));
         exit(1);
     }
 
@@ -64,7 +64,7 @@ void set_terminal_mode() {
     newmode.c_lflag = 0;		/* no processing	*/
     
     if(tcsetattr(STDIN_FILENO, TCSANOW, &newmode) < 0) {
-        fprintf(stderr, "Error while setting terminal mode attributes: %s", strerror(errno));
+        fprintf(stderr, "Error while setting terminal mode attributes: %s\r\n", strerror(errno));
         exit(1);
     }
     atexit(restore_terminal_mode);
@@ -74,7 +74,7 @@ void set_terminal_mode() {
 void write_char(int fd, const char ch) {
 
     if(write(fd, &ch, 1) < 0) {
-        fprintf(stderr, "Write failed: %s\n", strerror(errno));
+        fprintf(stderr, "Write failed: %s\r\n", strerror(errno));
         exit(1);
     }
 
@@ -88,7 +88,7 @@ void write_to_log(char* buffer, int size, int sent) {
     int log_size = sprintf(log_buffer, "%s %d bytes: %s\n", action, size, buffer);
 
     if(write(logfd, log_buffer, log_size) < 0) {
-        fprintf(stderr, "Error writing to log file: %s", strerror(errno));
+        fprintf(stderr, "Error writing to log file: %s\r\n", strerror(errno));
         exit(1);
     }
 }
@@ -98,6 +98,7 @@ int compress_message(char* buffer, int read_size, char* compressed_buffer, int c
     int ret;
     z_stream strm;
 
+    // Initialize zlib stream parameters
     strm.zalloc = Z_NULL;
     strm.zfree = Z_NULL;
     strm.opaque = Z_NULL;
@@ -113,6 +114,7 @@ int compress_message(char* buffer, int read_size, char* compressed_buffer, int c
     strm.avail_out = cbuffer_size;
     strm.next_out = (Bytef*) compressed_buffer;
 
+    // Compress input into compressed buffer
     do {
         ret = deflate(&strm, Z_SYNC_FLUSH);
         if(ret == Z_STREAM_ERROR) {
@@ -121,6 +123,7 @@ int compress_message(char* buffer, int read_size, char* compressed_buffer, int c
         }
     } while(strm.avail_in > 0);
 
+    // Clean up and return read size of compressed buffer
     deflateEnd(&strm);
     return cbuffer_size - strm.avail_out;
 
@@ -130,6 +133,7 @@ int decompress_message(char* buffer, int read_size, char* decompressed_buffer, i
 
     int ret;
 
+    // Initialize zlib stream parameters
     z_stream strm;
     strm.zalloc = Z_NULL;
     strm.zfree = Z_NULL;
@@ -148,6 +152,7 @@ int decompress_message(char* buffer, int read_size, char* decompressed_buffer, i
     strm.avail_out = dbuffer_size;
     strm.next_out = (Bytef*) decompressed_buffer;
 
+    // Decompress input into decompressed buffer
     do {
         ret = inflate(&strm, Z_SYNC_FLUSH);
         if(ret == Z_STREAM_ERROR) {
@@ -156,8 +161,8 @@ int decompress_message(char* buffer, int read_size, char* decompressed_buffer, i
         }
     } while(strm.avail_in > 0);
 
+    // Clean up and return read size of decompressed buffer
     inflateEnd(&strm);
-
     return dbuffer_size - strm.avail_out;
 
 }
@@ -175,7 +180,7 @@ void process_input() {
                 // Handle keyboard input
                 read_size = read(pollfds[0].fd, buffer, BUFF_SIZE);
                 if(read_size < 0) {
-                    fprintf(stderr, "Read failed: %s\n", strerror(errno));
+                    fprintf(stderr, "Read failed: %s\r\n", strerror(errno));
                     exit(1);
                 }
 
@@ -198,37 +203,37 @@ void process_input() {
                 }
 
                 // Handle logging/compression if specified and write to server
-                if(!compressflag) {
-                    if(logfile) write_to_log(buffer, read_size, 1);
-
-                    write(cli_sockfd, buffer, read_size);
-                }
-                else if(compressflag) {
+                if(compressflag) {
                     memcpy(tmp_buffer, buffer, read_size);
                     read_size = compress_message(tmp_buffer, read_size, buffer, BUFF_SIZE);
                     write(cli_sockfd, buffer, read_size);
 
-                    if(logfile) write_to_log(tmp_buffer, read_size, 1);
-                } 
+                    // if(logfile) write_to_log(tmp_buffer, read_size, 1);
+                } else {
+                    write(cli_sockfd, buffer, read_size);
+                }
+
+                if(logfile) {
+                    write_to_log(buffer, read_size, 1);
+                }
 
             } else if(pollfds[1].revents & POLLIN) {
 
                 // Handle socket input
                 read_size = read(pollfds[1].fd, buffer, BUFF_SIZE);
                 if(read_size < 0) {
-                    fprintf(stderr, "Read failed: %s\n", strerror(errno));
+                    fprintf(stderr, "Read failed: %s\r\n", strerror(errno));
                     exit(1);
                 }
 
                 // Handle logging/decompression if specified
-                if(logfile && !compressflag) 
+                if(logfile) {
                     write_to_log(buffer, read_size, 0);
-                else if(compressflag) {
-                    int compressed_size = read_size;
+                }
+
+                if(compressflag) {
                     memcpy(tmp_buffer, buffer, read_size);
                     read_size = decompress_message(tmp_buffer, read_size, buffer, BUFF_SIZE);
-
-                    if(logfile) write_to_log(buffer, compressed_size, 0);
                 }
 
                 // Write socket input to stdout
@@ -245,12 +250,11 @@ void process_input() {
             }
 
             if(pollfds[0].revents & POLLHUP || pollfds[0].revents & POLLERR) {
-                fprintf(stderr, "Error polling from keyboard: %s", strerror(errno));
+                fprintf(stderr, "Error polling from keyboard: %s\r\n", strerror(errno));
                 exit(1);
             }
 
             if(pollfds[1].revents & POLLHUP || pollfds[1].revents & POLLERR) {
-                // Receipt of polling error means no more output from shell
                 exit_flag = 1;
             }
         }
@@ -258,7 +262,7 @@ void process_input() {
     }
 
     if(n_ready < 0) {
-        fprintf(stderr, "Error while polling: %s", strerror(errno));
+        fprintf(stderr, "Error while polling: %s\r\n", strerror(errno));
         exit(1);
     }
 
@@ -272,7 +276,7 @@ void connect_to_server(int port) {
     // Create socket
     cli_sockfd = socket(AF_INET /*protocol domain*/, SOCK_STREAM /*type*/, 0 /*protocol*/);
     if(cli_sockfd < 0) {
-        fprintf(stderr, "Error creating socket: %s", strerror(errno));
+        fprintf(stderr, "Error creating socket: %s\r\n", strerror(errno));
         exit(1);
     }
 
@@ -284,7 +288,7 @@ void connect_to_server(int port) {
 
     // Connect to server
     if(connect(cli_sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-        fprintf(stderr, "Error connecting to server: %s", strerror(errno));
+        fprintf(stderr, "Error connecting to server: %s\r\n", strerror(errno));
         exit(1);
     }
 
@@ -338,11 +342,12 @@ int main(int argc, char *argv[]) {
     };
     pollfds = p;
 
+    // Create log file
     if(logfile) {
         ulimit(UL_SETFSIZE, FLIMIT);
         logfd = creat(logfile, 0666);
         if(logfd < 0) {
-            fprintf(stderr, "Error creating log file: %s", strerror(errno));
+            fprintf(stderr, "Error creating log file: %s\r\n", strerror(errno));
             exit(1);
         }
     }
