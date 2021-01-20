@@ -199,8 +199,9 @@ void process_input() {
 
                 // Handle logging/compression if specified and write to server
                 if(!compressflag) {
-                    if(logfile) write(cli_sockfd, buffer, read_size);
-                    write_to_log(buffer, read_size, 1);
+                    if(logfile) write_to_log(buffer, read_size, 1);
+
+                    write(cli_sockfd, buffer, read_size);
                 }
                 else if(compressflag) {
                     memcpy(tmp_buffer, buffer, read_size);
