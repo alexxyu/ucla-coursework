@@ -1,3 +1,11 @@
+# Binary executables *
+######################
+*
+!*.*
+!*/
+!README
+!Makefile
+
 # Compiled source #
 ###################
 *.com
@@ -6,11 +14,6 @@
 *.exe
 *.o
 *.so
-*
-!/**/
-!Makefile
-!README
-!*.*
 
 # Packages #
 ############
