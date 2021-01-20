@@ -167,6 +167,27 @@ int decompress_message(char* buffer, int read_size, char* decompressed_buffer, i
 
 }
 
+void write_buffer_to_stdout(char* buffer, int read_size) {
+
+    for(int i=0; i<read_size; i++) {
+        char c = buffer[i];
+
+        if(c == EOF_CODE) {
+            write_char(STDOUT_FILENO, '^');
+            write_char(STDOUT_FILENO, 'D');
+        } else if(c == INT_CODE) {
+            write_char(STDOUT_FILENO, '^');
+            write_char(STDOUT_FILENO, 'C');
+        } else if(c == LF_CODE || c == CR_CODE) {
+            write_char(STDOUT_FILENO, CR_CODE);
+            write_char(STDOUT_FILENO, LF_CODE);
+        } else {
+            write_char(STDOUT_FILENO, c);
+        }
+    }
+
+}
+
 void process_input() {
 
     char buffer[BUFF_SIZE], tmp_buffer[BUFF_SIZE];
@@ -184,38 +205,19 @@ void process_input() {
                     exit(1);
                 }
 
-                // Echo input to stdout and handle special input
-                for(int i=0; i<read_size; i++) {
-                    char c = buffer[i];
-
-                    if(c == EOF_CODE) {
-                        write_char(STDOUT_FILENO, '^');
-                        write_char(STDOUT_FILENO, 'D');
-                    } else if(c == INT_CODE) {
-                        write_char(STDOUT_FILENO, '^');
-                        write_char(STDOUT_FILENO, 'C');
-                    } else if(c == LF_CODE || c == CR_CODE) {
-                        write_char(STDOUT_FILENO, CR_CODE);
-                        write_char(STDOUT_FILENO, LF_CODE);
-                    } else {
-                        write_char(STDOUT_FILENO, c);
-                    }
-                }
+                write_buffer_to_stdout(buffer, read_size);
 
                 // Handle logging/compression if specified and write to server
                 if(compressflag) {
                     memcpy(tmp_buffer, buffer, read_size);
                     read_size = compress_message(tmp_buffer, read_size, buffer, BUFF_SIZE);
-                    write(cli_sockfd, buffer, read_size);
-
-                    // if(logfile) write_to_log(tmp_buffer, read_size, 1);
-                } else {
-                    write(cli_sockfd, buffer, read_size);
-                }
+                } 
 
                 if(logfile) {
                     write_to_log(buffer, read_size, 1);
                 }
+                
+                write(cli_sockfd, buffer, read_size);
 
             } else if(pollfds[1].revents & POLLIN) {
 
@@ -236,16 +238,7 @@ void process_input() {
                     read_size = decompress_message(tmp_buffer, read_size, buffer, BUFF_SIZE);
                 }
 
-                // Write socket input to stdout
-                for(int i=0; i<read_size; i++) {
-                    char c = buffer[i];
-                    if(c == LF_CODE || c == CR_CODE) {
-                        write_char(STDOUT_FILENO, CR_CODE);
-                        write_char(STDOUT_FILENO, LF_CODE);
-                    } else {
-                        write_char(STDOUT_FILENO, c);
-                    }
-                }
+                write_buffer_to_stdout(buffer, read_size);
 
             }
 
