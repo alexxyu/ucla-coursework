@@ -196,6 +196,8 @@ void process_input() {
     while( !exit_flag && (n_ready = poll(pollfds, 2, POLL_TIMEOUT)) >= 0 ) {
 
         if(n_ready > 0) {
+            bzero(buffer, BUFF_SIZE);
+
             if(pollfds[0].revents & POLLIN) {
 
                 // Handle keyboard input
@@ -276,6 +278,7 @@ void connect_to_server(int port) {
     // Initialize server address struct
     server = gethostbyname("localhost");
     bzero((char *) &serv_addr, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
     bcopy((char *) server->h_addr, (char *) &serv_addr.sin_addr.s_addr, server->h_length);
     serv_addr.sin_port = htons(port);
 
@@ -285,7 +288,7 @@ void connect_to_server(int port) {
         exit(1);
     }
 
-    fprintf(stderr, "CONNECTED TO SERVER\n\r");
+    fprintf(stderr, "CONNECTED TO SERVER\r\n");
 
 }
 
