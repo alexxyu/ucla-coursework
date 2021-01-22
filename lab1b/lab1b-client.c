@@ -214,7 +214,6 @@ void process_input() {
                     memcpy(tmp_buffer, buffer, read_size);
                     read_size = compress_message(tmp_buffer, read_size, buffer, BUFF_SIZE);
                 } 
-
                 if(logfile) {
                     write_to_log(buffer, read_size, 1);
                 }
@@ -228,13 +227,15 @@ void process_input() {
                 if(read_size < 0) {
                     fprintf(stderr, "Read failed: %s\r\n", strerror(errno));
                     exit(1);
+                } else if(read_size == 0) {
+                    // Extra check for 0 read bytes
+                    exit(0);
                 }
 
                 // Handle logging/decompression if specified
                 if(logfile) {
                     write_to_log(buffer, read_size, 0);
                 }
-
                 if(compressflag) {
                     memcpy(tmp_buffer, buffer, read_size);
                     read_size = decompress_message(tmp_buffer, read_size, buffer, BUFF_SIZE);
