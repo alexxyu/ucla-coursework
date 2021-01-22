@@ -23,29 +23,27 @@ struct pollfd* pollfds;
 const int POLL_TIMEOUT = -1;
 const short POLL_EVENTS = POLLIN | POLLHUP | POLLERR;
 
-struct termios newmode;
-struct termios currmode;
-
+int child_pid;
 int pipe_from_shell[2];         // [0] = read end of shell to terminal, [1] = write end
 int pipe_from_terminal[2];      // [0] = read end of terminal to shell, [1] = write end
 
-int serv_sockfd, serv_sockfd_new;
-int child_pid;
-
+int exit_flag;
 int compressflag;
+int serv_sockfd, serv_sockfd_new;
+
+char buffer[BUFF_SIZE], tmp_buffer[BUFF_SIZE];
 
 void print_usage_and_exit(char* exec) {
-    fprintf(stderr, "Usage: %s --port=INT [--compress]\n", exec);
+    fprintf(stderr, "Usage: %s --port=PORTNO [--compress]\n", exec);
     exit(1);
 }
 
-void write_char(int fd, const char ch) {
+void close_fds_on_exit() {
+    close(serv_sockfd);
+    close(serv_sockfd_new);
 
-    if(write(fd, &ch, 1) < 0) {
-        fprintf(stderr, "Write failed: %s\r\n", strerror(errno));
-        exit(1);
-    }
-
+    close(pipe_from_shell[0]);
+    close(pipe_from_terminal[1]);
 }
 
 int compress_message(char* buffer, int read_size, char* compressed_buffer, int cbuffer_size) {
@@ -118,43 +116,81 @@ int decompress_message(char* buffer, int read_size, char* decompressed_buffer, i
 
 }
 
-void cleanup() {
+void write_char(int fd, const char ch) {
 
-    int read_size, n_ready, exit_flag = 0;
-    char buffer[BUFF_SIZE];
-
-    close(pipe_from_terminal[1]);   
-
-    // Process any remaining input from shell
-    while(!exit_flag && (n_ready = poll(pollfds+1, 1, POLL_TIMEOUT)) >= 0 && !(pollfds[1].revents & POLLHUP) 
-          && !(pollfds[1].revents & POLLERR)) {
-        if(pollfds[1].revents & POLLIN && (read_size = read(pipe_from_shell[0], buffer, BUFF_SIZE)) > 0) {
-            for(int i=0; !exit_flag && i<read_size; i++) {
-                char c = buffer[i];
-
-                if(c == EOF_CODE) {
-                    exit_flag = 1;
-                } else if(c == LF_CODE || c == CR_CODE) {
-                    write_char(STDOUT_FILENO, CR_CODE);
-                    write_char(STDOUT_FILENO, LF_CODE);
-                } else {
-                    write_char(STDOUT_FILENO, c);
-                }
-
-            }
-
-            bzero(buffer, BUFF_SIZE);
-        }
-    }
-
-    if(n_ready < 0) {
-        fprintf(stderr, "Error while polling: %s\r\n", strerror(errno));
+    if(write(fd, &ch, 1) < 0) {
+        fprintf(stderr, "Write failed: %s\r\n", strerror(errno));
         exit(1);
     }
 
-    close(pipe_from_shell[0]);
-    close(serv_sockfd_new);
+}
 
+void handle_client_input() {
+
+    // Read from client into buffer
+    int read_size = read(pollfds[0].fd, buffer, BUFF_SIZE);
+    if(read_size < 0) {
+        fprintf(stderr, "Read failed: %s\r\n", strerror(errno));
+        exit(1);
+    }
+
+    // Decompress if specified
+    if(compressflag) {
+        memcpy(tmp_buffer, buffer, read_size);
+        read_size = decompress_message(tmp_buffer, read_size, buffer, BUFF_SIZE);
+    }
+
+    // Handle special input and send to shell
+    for(int i=0; !exit_flag && i<read_size; i++) {
+        char c = buffer[i];
+
+        if(c == EOF_CODE) {
+            exit_flag = 1;
+        } else if(c == INT_CODE) {
+            if(kill(child_pid, SIGINT) < 0) {
+                fprintf(stderr, "Error while interrupting child process: %s\r\n", strerror(errno));
+                exit(1);
+            }
+        } else if(c == LF_CODE || c == CR_CODE) {
+            write_char(pipe_from_terminal[1], LF_CODE);
+        } else {
+            write_char(pipe_from_terminal[1], c); 
+        }
+    }
+
+}
+
+void handle_shell_input() {
+
+    bzero(buffer, BUFF_SIZE);
+
+    // Read from shell into buffer
+    int read_size = read(pollfds[1].fd, buffer, BUFF_SIZE);
+    if(read_size < 0) {
+        fprintf(stderr, "Read failed: %s\r\n", strerror(errno));
+        exit(1);
+    }
+
+    // Compress if specified and send shell input back to client
+    if(compressflag) {
+        memcpy(tmp_buffer, buffer, read_size);
+        read_size = compress_message(tmp_buffer, read_size, buffer, BUFF_SIZE);
+
+        write(serv_sockfd_new, buffer, read_size);
+    } else {
+        write(serv_sockfd_new, buffer, read_size);
+    }
+
+}
+
+void cleanup() {
+
+    while(!exit_flag && poll(pollfds+1, 1, POLL_TIMEOUT) >= 0 && !(pollfds[1].revents & POLLHUP) 
+          && !(pollfds[1].revents & POLLERR)) {
+        handle_shell_input();
+    }
+
+    // Harvest shell's completion status
     int status;
     if(waitpid(child_pid, &status, 0) < 0) {
         fprintf(stderr, "Error while waiting for child process: %s\r\n", strerror(errno));
@@ -174,82 +210,29 @@ void handle_sigpipe() {
 
 void process_input_with_shell() {
 
-    char buffer[BUFF_SIZE];
-    int read_size;
-
+    exit_flag = 0;
     signal(SIGPIPE, handle_sigpipe);
 
-    int n_ready, exit_flag = 0;
+    int n_ready;
     while( !exit_flag && (n_ready = poll(pollfds, 2, POLL_TIMEOUT)) >= 0 ) {
 
         if(n_ready > 0) {
-            bzero(buffer, BUFF_SIZE);
-
             if(pollfds[0].revents & POLLIN) {
-                // Handle input from client
-                read_size = read(pollfds[0].fd, buffer, BUFF_SIZE);
-                if(read_size < 0) {
-                    fprintf(stderr, "Read failed: %s\r\n", strerror(errno));
-                    exit(1);
-                }
-
-                // Decompress if specified
-                if(compressflag) {
-                    char tmp[BUFF_SIZE];
-                    memcpy(tmp, buffer, read_size);
-                    read_size = decompress_message(tmp, read_size, buffer, BUFF_SIZE);
-                }
-
-                // Handle special input and send to shell
-                for(int i=0; !exit_flag && i<read_size; i++) {
-                    char c = buffer[i];
-
-                    if(c == EOF_CODE) {
-                        exit_flag = 1;
-                    } else if(c == INT_CODE) {
-                        if(kill(child_pid, SIGINT) < 0) {
-                            fprintf(stderr, "Error while interrupting child process: %s\r\n", strerror(errno));
-                            exit(1);
-                        }
-                    } else if(c == LF_CODE || c == CR_CODE) {
-                        write_char(pipe_from_terminal[1], LF_CODE);
-                    } else {
-                        write_char(pipe_from_terminal[1], c); 
-                    }
-                }
-            } else if(pollfds[1].revents & POLLIN) {
-                // Handle shell input
-                read_size = read(pollfds[1].fd, buffer, BUFF_SIZE);
-                if(read_size < 0) {
-                    fprintf(stderr, "Read failed: %s\r\n", strerror(errno));
-                    exit(1);
-                }
-
-                // Compress if specified and send shell input back to client
-                if(compressflag) {
-                    char tmp[BUFF_SIZE];
-                    memcpy(tmp, buffer, read_size);
-                    read_size = compress_message(tmp, read_size, buffer, BUFF_SIZE);
-
-                    write(serv_sockfd_new, buffer, read_size);
-                } else {
-                    write(serv_sockfd_new, buffer, read_size);
-                }
+                handle_client_input();
             }
-
+            if(pollfds[1].revents & POLLIN) {
+                handle_shell_input();
+            }
             if(pollfds[0].revents & POLLHUP || pollfds[0].revents & POLLERR) {
                 fprintf(stderr, "Error polling from the client: %s\r\n", strerror(errno));
                 exit(1);
             }
-
             if(pollfds[1].revents & POLLHUP || pollfds[1].revents & POLLERR) {
-                // Receipt of polling error means no more output from shell
                 exit_flag = 1;
             }
         }
 
     }
-
     cleanup();
 
 }
@@ -278,8 +261,12 @@ void connect_to_client(int port) {
     }
 
     // Listen for connection and accept
-    listen(serv_sockfd, 5);
+    if(listen(serv_sockfd, 5) < 0) {
+        fprintf(stderr, "Error while listening to socket: %s\r\n", strerror(errno));
+        exit(1);
+    }
 
+    // Accept client connection
     socklen_t cli_len = sizeof(cli_addr);
     serv_sockfd_new = accept(serv_sockfd, (struct sockaddr *) &cli_addr, &cli_len);
     if(serv_sockfd_new < 0) {
@@ -317,6 +304,10 @@ int main(int argc, char *argv[]) {
         }
         
     }
+
+    // Handle extra arguments
+    if(optind < argc)
+        print_usage_and_exit(argv[0]);
     
     if(port <= 0) {
         fprintf(stderr, "Please enter a valid port number.\n");
