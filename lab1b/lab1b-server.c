@@ -4,7 +4,6 @@ EMAIL: alexy23@g.ucla.edu
 ID: 105295708
 */
 
-#include <termios.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -40,33 +39,6 @@ void print_usage_and_exit(char* exec) {
     exit(1);
 }
 
-void restore_terminal_mode() {
-    if(tcsetattr(STDIN_FILENO, TCSANOW, &currmode) < 0) {
-        fprintf(stderr, "Error while setting terminal mode attributes: %s\r\n", strerror(errno));
-        exit(1);
-    }
-}
-
-void set_terminal_mode() {
-
-    if(tcgetattr(STDIN_FILENO, &newmode) < 0) {
-        fprintf(stderr, "Error while getting terminal mode attributes: %s\r\n", strerror(errno));
-        exit(1);
-    }
-
-    memcpy(&currmode, &newmode, sizeof(newmode));
-    newmode.c_iflag = ISTRIP;	/* only lower 7 bits	*/
-    newmode.c_oflag = 0;		/* no processing	*/
-    newmode.c_lflag = 0;		/* no processing	*/
-    
-    if(tcsetattr(STDIN_FILENO, TCSANOW, &newmode) < 0) {
-        fprintf(stderr, "Error while setting terminal mode attributes: %s\r\n", strerror(errno));
-        exit(1);
-    }
-    atexit(restore_terminal_mode);
-
-}
-
 void write_char(int fd, const char ch) {
 
     if(write(fd, &ch, 1) < 0) {
@@ -81,6 +53,7 @@ int compress_message(char* buffer, int read_size, char* compressed_buffer, int c
     int ret;
     z_stream strm;
 
+    // Initialize zlib stream parameters
     strm.zalloc = Z_NULL;
     strm.zfree = Z_NULL;
     strm.opaque = Z_NULL;
@@ -96,12 +69,14 @@ int compress_message(char* buffer, int read_size, char* compressed_buffer, int c
     strm.avail_out = cbuffer_size;
     strm.next_out = (Bytef*) compressed_buffer;
 
+    // Compress input into compressed buffer
     ret = deflate(&strm, Z_SYNC_FLUSH);
     if(ret == Z_STREAM_ERROR) {
         fprintf(stderr, "Error compressing message\n");
         deflateEnd(&strm);
     }
 
+    // Clean up and return read size of compressed buffer
     deflateEnd(&strm);
     return cbuffer_size - strm.avail_out;
 
@@ -111,6 +86,7 @@ int decompress_message(char* buffer, int read_size, char* decompressed_buffer, i
 
     int ret;
 
+    // Initialize zlib stream parameters
     z_stream strm;
     strm.zalloc = Z_NULL;
     strm.zfree = Z_NULL;
@@ -129,14 +105,15 @@ int decompress_message(char* buffer, int read_size, char* decompressed_buffer, i
     strm.avail_out = dbuffer_size;
     strm.next_out = (Bytef*) decompressed_buffer;
 
+    // Decompress input into decompressed buffer
     ret = inflate(&strm, Z_SYNC_FLUSH);
     if(ret == Z_STREAM_ERROR) {
         fprintf(stderr, "Error decompressing message\n");
         inflateEnd(&strm);
     }
 
+    // Clean up and return read size of decompressed buffer
     inflateEnd(&strm);
-
     return dbuffer_size - strm.avail_out;
 
 }
@@ -183,8 +160,7 @@ void cleanup() {
         fprintf(stderr, "Error while waiting for child process: %s\r\n", strerror(errno));
         exit(1);
     }
-    fprintf(stderr, "SHELL EXIT SIGNAL=%d STATUS=%d\n", WTERMSIG(status), WEXITSTATUS(status));
-
+    fprintf(stderr, "SHELL EXIT SIGNAL=%d STATUS=%d\r\n", WTERMSIG(status), WEXITSTATUS(status));
     exit(0);
 
 }
@@ -207,6 +183,8 @@ void process_input_with_shell() {
     while( !exit_flag && (n_ready = poll(pollfds, 2, POLL_TIMEOUT)) >= 0 ) {
 
         if(n_ready > 0) {
+            bzero(buffer, BUFF_SIZE);
+
             if(pollfds[0].revents & POLLIN) {
                 // Handle input from client
                 read_size = read(pollfds[0].fd, buffer, BUFF_SIZE);
@@ -347,7 +325,6 @@ int main(int argc, char *argv[]) {
 
     connect_to_client(port);
 
-    set_terminal_mode();
     pipe(pipe_from_shell);
     pipe(pipe_from_terminal);
 
