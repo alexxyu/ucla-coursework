@@ -39,7 +39,7 @@ int logfd, compressflag;
 char buffer[BUFF_SIZE], tmp_buffer[BUFF_SIZE];
 
 void print_usage_and_exit(char* exec) {
-    fprintf(stderr, "Usage: %s --port=INT [--log=FILENAME] [--compress]\n", exec);
+    fprintf(stderr, "Usage: %s --port=PORTNO [--log=FILENAME] [--compress]\n", exec);
     exit(1);
 }
 
@@ -337,8 +337,12 @@ int main(int argc, char *argv[]) {
         
     }
 
+    // Handle extra arguments
+    if(optind < argc)
+        print_usage_and_exit(argv[0]);
+
     if(port <= 0) {
-        fprintf(stderr, "Please enter a valid port number.\n");
+        fprintf(stderr, "Please enter a valid port number\n");
         print_usage_and_exit(argv[0]);
     }
     
