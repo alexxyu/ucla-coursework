@@ -31,7 +31,7 @@ lab1b-client.o: lab1b-client.c
 	$(CC) $(CFLAGS) -c lab1b-client.c
 
 dist: $(DISTNAME)
-dist-files = lab1b-client.c lab1b-server.c Makefile README
+dist-files = lab1b-client.c lab1b-server.c constants.h Makefile README
 $(DISTNAME): $(dist-files)
 	$(TAR) $(TARFLAGS) $@ $(dist-files)
 
