@@ -19,6 +19,8 @@ ID: 105295708
 #include "zlib.h"
 #include "constants.h"
 
+#define BUFF_SIZE 256
+
 struct pollfd* pollfds;
 const int POLL_TIMEOUT = -1;
 const short POLL_EVENTS = POLLIN | POLLHUP | POLLERR;
@@ -126,6 +128,8 @@ void write_char(int fd, const char ch) {
 }
 
 void handle_client_input() {
+
+    bzero(buffer, BUFF_SIZE);
 
     // Read from client into buffer
     int read_size = read(pollfds[0].fd, buffer, BUFF_SIZE);

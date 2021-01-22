@@ -23,6 +23,8 @@ ID: 105295708
 #include "zlib.h"
 #include "constants.h"
 
+#define BUFF_SIZE 256
+
 const long FLIMIT = 10000;
 const int POLL_TIMEOUT = -1;
 const short POLL_EVENTS = POLLIN | POLLHUP | POLLERR;
