@@ -4,15 +4,15 @@ EMAIL: alexy23@g.ucla.edu
 ID: 105295708
 */
 
-#include <termios.h>
-#include <unistd.h>
 #include <stdlib.h>
-#include <string.h>
 #include <stdio.h>
-#include <errno.h>
+#include <unistd.h>
+#include <string.h>
 #include <getopt.h>
+#include <errno.h>
 #include <poll.h>
 #include <signal.h>
+#include <termios.h>
 #include <netdb.h>
 #include <fcntl.h>
 #include <ulimit.h>
@@ -23,23 +23,30 @@ ID: 105295708
 #include "zlib.h"
 #include "constants.h"
 
-struct pollfd* pollfds;
+const long FLIMIT = 10000;
 const int POLL_TIMEOUT = -1;
 const short POLL_EVENTS = POLLIN | POLLHUP | POLLERR;
-
-const long FLIMIT = 10000;
 
 struct termios newmode;
 struct termios currmode;
 
-int cli_sockfd;
+struct pollfd* pollfds;
 
-int logfd, compressflag;
 char* logfile;
+int cli_sockfd;
+int logfd, compressflag;
+
+char buffer[BUFF_SIZE], tmp_buffer[BUFF_SIZE];
 
 void print_usage_and_exit(char* exec) {
     fprintf(stderr, "Usage: %s --port=INT [--log=FILENAME] [--compress]\n", exec);
     exit(1);
+}
+
+void close_fds_on_exit() {
+    if(logfile) 
+        close(logfd);
+    close(cli_sockfd);
 }
 
 void restore_terminal_mode() {
@@ -47,8 +54,6 @@ void restore_terminal_mode() {
         fprintf(stderr, "Error while setting terminal mode attributes: %s\r\n", strerror(errno));
         exit(1);
     }
-
-    if(logfile) close(logfd);
 }
 
 void set_terminal_mode() {
@@ -69,28 +74,6 @@ void set_terminal_mode() {
     }
     atexit(restore_terminal_mode);
 
-}
-
-void write_char(int fd, const char ch) {
-
-    if(write(fd, &ch, 1) < 0) {
-        fprintf(stderr, "Write failed: %s\r\n", strerror(errno));
-        exit(1);
-    }
-
-}
-
-void write_to_log(char* buffer, int size, int sent) {
-    char log_buffer[BUFF_SIZE];
-    buffer[size] = '\0';
-
-    char* action = (sent) ? "SENT" : "RECEIVED";
-    int log_size = sprintf(log_buffer, "%s %d bytes: %s\n", action, size, buffer);
-
-    if(write(logfd, log_buffer, log_size) < 0) {
-        fprintf(stderr, "Error writing to log file: %s\r\n", strerror(errno));
-        exit(1);
-    }
 }
 
 int compress_message(char* buffer, int read_size, char* compressed_buffer, int cbuffer_size) {
@@ -167,6 +150,28 @@ int decompress_message(char* buffer, int read_size, char* decompressed_buffer, i
 
 }
 
+void write_char(int fd, const char ch) {
+
+    if(write(fd, &ch, 1) < 0) {
+        fprintf(stderr, "Write failed: %s\r\n", strerror(errno));
+        exit(1);
+    }
+
+}
+
+void write_to_log(char* buffer, int size, int sent) {
+    char log_buffer[BUFF_SIZE];
+    buffer[size] = '\0';
+
+    char* action = (sent) ? "SENT" : "RECEIVED";
+    int log_size = sprintf(log_buffer, "%s %d bytes: %s\n", action, size, buffer);
+
+    if(write(logfd, log_buffer, log_size) < 0) {
+        fprintf(stderr, "Error writing to log file: %s\r\n", strerror(errno));
+        exit(1);
+    }
+}
+
 void write_buffer_to_stdout(char* buffer, int read_size) {
 
     for(int i=0; i<read_size; i++) {
@@ -188,69 +193,76 @@ void write_buffer_to_stdout(char* buffer, int read_size) {
 
 }
 
+void handle_keyboard_input() {
+
+    bzero(buffer, BUFF_SIZE);
+
+    // Read from keyboard into buffer
+    int read_size = read(pollfds[0].fd, buffer, BUFF_SIZE);
+    if(read_size < 0) {
+        fprintf(stderr, "Read failed: %s\r\n", strerror(errno));
+        exit(1);
+    }
+
+    write_buffer_to_stdout(buffer, read_size);
+
+    // Handle logging/compression if specified and write to server
+    if(compressflag) {
+        memcpy(tmp_buffer, buffer, read_size);
+        read_size = compress_message(tmp_buffer, read_size, buffer, BUFF_SIZE);
+    } 
+    if(logfile) {
+        write_to_log(buffer, read_size, 1);
+    }
+    write(cli_sockfd, buffer, read_size);
+
+}
+
+void handle_socket_input() {
+
+    bzero(buffer, BUFF_SIZE);
+
+    // Read from socket into buffer
+    int read_size = read(pollfds[1].fd, buffer, BUFF_SIZE);
+    if(read_size < 0) {
+        fprintf(stderr, "Read failed: %s\r\n", strerror(errno));
+        exit(1);
+    } else if(read_size == 0) {
+        // Extra check for 0 read bytes
+        exit(0);
+    }
+
+    // Handle logging/decompression if specified
+    if(logfile) {
+        write_to_log(buffer, read_size, 0);
+    }
+    if(compressflag) {
+        memcpy(tmp_buffer, buffer, read_size);
+        read_size = decompress_message(tmp_buffer, read_size, buffer, BUFF_SIZE);
+    }
+
+    write_buffer_to_stdout(buffer, read_size);
+
+}
+
 void process_input() {
 
-    char buffer[BUFF_SIZE], tmp_buffer[BUFF_SIZE];
-
-    int read_size, n_ready, exit_flag = 0;
+    int n_ready, exit_flag = 0;
     while( !exit_flag && (n_ready = poll(pollfds, 2, POLL_TIMEOUT)) >= 0 ) {
 
         if(n_ready > 0) {
-            bzero(buffer, BUFF_SIZE);
-
             if(pollfds[0].revents & POLLIN) {
-
-                // Handle keyboard input
-                read_size = read(pollfds[0].fd, buffer, BUFF_SIZE);
-                if(read_size < 0) {
-                    fprintf(stderr, "Read failed: %s\r\n", strerror(errno));
-                    exit(1);
-                }
-
-                write_buffer_to_stdout(buffer, read_size);
-
-                // Handle logging/compression if specified and write to server
-                if(compressflag) {
-                    memcpy(tmp_buffer, buffer, read_size);
-                    read_size = compress_message(tmp_buffer, read_size, buffer, BUFF_SIZE);
-                } 
-                if(logfile) {
-                    write_to_log(buffer, read_size, 1);
-                }
-                
-                write(cli_sockfd, buffer, read_size);
-
-            } else if(pollfds[1].revents & POLLIN) {
-
-                // Handle socket input
-                read_size = read(pollfds[1].fd, buffer, BUFF_SIZE);
-                if(read_size < 0) {
-                    fprintf(stderr, "Read failed: %s\r\n", strerror(errno));
-                    exit(1);
-                } else if(read_size == 0) {
-                    // Extra check for 0 read bytes
-                    exit(0);
-                }
-
-                // Handle logging/decompression if specified
-                if(logfile) {
-                    write_to_log(buffer, read_size, 0);
-                }
-                if(compressflag) {
-                    memcpy(tmp_buffer, buffer, read_size);
-                    read_size = decompress_message(tmp_buffer, read_size, buffer, BUFF_SIZE);
-                }
-
-                write_buffer_to_stdout(buffer, read_size);
-
+                handle_keyboard_input();
+            } 
+            if(pollfds[1].revents & POLLIN) {
+                handle_socket_input();
             }
-
             if(pollfds[0].revents & POLLHUP || pollfds[0].revents & POLLERR) {
                 fprintf(stderr, "Error polling from keyboard: %s\r\n", strerror(errno));
                 exit(1);
             }
-
             if(pollfds[1].revents & POLLHUP || pollfds[1].revents & POLLERR) {
+                handle_socket_input();
                 exit_flag = 1;
             }
         }
@@ -331,6 +343,7 @@ int main(int argc, char *argv[]) {
     }
     
     connect_to_server(port);
+    atexit(close_fds_on_exit);
 
     // Establish socket connection to server here
     struct pollfd p[2] = {
@@ -339,11 +352,10 @@ int main(int argc, char *argv[]) {
     };
     pollfds = p;
 
-    // Create log file
+    // Create log file if specified
     if(logfile) {
         ulimit(UL_SETFSIZE, FLIMIT);
-        logfd = creat(logfile, 0666);
-        if(logfd < 0) {
+        if( (logfd = creat(logfile, 0666)) < 0 ) {
             fprintf(stderr, "Error creating log file: %s\r\n", strerror(errno));
             exit(1);
         }
