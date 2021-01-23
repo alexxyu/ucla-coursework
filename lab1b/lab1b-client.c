@@ -303,7 +303,7 @@ void connect_to_server(int port) {
         exit(1);
     }
 
-    fprintf(stderr, "CONNECTED TO SERVER\r\n");
+    // fprintf(stderr, "CONNECTED TO SERVER\r\n");
 
 }
 
