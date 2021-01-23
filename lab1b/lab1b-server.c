@@ -28,6 +28,7 @@ const short POLL_EVENTS = POLLIN | POLLHUP | POLLERR;
 int child_pid;
 int pipe_from_shell[2];         // [0] = read end of shell to terminal, [1] = write end
 int pipe_from_terminal[2];      // [0] = read end of terminal to shell, [1] = write end
+int write_pipe_is_open;
 
 int exit_flag;
 int compressflag;
@@ -45,7 +46,9 @@ void close_fds_on_exit() {
     close(serv_sockfd_new);
 
     close(pipe_from_shell[0]);
-    close(pipe_from_terminal[1]);
+
+    if(write_pipe_is_open) 
+        close(pipe_from_terminal[1]);
 }
 
 int compress_message(char* buffer, int read_size, char* compressed_buffer, int cbuffer_size) {
@@ -189,6 +192,10 @@ void handle_shell_input() {
 
 void cleanup() {
 
+    close(pipe_from_terminal[1]);
+    write_pipe_is_open = 0;
+
+    exit_flag = 0;
     while(!exit_flag && poll(pollfds+1, 1, POLL_TIMEOUT) >= 0 && !(pollfds[1].revents & POLLHUP) 
           && !(pollfds[1].revents & POLLERR)) {
         handle_shell_input();
@@ -227,11 +234,8 @@ void process_input_with_shell() {
             if(pollfds[1].revents & POLLIN) {
                 handle_shell_input();
             }
-            if(pollfds[0].revents & POLLHUP || pollfds[0].revents & POLLERR) {
-                fprintf(stderr, "Error polling from the client: %s\r\n", strerror(errno));
-                exit(1);
-            }
-            if(pollfds[1].revents & POLLHUP || pollfds[1].revents & POLLERR) {
+            if(pollfds[0].revents & POLLHUP || pollfds[0].revents & POLLERR || 
+               pollfds[1].revents & POLLHUP || pollfds[1].revents & POLLERR) {
                 exit_flag = 1;
             }
         }
@@ -278,7 +282,7 @@ void connect_to_client(int port) {
         exit(1);
     }
 
-    fprintf(stderr, "ACCEPTED CLIENT CONNECTION\r\n");
+    // fprintf(stderr, "ACCEPTED CLIENT CONNECTION\r\n");
 
 }
 
@@ -322,6 +326,7 @@ int main(int argc, char *argv[]) {
 
     pipe(pipe_from_shell);
     pipe(pipe_from_terminal);
+    write_pipe_is_open = 1;
 
     struct pollfd p[2] = {
         {serv_sockfd_new, POLL_EVENTS, 0},
