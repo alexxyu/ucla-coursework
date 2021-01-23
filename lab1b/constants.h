@@ -1,3 +1,9 @@
+/*
+NAME: Alex Yu
+EMAIL: alexy23@g.ucla.edu
+ID: 105295708
+*/
+
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
