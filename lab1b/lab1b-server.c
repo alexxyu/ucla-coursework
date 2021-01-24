@@ -47,8 +47,9 @@ void close_fds_on_exit() {
 
     close(pipe_from_shell[0]);
 
-    if(write_pipe_is_open) 
+    if(write_pipe_is_open) {
         close(pipe_from_terminal[1]);
+    }
 }
 
 int compress_message(char* buffer, int read_size, char* compressed_buffer, int cbuffer_size) {
@@ -124,7 +125,7 @@ int decompress_message(char* buffer, int read_size, char* decompressed_buffer, i
 void write_char(int fd, const char ch) {
 
     if(write(fd, &ch, 1) < 0) {
-        fprintf(stderr, "Write failed: %s\r\n", strerror(errno));
+        fprintf(stderr, "Write failed: %s\n", strerror(errno));
         exit(1);
     }
 
@@ -137,7 +138,7 @@ void handle_client_input() {
     // Read from client into buffer
     int read_size = read(pollfds[0].fd, buffer, BUFF_SIZE);
     if(read_size < 0) {
-        fprintf(stderr, "Read failed: %s\r\n", strerror(errno));
+        fprintf(stderr, "Read failed: %s\n", strerror(errno));
         exit(1);
     }
 
@@ -155,7 +156,7 @@ void handle_client_input() {
             exit_flag = 1;
         } else if(c == INT_CODE) {
             if(kill(child_pid, SIGINT) < 0) {
-                fprintf(stderr, "Error while interrupting child process: %s\r\n", strerror(errno));
+                fprintf(stderr, "Error while interrupting child process: %s\n", strerror(errno));
                 exit(1);
             }
         } else if(c == LF_CODE || c == CR_CODE) {
@@ -174,7 +175,7 @@ void handle_shell_input() {
     // Read from shell into buffer
     int read_size = read(pollfds[1].fd, buffer, BUFF_SIZE);
     if(read_size < 0) {
-        fprintf(stderr, "Read failed: %s\r\n", strerror(errno));
+        fprintf(stderr, "Read failed: %s\n", strerror(errno));
         exit(1);
     }
 
@@ -204,10 +205,10 @@ void cleanup() {
     // Harvest shell's completion status
     int status;
     if(waitpid(child_pid, &status, 0) < 0) {
-        fprintf(stderr, "Error while waiting for child process: %s\r\n", strerror(errno));
+        fprintf(stderr, "Error while waiting for child process: %s\n", strerror(errno));
         exit(1);
     }
-    fprintf(stderr, "SHELL EXIT SIGNAL=%d STATUS=%d\r\n", WTERMSIG(status), WEXITSTATUS(status));
+    fprintf(stderr, "SHELL EXIT SIGNAL=%d STATUS=%d\n", WTERMSIG(status), WEXITSTATUS(status));
     exit(0);
 
 }
@@ -222,7 +223,10 @@ void handle_sigpipe() {
 void process_input_with_shell() {
 
     exit_flag = 0;
-    signal(SIGPIPE, handle_sigpipe);
+    if(signal(SIGPIPE, handle_sigpipe) == SIG_ERR) {
+        fprintf(stderr, "Error while setting SIGPIPE handler: %s\n", strerror(errno));
+        exit(1);
+    }
 
     int n_ready;
     while( !exit_flag && (n_ready = poll(pollfds, 2, POLL_TIMEOUT)) >= 0 ) {
@@ -252,7 +256,7 @@ void connect_to_client(int port) {
     // Create socket
     serv_sockfd = socket(AF_INET /*protocol domain*/, SOCK_STREAM /*type*/, 0 /*protocol*/);
     if(serv_sockfd < 0) {
-        fprintf(stderr, "Error creating socket: %s\r\n", strerror(errno));
+        fprintf(stderr, "Error creating socket: %s\n", strerror(errno));
         exit(1);
     }
 
@@ -264,13 +268,13 @@ void connect_to_client(int port) {
 
     // Bind socket to server address
     if(bind(serv_sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-        fprintf(stderr, "Error binding socket to address: %s\r\n", strerror(errno));
+        fprintf(stderr, "Error binding socket to address: %s\n", strerror(errno));
         exit(1);
     }
 
     // Listen for connection and accept
     if(listen(serv_sockfd, 5) < 0) {
-        fprintf(stderr, "Error while listening to socket: %s\r\n", strerror(errno));
+        fprintf(stderr, "Error while listening to socket: %s\n", strerror(errno));
         exit(1);
     }
 
@@ -278,11 +282,11 @@ void connect_to_client(int port) {
     socklen_t cli_len = sizeof(cli_addr);
     serv_sockfd_new = accept(serv_sockfd, (struct sockaddr *) &cli_addr, &cli_len);
     if(serv_sockfd_new < 0) {
-        fprintf(stderr, "Error accepting client connection: %s\r\n", strerror(errno));
+        fprintf(stderr, "Error accepting client connection: %s\n", strerror(errno));
         exit(1);
     }
 
-    // fprintf(stderr, "ACCEPTED CLIENT CONNECTION\r\n");
+    // fprintf(stderr, "ACCEPTED CLIENT CONNECTION\n");
 
 }
 
@@ -314,8 +318,9 @@ int main(int argc, char *argv[]) {
     }
 
     // Handle extra arguments
-    if(optind < argc)
+    if(optind < argc) {
         print_usage_and_exit(argv[0]);
+    }
     
     if(port <= 0) {
         fprintf(stderr, "Please enter a valid port number.\n");
@@ -324,8 +329,14 @@ int main(int argc, char *argv[]) {
 
     connect_to_client(port);
 
-    pipe(pipe_from_shell);
-    pipe(pipe_from_terminal);
+    if(pipe(pipe_from_shell) < 0) {
+        fprintf(stderr, "Error during pipe creation: %s\n", strerror(errno));
+        exit(1);
+    }
+    if(pipe(pipe_from_terminal) < 0) {
+        fprintf(stderr, "Error during pipe creation: %s\n", strerror(errno));
+        exit(1);
+    }
     write_pipe_is_open = 1;
 
     struct pollfd p[2] = {

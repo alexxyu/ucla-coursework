@@ -46,9 +46,10 @@ void print_usage_and_exit(char* exec) {
 }
 
 void close_fds_on_exit() {
-    if(logfile) 
-        close(logfd);
     close(cli_sockfd);
+    if(logfile) {
+        close(logfd);
+    }
 }
 
 void restore_terminal_mode() {
@@ -74,7 +75,11 @@ void set_terminal_mode() {
         fprintf(stderr, "Error while setting terminal mode attributes: %s\r\n", strerror(errno));
         exit(1);
     }
-    atexit(restore_terminal_mode);
+
+    if(atexit(restore_terminal_mode) < 0) {
+        fprintf(stderr, "Error while registering exit function: %s\r\n", strerror(errno));
+        exit(1);
+    }
 
 }
 
@@ -90,7 +95,7 @@ int compress_message(char* buffer, int read_size, char* compressed_buffer, int c
 
     ret = deflateInit(&strm, Z_DEFAULT_COMPRESSION);
     if(ret != Z_OK) {
-        fprintf(stderr, "Error initializing zlib\n");
+        fprintf(stderr, "Error initializing zlib\r\n");
         exit(1);
     }
 
@@ -100,13 +105,11 @@ int compress_message(char* buffer, int read_size, char* compressed_buffer, int c
     strm.next_out = (Bytef*) compressed_buffer;
 
     // Compress input into compressed buffer
-    do {
-        ret = deflate(&strm, Z_SYNC_FLUSH);
-        if(ret == Z_STREAM_ERROR) {
-            fprintf(stderr, "Error compressing message\n");
-            deflateEnd(&strm);
-        }
-    } while(strm.avail_in > 0);
+    ret = deflate(&strm, Z_SYNC_FLUSH);
+    if(ret == Z_STREAM_ERROR) {
+        fprintf(stderr, "Error compressing message\r\n");
+        deflateEnd(&strm);
+    }
 
     // Clean up and return read size of compressed buffer
     deflateEnd(&strm);
@@ -128,7 +131,7 @@ int decompress_message(char* buffer, int read_size, char* decompressed_buffer, i
 
     ret = inflateInit(&strm);
     if(ret != Z_OK) {
-        fprintf(stderr, "Error initializing zlib\n");
+        fprintf(stderr, "Error initializing zlib\r\n");
         exit(1);
     }
 
@@ -138,13 +141,11 @@ int decompress_message(char* buffer, int read_size, char* decompressed_buffer, i
     strm.next_out = (Bytef*) decompressed_buffer;
 
     // Decompress input into decompressed buffer
-    do {
-        ret = inflate(&strm, Z_SYNC_FLUSH);
-        if(ret == Z_STREAM_ERROR) {
-            fprintf(stderr, "Error decompressing message\n");
-            inflateEnd(&strm);
-        }
-    } while(strm.avail_in > 0);
+    ret = inflate(&strm, Z_SYNC_FLUSH);
+    if(ret == Z_STREAM_ERROR) {
+        fprintf(stderr, "Error decompressing message\r\n");
+        inflateEnd(&strm);
+    }
 
     // Clean up and return read size of decompressed buffer
     inflateEnd(&strm);
@@ -349,7 +350,10 @@ int main(int argc, char *argv[]) {
     }
     
     connect_to_server(port);
-    atexit(close_fds_on_exit);
+    if(atexit(close_fds_on_exit) != 0) {
+        fprintf(stderr, "Error while registering exit function: %s\r\n", strerror(errno));
+        exit(1);
+    } 
 
     // Establish socket connection to server here
     struct pollfd p[2] = {
