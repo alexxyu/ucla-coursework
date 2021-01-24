@@ -15,7 +15,6 @@ ID: 105295708
 #include <termios.h>
 #include <netdb.h>
 #include <fcntl.h>
-#include <ulimit.h>
 #include <netinet/in.h>
 #include <sys/wait.h>
 #include <sys/socket.h>
@@ -38,6 +37,7 @@ char* logfile;
 int cli_sockfd;
 int logfd, compressflag;
 
+z_stream strm_in, strm_out;
 char buffer[BUFF_SIZE], tmp_buffer[BUFF_SIZE];
 
 void print_usage_and_exit(char* exec) {
@@ -45,10 +45,15 @@ void print_usage_and_exit(char* exec) {
     exit(1);
 }
 
-void close_fds_on_exit() {
-    close(cli_sockfd);
+void close_io_on_exit() {
+    shutdown(cli_sockfd, SHUT_RDWR);
     if(logfile) {
         close(logfd);
+    }
+
+    if(compressflag) {
+        deflateEnd(&strm_out);
+        inflateEnd(&strm_in);
     }
 }
 
@@ -83,37 +88,51 @@ void set_terminal_mode() {
 
 }
 
-int compress_message(char* buffer, int read_size, char* compressed_buffer, int cbuffer_size) {
+void initialize_zstreams() {
 
     int ret;
-    z_stream strm;
 
     // Initialize zlib stream parameters
-    strm.zalloc = Z_NULL;
-    strm.zfree = Z_NULL;
-    strm.opaque = Z_NULL;
-
-    ret = deflateInit(&strm, Z_DEFAULT_COMPRESSION);
+    strm_out.zalloc = Z_NULL;
+    strm_out.zfree = Z_NULL;
+    strm_out.opaque = Z_NULL;
+    ret = deflateInit(&strm_out, Z_DEFAULT_COMPRESSION);
     if(ret != Z_OK) {
-        fprintf(stderr, "Error initializing zlib\r\n");
+        fprintf(stderr, "Error initializing zlib stream\r\n");
         exit(1);
     }
 
-    strm.avail_in = read_size;
-    strm.next_in = (Bytef*) buffer;
-    strm.avail_out = cbuffer_size;
-    strm.next_out = (Bytef*) compressed_buffer;
-
-    // Compress input into compressed buffer
-    ret = deflate(&strm, Z_SYNC_FLUSH);
-    if(ret == Z_STREAM_ERROR) {
-        fprintf(stderr, "Error compressing message\r\n");
-        deflateEnd(&strm);
+    strm_in.zalloc = Z_NULL;
+    strm_in.zfree = Z_NULL;
+    strm_in.opaque = Z_NULL;
+    strm_in.avail_in = 0;
+    strm_in.next_in = Z_NULL;
+    ret = inflateInit(&strm_in);
+    if(ret != Z_OK) {
+        fprintf(stderr, "Error initializing zlib stream\r\n");
+        exit(1);
     }
 
-    // Clean up and return read size of compressed buffer
-    deflateEnd(&strm);
-    return cbuffer_size - strm.avail_out;
+}
+
+int compress_message(char* buffer, int read_size, char* compressed_buffer, int cbuffer_size) {
+
+    int ret;
+
+    strm_out.avail_in = read_size;
+    strm_out.next_in = (Bytef*) buffer;
+    strm_out.avail_out = cbuffer_size;
+    strm_out.next_out = (Bytef*) compressed_buffer;
+
+    // Compress input into compressed buffer
+    ret = deflate(&strm_out, Z_SYNC_FLUSH);
+    if(ret == Z_STREAM_ERROR) {
+        fprintf(stderr, "Error compressing message\r\n");
+        exit(1);
+    }
+
+    // Return read size of compressed buffer
+    return cbuffer_size - strm_out.avail_out;
 
 }
 
@@ -121,35 +140,20 @@ int decompress_message(char* buffer, int read_size, char* decompressed_buffer, i
 
     int ret;
 
-    // Initialize zlib stream parameters
-    z_stream strm;
-    strm.zalloc = Z_NULL;
-    strm.zfree = Z_NULL;
-    strm.opaque = Z_NULL;
-    strm.avail_in = 0;
-    strm.next_in = Z_NULL;
+    strm_in.avail_in = read_size;
+    strm_in.next_in = (Bytef*) buffer;
+    strm_in.avail_out = dbuffer_size;
+    strm_in.next_out = (Bytef*) decompressed_buffer;
 
-    ret = inflateInit(&strm);
-    if(ret != Z_OK) {
-        fprintf(stderr, "Error initializing zlib\r\n");
+    // Decompress input into decompressed buffer
+    ret = inflate(&strm_in, Z_SYNC_FLUSH);
+    if(ret == Z_STREAM_ERROR) {
+        fprintf(stderr, "Error decompressing message\r\n");
         exit(1);
     }
 
-    strm.avail_in = read_size;
-    strm.next_in = (Bytef*) buffer;
-    strm.avail_out = dbuffer_size;
-    strm.next_out = (Bytef*) decompressed_buffer;
-
-    // Decompress input into decompressed buffer
-    ret = inflate(&strm, Z_SYNC_FLUSH);
-    if(ret == Z_STREAM_ERROR) {
-        fprintf(stderr, "Error decompressing message\r\n");
-        inflateEnd(&strm);
-    }
-
     // Clean up and return read size of decompressed buffer
-    inflateEnd(&strm);
-    return dbuffer_size - strm.avail_out;
+    return dbuffer_size - strm_in.avail_out;
 
 }
 
@@ -350,7 +354,7 @@ int main(int argc, char *argv[]) {
     }
     
     connect_to_server(port);
-    if(atexit(close_fds_on_exit) != 0) {
+    if(atexit(close_io_on_exit) != 0) {
         fprintf(stderr, "Error while registering exit function: %s\r\n", strerror(errno));
         exit(1);
     } 
@@ -364,11 +368,14 @@ int main(int argc, char *argv[]) {
 
     // Create log file if specified
     if(logfile) {
-        ulimit(UL_SETFSIZE, FLIMIT);
         if( (logfd = creat(logfile, 0666)) < 0 ) {
             fprintf(stderr, "Error creating log file: %s\r\n", strerror(errno));
             exit(1);
         }
+    }
+
+    if(compressflag) {
+        initialize_zstreams();
     }
 
     set_terminal_mode();
