@@ -88,6 +88,49 @@ void set_terminal_mode() {
 
 }
 
+void write_char(int fd, const char ch) {
+
+    if(write(fd, &ch, 1) < 0) {
+        fprintf(stderr, "Write failed: %s\r\n", strerror(errno));
+        exit(1);
+    }
+
+}
+
+void write_to_log(char* buffer, int size, int sent) {
+    char log_buffer[BUFF_SIZE];
+    buffer[size] = '\0';
+
+    char* action = (sent) ? "SENT" : "RECEIVED";
+    int log_size = sprintf(log_buffer, "%s %d bytes: %s\n", action, size, buffer);
+
+    if(write(logfd, log_buffer, log_size) < 0) {
+        fprintf(stderr, "Error writing to log file: %s\r\n", strerror(errno));
+        exit(1);
+    }
+}
+
+void write_buffer_to_stdout(char* buffer, int read_size) {
+
+    for(int i=0; i<read_size; i++) {
+        char c = buffer[i];
+
+        if(c == EOF_CODE) {
+            write_char(STDOUT_FILENO, '^');
+            write_char(STDOUT_FILENO, 'D');
+        } else if(c == INT_CODE) {
+            write_char(STDOUT_FILENO, '^');
+            write_char(STDOUT_FILENO, 'C');
+        } else if(c == LF_CODE || c == CR_CODE) {
+            write_char(STDOUT_FILENO, CR_CODE);
+            write_char(STDOUT_FILENO, LF_CODE);
+        } else {
+            write_char(STDOUT_FILENO, c);
+        }
+    }
+
+}
+
 void initialize_zstreams() {
 
     int ret;
@@ -136,67 +179,26 @@ int compress_message(char* buffer, int read_size, char* compressed_buffer, int c
 
 }
 
-int decompress_message(char* buffer, int read_size, char* decompressed_buffer, int dbuffer_size) {
+void decompress_message_to_stdout(char* buffer, int read_size, char* decompressed_buffer, int dbuffer_size) {
 
     int ret;
 
     strm_in.avail_in = read_size;
     strm_in.next_in = (Bytef*) buffer;
-    strm_in.avail_out = dbuffer_size;
-    strm_in.next_out = (Bytef*) decompressed_buffer;
 
-    // Decompress input into decompressed buffer
-    ret = inflate(&strm_in, Z_SYNC_FLUSH);
-    if(ret == Z_STREAM_ERROR) {
-        fprintf(stderr, "Error decompressing message\r\n");
-        exit(1);
-    }
+    // Decompress input and write to stdout
+    do {
+        strm_in.avail_out = dbuffer_size;
+        strm_in.next_out = (Bytef*) decompressed_buffer;
 
-    // Clean up and return read size of decompressed buffer
-    return dbuffer_size - strm_in.avail_out;
-
-}
-
-void write_char(int fd, const char ch) {
-
-    if(write(fd, &ch, 1) < 0) {
-        fprintf(stderr, "Write failed: %s\r\n", strerror(errno));
-        exit(1);
-    }
-
-}
-
-void write_to_log(char* buffer, int size, int sent) {
-    char log_buffer[BUFF_SIZE];
-    buffer[size] = '\0';
-
-    char* action = (sent) ? "SENT" : "RECEIVED";
-    int log_size = sprintf(log_buffer, "%s %d bytes: %s\n", action, size, buffer);
-
-    if(write(logfd, log_buffer, log_size) < 0) {
-        fprintf(stderr, "Error writing to log file: %s\r\n", strerror(errno));
-        exit(1);
-    }
-}
-
-void write_buffer_to_stdout(char* buffer, int read_size) {
-
-    for(int i=0; i<read_size; i++) {
-        char c = buffer[i];
-
-        if(c == EOF_CODE) {
-            write_char(STDOUT_FILENO, '^');
-            write_char(STDOUT_FILENO, 'D');
-        } else if(c == INT_CODE) {
-            write_char(STDOUT_FILENO, '^');
-            write_char(STDOUT_FILENO, 'C');
-        } else if(c == LF_CODE || c == CR_CODE) {
-            write_char(STDOUT_FILENO, CR_CODE);
-            write_char(STDOUT_FILENO, LF_CODE);
-        } else {
-            write_char(STDOUT_FILENO, c);
+        ret = inflate(&strm_in, Z_SYNC_FLUSH);
+        if(ret == Z_STREAM_ERROR) {
+            fprintf(stderr, "Error decompressing message\r\n");
+            exit(1);
         }
-    }
+
+        write_buffer_to_stdout(decompressed_buffer, (int) dbuffer_size - strm_in.avail_out);
+    } while(strm_in.avail_in > 0);
 
 }
 
@@ -243,12 +245,13 @@ void handle_socket_input() {
     if(logfile) {
         write_to_log(buffer, read_size, 0);
     }
+    
     if(compressflag) {
         memcpy(tmp_buffer, buffer, read_size);
-        read_size = decompress_message(tmp_buffer, read_size, buffer, BUFF_SIZE);
+        decompress_message_to_stdout(tmp_buffer, read_size, buffer, BUFF_SIZE);
+    } else {
+        write_buffer_to_stdout(buffer, read_size);
     }
-
-    write_buffer_to_stdout(buffer, read_size);
 
 }
 

@@ -96,7 +96,7 @@ int compress_message(char* buffer, int read_size, char* compressed_buffer, int c
 
     // Compress input into compressed buffer
     ret = deflate(&strm_out, Z_SYNC_FLUSH);
-    if(ret != Z_OK) {
+    if(ret == Z_STREAM_ERROR) {
         fprintf(stderr, "Error compressing message\r\n");
         exit(1);
     }
@@ -117,7 +117,7 @@ int decompress_message(char* buffer, int read_size, char* decompressed_buffer, i
 
     // Decompress input into decompressed buffer
     ret = inflate(&strm_in, Z_SYNC_FLUSH);
-    if(ret != Z_OK) {
+    if(ret == Z_STREAM_ERROR) {
         fprintf(stderr, "Error decompressing message\r\n");
         exit(1);
     }
