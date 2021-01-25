@@ -85,6 +85,36 @@ void initialize_zstreams() {
 
 }
 
+void write_char(int fd, const char ch) {
+
+    if(write(fd, &ch, 1) < 0) {
+        fprintf(stderr, "Write failed: %s\n", strerror(errno));
+        exit(1);
+    }
+
+}
+
+void write_buffer_to_shell(char* buffer, int read_size) {
+
+    for(int i=0; !exit_flag && i<read_size; i++) {
+        char c = buffer[i];
+
+        if(c == EOF_CODE) {
+            exit_flag = 1;
+        } else if(c == INT_CODE) {
+            if(kill(child_pid, SIGINT) < 0) {
+                fprintf(stderr, "Error while interrupting child process: %s\n", strerror(errno));
+                exit(1);
+            }
+        } else if(c == LF_CODE || c == CR_CODE) {
+            write_char(pipe_from_terminal[1], LF_CODE);
+        } else {
+            write_char(pipe_from_terminal[1], c); 
+        }
+    }
+
+}
+
 int compress_message(char* buffer, int read_size, char* compressed_buffer, int cbuffer_size) {
 
     int ret;
@@ -106,33 +136,26 @@ int compress_message(char* buffer, int read_size, char* compressed_buffer, int c
 
 }
 
-int decompress_message(char* buffer, int read_size, char* decompressed_buffer, int dbuffer_size) {
+void decompress_message_to_shell(char* buffer, int read_size, char* decompressed_buffer, int dbuffer_size) {
 
     int ret;
 
     strm_in.avail_in = read_size;
     strm_in.next_in = (Bytef*) buffer;
-    strm_in.avail_out = dbuffer_size;
-    strm_in.next_out = (Bytef*) decompressed_buffer;
 
-    // Decompress input into decompressed buffer
-    ret = inflate(&strm_in, Z_SYNC_FLUSH);
-    if(ret == Z_STREAM_ERROR) {
-        fprintf(stderr, "Error decompressing message\r\n");
-        exit(1);
-    }
+    // Decompress input and write to shell
+    do {
+        strm_in.avail_out = dbuffer_size;
+        strm_in.next_out = (Bytef*) decompressed_buffer;
 
-    // Clean up and return read size of decompressed buffer
-    return dbuffer_size - strm_in.avail_out;
+        ret = inflate(&strm_in, Z_SYNC_FLUSH);
+        if(ret == Z_STREAM_ERROR) {
+            fprintf(stderr, "Error decompressing message\r\n");
+            exit(1);
+        }
 
-}
-
-void write_char(int fd, const char ch) {
-
-    if(write(fd, &ch, 1) < 0) {
-        fprintf(stderr, "Write failed: %s\n", strerror(errno));
-        exit(1);
-    }
+        write_buffer_to_shell(decompressed_buffer, (int) dbuffer_size - strm_in.avail_out);
+    } while(strm_in.avail_in > 0);
 
 }
 
@@ -150,25 +173,9 @@ void handle_client_input() {
     // Decompress if specified
     if(compressflag) {
         memcpy(tmp_buffer, buffer, read_size);
-        read_size = decompress_message(tmp_buffer, read_size, buffer, BUFF_SIZE);
-    }
-
-    // Handle special input and send to shell
-    for(int i=0; !exit_flag && i<read_size; i++) {
-        char c = buffer[i];
-
-        if(c == EOF_CODE) {
-            exit_flag = 1;
-        } else if(c == INT_CODE) {
-            if(kill(child_pid, SIGINT) < 0) {
-                fprintf(stderr, "Error while interrupting child process: %s\n", strerror(errno));
-                exit(1);
-            }
-        } else if(c == LF_CODE || c == CR_CODE) {
-            write_char(pipe_from_terminal[1], LF_CODE);
-        } else {
-            write_char(pipe_from_terminal[1], c); 
-        }
+        decompress_message_to_shell(tmp_buffer, read_size, buffer, BUFF_SIZE);
+    } else {
+        write_buffer_to_shell(buffer, read_size);
     }
 
 }

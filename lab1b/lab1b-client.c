@@ -98,11 +98,11 @@ void write_char(int fd, const char ch) {
 }
 
 void write_to_log(char* buffer, int size, int sent) {
-    char log_buffer[BUFF_SIZE];
-    buffer[size] = '\0';
-
+    char log_buffer[BUFF_SIZE*2];
     char* action = (sent) ? "SENT" : "RECEIVED";
-    int log_size = sprintf(log_buffer, "%s %d bytes: %s\n", action, size, buffer);
+
+    // %.*s allows us to specify how many bytes of the buffer to print since it is not null-terminated
+    int log_size = sprintf(log_buffer, "%s %d bytes: %.*s\n", action, size, size, buffer);
 
     if(write(logfd, log_buffer, log_size) < 0) {
         fprintf(stderr, "Error writing to log file: %s\r\n", strerror(errno));
@@ -357,6 +357,10 @@ int main(int argc, char *argv[]) {
     }
     
     connect_to_server(port);
+
+    if(compressflag) {
+        initialize_zstreams();
+    }
     if(atexit(close_io_on_exit) != 0) {
         fprintf(stderr, "Error while registering exit function: %s\r\n", strerror(errno));
         exit(1);
@@ -375,10 +379,6 @@ int main(int argc, char *argv[]) {
             fprintf(stderr, "Error creating log file: %s\r\n", strerror(errno));
             exit(1);
         }
-    }
-
-    if(compressflag) {
-        initialize_zstreams();
     }
 
     set_terminal_mode();
