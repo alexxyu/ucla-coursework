@@ -20,9 +20,12 @@ ID: 105295708
 #include <sys/socket.h>
 #include <sys/types.h>
 #include "zlib.h"
-#include "constants.h"
 
 #define BUFF_SIZE 256
+const char CR_CODE = 0x0D;
+const char LF_CODE = 0x0A;
+const char EOF_CODE = 0x04;
+const char INT_CODE = 0x03;
 
 const long FLIMIT = 10000;
 const int POLL_TIMEOUT = -1;

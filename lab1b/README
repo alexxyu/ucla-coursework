@@ -5,7 +5,6 @@ ID: 105295708
 The following files are included:
 * lab1b-client.c is the source file for the client program
 * lab1b-server.c is the source file for the server program
-* constants.h is a header file that defines several constants used by the server and client programs
 * Makefile builds the program, creates the tarball, and cleans the working directory
 * README documents the included files and other info
 
