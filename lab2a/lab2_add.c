@@ -12,7 +12,7 @@ ID: 105295708
 #include <getopt.h>
 #include <pthread.h>
 
-long long* ptr;
+long long counter;
 long n_threads, n_iters;
 
 void print_usage_and_exit(char* exec) {
@@ -27,12 +27,12 @@ void add(long long *pointer, long long value) {
 
 void *run() {
     for(long i=0; i<n_iters; i++) {
-        add(ptr, 1);
+        add(&counter, 1);
     }
     for(long i=0; i<n_iters; i++) {
-        add(ptr, -1);
+        add(&counter, -1);
     }
-    pthread_exit(NULL);
+    return NULL;
 }
 
 int main(int argc, char *argv[]) {
@@ -75,8 +75,7 @@ int main(int argc, char *argv[]) {
         print_usage_and_exit(argv[0]);
     }
 
-    long long counter = 0;
-    ptr = &counter;
+    counter = 0;
 
     pthread_t threads[256];
     struct timespec start_tp, end_tp;
@@ -111,8 +110,8 @@ int main(int argc, char *argv[]) {
     long n_operations = n_threads * n_iters * 2;
     long run_time = end_tp.tv_nsec - start_tp.tv_nsec;
     long avg_time = run_time / n_operations;
-    fprintf(stdout, "%s,%ld,%ld,%ld,%ld,%ld,%lld\n", "add-none", n_threads, n_iters, n_operations, run_time, avg_time, *ptr);
+    fprintf(stdout, "%s,%ld,%ld,%ld,%ld,%ld,%lld\n", "add-none", n_threads, n_iters, n_operations, run_time, avg_time, counter);
 
-    pthread_exit(NULL);
+    exit(0);
 
 }
