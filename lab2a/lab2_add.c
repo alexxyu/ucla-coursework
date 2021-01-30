@@ -35,14 +35,17 @@ void print_usage_and_exit(char* exec) {
 }
 
 void set_test_name(char* name, int size) {
+    char tmp[20];
     if(opt_yield) {
-        snprintf(name, size, "%s-yield", name);
+        strcpy(tmp, name);
+        snprintf(name, size, "%s-yield", tmp);
     } 
 
+    strcpy(tmp, name);
     if(opt_sync != NO_SYNC) {
-        snprintf(name, size, "%s-%c", name, sync_char);
+        snprintf(name, size, "%s-%c", tmp, sync_char);
     } else {
-        snprintf(name, size, "%s-none", name);
+        snprintf(name, size, "%s-none", tmp);
     }
 }
 
