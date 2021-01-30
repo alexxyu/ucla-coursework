@@ -24,9 +24,8 @@ ID: 105295708
 char** keys;
 SortedList_t list, *pool;
 
-long n_threads, n_iters;
-int opt_yield, opt_sync;
-long spinlock;
+int opt_sync, opt_yield;
+long n_threads, n_iters, spinlock;
 pthread_mutex_t mutex;
 
 static void handle_segfault() {
@@ -44,7 +43,7 @@ void cleanup() {
 }
 
 void print_usage_and_exit(char* exec) {
-    fprintf(stderr, "Usage: %s [-iterations=<ITERS>] [--threads=<THREADS>] [--yield=[idl]] [--sync={m|s|c}}]\n", exec);
+    fprintf(stderr, "Usage: %s [-iterations=<ITERS>] [--threads=<THREADS>] [--yield=[idl]] [--sync={m|s}}]\n", exec);
     exit(1);
 }
 
@@ -117,7 +116,7 @@ int main(int argc, char *argv[]) {
 
     // Process options and arguments
     int c, opt_index;
-    char* sync_str = NULL;
+    char *sync_str = NULL, *yield_str = NULL;
     while( (c = getopt_long(argc, argv, "", long_options, &opt_index)) != -1 ) {
         switch(c) {
             case 't':
@@ -127,7 +126,7 @@ int main(int argc, char *argv[]) {
                 n_iters = strtol(optarg, NULL, 10);
                 break;
             case 'y':
-                // opt_yield = 1;
+                yield_str = optarg;
                 break;
             case 's':
                 sync_str = optarg;
@@ -168,6 +167,25 @@ int main(int argc, char *argv[]) {
             default:
                 fprintf(stderr, "Please provide a valid synchronization option\n");
                 print_usage_and_exit(argv[0]);
+        }
+    }
+    if(yield_str) {
+        int yield_len = (int) strlen(yield_str);
+        for(int i=0; i<yield_len; i++) {
+            switch(yield_str[i]) {
+                case 'i':
+                    opt_yield |= INSERT_YIELD;
+                    break;
+                case 'd':
+                    opt_yield |= DELETE_YIELD;
+                    break;
+                case 'l':
+                    opt_yield |= LOOKUP_YIELD;
+                    break;
+                default:
+                    fprintf(stderr, "Please provide a valid yield option\n");
+                    print_usage_and_exit(argv[0]);
+            }
         }
     }
 
