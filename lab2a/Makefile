@@ -27,7 +27,8 @@ graphs:
 	./lab2_add.gp
 
 dist: $(DISTNAME)
-dist-files = lab1b-client.c lab1b-server.c Makefile README
+dist-files = lab2_add.c SortedList.h SortedList.c lab2_list.c \
+			 Makefile *.csv *.png test.sh README
 $(DISTNAME): $(dist-files)
 	$(TAR) $(TARFLAGS) $@ $(dist-files)
 
