@@ -61,12 +61,12 @@ void set_test_name(char* name, int size) {
         sprintf(name, "%si", tmp);
     }
     memcpy(tmp, name, size);
-    if(opt_yield & LOOKUP_YIELD) {
-        sprintf(name, "%sl", tmp);
-    }
-    memcpy(tmp, name, size);
     if(opt_yield & DELETE_YIELD) {
         sprintf(name, "%sd", tmp);
+    }
+    memcpy(tmp, name, size);
+    if(opt_yield & LOOKUP_YIELD) {
+        sprintf(name, "%sl", tmp);
     }
 
     // Format sync option in test name
