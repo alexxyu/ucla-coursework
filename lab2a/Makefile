@@ -20,17 +20,18 @@ lab2_add:
 lab2_list:
 	$(CC) $(CFLAGS) -pthread lab2_list.c SortedList.c -o $@
 
-tests: lab2_add
+tests: lab2_add lab2_list
 	./test.sh
 
 graphs:
 	./lab2_add.gp
+	./lab2_list.gp
 
-dist: $(DISTNAME)
-dist-files = lab2_add.c SortedList.h SortedList.c lab2_list.c \
-			 Makefile test.sh README # *.csv *.png
+dist: tests graphs $(DISTNAME)
+dist-files = lab2_add.c SortedList.h SortedList.c lab2_list.c Makefile test.sh README \
+	lab2_add.gp lab2_list.gp
 $(DISTNAME): $(dist-files)
-	$(TAR) $(TARFLAGS) $@ $(dist-files)
+	$(TAR) $(TARFLAGS) $@ $(dist-files) *.csv *.png
 
 clean:
-	rm -rf *.o *.$(TAREXT) lab2_add lab2_list *.png
+	rm -rf *.o *.$(TAREXT) lab2_add lab2_list
