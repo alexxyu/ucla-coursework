@@ -12,16 +12,31 @@ ID: 105295708
 #include <getopt.h>
 #include <pthread.h>
 
+#define DEFAULT_THREADS 1
+#define DEFAULT_ITERS 1
+
 long long counter;
 long n_threads, n_iters;
+
+int opt_yield;
 
 void print_usage_and_exit(char* exec) {
     fprintf(stderr, "Usage: %s --port=PORTNO [--log=FILENAME] [--compress]\n", exec);
     exit(1);
 }
 
+void set_test_name(char* name, int size) {
+    if(opt_yield) {
+        snprintf(name, size, "%s-yield", name);
+    } 
+    
+    snprintf(name, size, "%s-none", name);
+}
+
 void add(long long *pointer, long long value) {
     long long sum = *pointer + value;
+    if (opt_yield)
+            sched_yield();
     *pointer = sum;
 }
 
@@ -40,11 +55,14 @@ int main(int argc, char *argv[]) {
     const struct option long_options[] = {
         {"threads", required_argument, 0, 't'},
         {"iterations", required_argument, 0, 'i'},
+        {"yield", no_argument, 0, 'y'},
         {0, 0, 0, 0}
     };
     
-    n_threads = 1;
-    n_iters = 1;
+    // Set default values
+    n_threads = DEFAULT_THREADS;
+    n_iters = DEFAULT_ITERS;
+    opt_yield = 0;
 
     // Process options and arguments
     int c, opt_index;
@@ -55,6 +73,9 @@ int main(int argc, char *argv[]) {
                 break;
             case 'i':
                 n_iters = strtol(optarg, NULL, 10);
+                break;
+            case 'y':
+                opt_yield = 1;
                 break;
             default:
                 // Handle unrecognized argument
@@ -110,7 +131,11 @@ int main(int argc, char *argv[]) {
     long n_operations = n_threads * n_iters * 2;
     long run_time = end_tp.tv_nsec - start_tp.tv_nsec;
     long avg_time = run_time / n_operations;
-    fprintf(stdout, "%s,%ld,%ld,%ld,%ld,%ld,%lld\n", "add-none", n_threads, n_iters, n_operations, run_time, avg_time, counter);
+
+    char name[20] = "add";
+    set_test_name(name, 20);
+    fprintf(stdout, "%s,%ld,%ld,%ld,%ld,%ld,%lld\n", name, n_threads, n_iters, n_operations, 
+                                                     run_time, avg_time, counter);
 
     exit(0);
 

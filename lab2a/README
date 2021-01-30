@@ -1,0 +1,35 @@
+NAME: Alex Yu
+EMAIL: alexy23@g.ucla.edu
+ID: 105295708
+
+QUESTION 2.1.1 - causing conflicts:
+    It takes many iterations before errors are seen because there are more opportunities for race conditions to occur.
+    With a few iterations, the threads finish executing their operations faster, and thus they are less likely to be
+    interrupted during the critical section.
+
+    A significantly smaller number of iterations rarely fails for the same reason, as it is less likely that a thread
+    will access the shared variable while another is still computing the sum.
+
+QUESTION 2.1.2 - cost of yielding:
+    The --yield runs are much slower since the currently running thread must give up the CPU to another during the
+    critical section. This, in turn, takes time and incurs a large overhead due to context switching.
+
+    It is not possible to get valid per-operation timings while using the --yield option since the yield operation
+    itself implies that context switching occurs afterward, which takes an undetermined time.
+
+QUESTION 2.1.3 - measurement errors:
+    Why does the average cost per operation drop with increasing iterations?
+    If the cost per iteration is a function of the number of iterations, how do we know how many iterations to run (or what the "correct" cost is)?
+
+QUESTION 2.1.4 - costs of serialization:
+    Why do all of the options perform similarly for low numbers of threads?
+    Why do the three protected operations slow down as the number of threads rises?
+
+QUESTION 2.2.1 - scalability of Mutex
+    Compare the variation in time per mutex-protected operation vs the number of threads in Part-1 (adds) and Part-2 (sorted lists).
+    Comment on the general shapes of the curves, and explain why they have this shape.
+    Comment on the relative rates of increase and differences in the shapes of the curves, and offer an explanation for these differences.
+
+QUESTION 2.2.2 - scalability of spin locks
+    Compare the variation in time per protected operation vs the number of threads for list operations protected by Mutex vs Spin locks. Comment on the general shapes of the curves, and explain why they have this shape.
+    Comment on the relative rates of increase and differences in the shapes of the curves, and offer an explanation for these differences.

@@ -20,8 +20,18 @@ lab2_add:
 lab2_list:
 	$(CC) $(CFLAGS) lab2_list.c -o $@
 
-tests:
-	echo "run all (over 200) specified test cases to generate results in CSV files. Note that the lab2_list program is expected to fail when running multiple threads without synchronization. Make sure that your Makefile continues executing despite such failures (e.g. put a '-' in front of commands that are expected to fail)."
+tests: lab2_add
+	for x in 1 2 4 8 16; do \
+    	for y in 1 10 100 1000 10000 100000; do \
+        	./lab2_add --threads=$$x --iterations=$$y >> lab2_add.csv ; \
+    	done ; \
+	done ; \
+
+	for x in 1 2 4 8 16; do \
+    	for y in 1 10 100 1000 10000 100000; do \
+        	./lab2_add --threads=$$x --iterations=$$y --yield >> lab2_add.csv ; \
+    	done ; \
+	done
 
 graphs:
 	echo "use gnuplot(1) and the supplied data reduction scripts to generate the required graphs"
