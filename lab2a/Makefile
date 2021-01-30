@@ -27,8 +27,8 @@ graphs:
 	./lab2_add.gp
 
 dist: $(DISTNAME)
-dist-files = lab2_add.c SortedList.h SortedList.c  \
-			 Makefile test.sh README # *.csv *.png lab2_list.c
+dist-files = lab2_add.c SortedList.h SortedList.c lab2_list.c \
+			 Makefile test.sh README # *.csv *.png
 $(DISTNAME): $(dist-files)
 	$(TAR) $(TARFLAGS) $@ $(dist-files)
 

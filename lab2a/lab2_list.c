@@ -47,8 +47,41 @@ void print_usage_and_exit(char* exec) {
     exit(1);
 }
 
-char* get_test_name() {
-    return "add-none";
+void set_test_name(char* name, int size) {
+    sprintf(name, "%s", "list-");
+    char tmp[20];
+
+    // Format yield option(s) in test name
+    memcpy(tmp, name, size);
+    if(opt_yield == 0) {
+        sprintf(name, "%snone", tmp);
+    }
+    memcpy(tmp, name, size);
+    if(opt_yield & INSERT_YIELD) {
+        sprintf(name, "%si", tmp);
+    }
+    memcpy(tmp, name, size);
+    if(opt_yield & LOOKUP_YIELD) {
+        sprintf(name, "%sl", tmp);
+    }
+    memcpy(tmp, name, size);
+    if(opt_yield & DELETE_YIELD) {
+        sprintf(name, "%sd", tmp);
+    }
+
+    // Format sync option in test name
+    memcpy(tmp, name, size);
+    switch(opt_sync) {
+        case M_SYNC:
+            sprintf(name, "%s-m", tmp);
+            break;
+        case S_SYNC:
+            sprintf(name, "%s-s", tmp);
+            break;
+        default:
+            sprintf(name, "%s-none", tmp);
+            break;
+    }
 }
 
 void *run(void *threadid) {
@@ -253,8 +286,10 @@ int main(int argc, char *argv[]) {
     long run_time = end_tp.tv_nsec - start_tp.tv_nsec;
     long avg_time = run_time / n_operations;
 
-    fprintf(stdout, "%s,%ld,%ld,%d,%ld,%ld,%ld\n", get_test_name(), n_threads, n_iters, 1, n_operations, 
-                                                     run_time, avg_time);
+    char name[20];
+    set_test_name(name, sizeof(name));
+    fprintf(stdout, "%s,%ld,%ld,%d,%ld,%ld,%ld\n", name, n_threads, n_iters, 1, n_operations, 
+                                                   run_time, avg_time);
 
     exit(0);
 
