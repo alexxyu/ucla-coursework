@@ -21,16 +21,26 @@ ID: 105295708
 #define M_SYNC 1
 #define S_SYNC 2
 
+char** keys;
 SortedList_t list, *pool;
+
 long n_threads, n_iters;
 int opt_yield, opt_sync;
-
 long spinlock;
 pthread_mutex_t mutex;
 
 static void handle_segfault() {
     fprintf(stderr, "Error: received and caught segfault during execution\n");
     exit(2);
+}
+
+void cleanup() {
+    if(opt_sync == M_SYNC) pthread_mutex_destroy(&mutex);
+
+    int n_elements = n_iters * n_threads;
+    for(int i=0; i<n_elements; i++) free(keys[i]);
+    free(keys);
+    free(pool);
 }
 
 void print_usage_and_exit(char* exec) {
@@ -46,12 +56,31 @@ void *run(void *threadid) {
     long tid = (long) threadid;
     long offset = tid * n_iters;
     for(long i=0; i<n_iters; i++) {
+        if(opt_sync == M_SYNC) {
+            pthread_mutex_lock(&mutex);
+        } else if(opt_sync == S_SYNC) {
+            while(__sync_lock_test_and_set(&spinlock, 1) == 1);
+        }
+
         SortedList_insert(&list, &pool[i+offset]);
+
+        if(opt_sync == M_SYNC) {
+            pthread_mutex_unlock(&mutex);
+        } else if(opt_sync == S_SYNC) {
+            __sync_lock_release(&spinlock);
+        }
     }
 
+    SortedList_length(&list);
     // fprintf(stderr, "%d\n", SortedList_length(&list));
 
     for(long i=0; i<n_iters; i++) {
+        if(opt_sync == M_SYNC) {
+            pthread_mutex_lock(&mutex);
+        } else if(opt_sync == S_SYNC) {
+            while(__sync_lock_test_and_set(&spinlock, 1) == 1);
+        }
+
         SortedListElement_t *elem = SortedList_lookup(&list, pool[i+offset].key);
         if(elem == NULL) {
             fprintf(stderr, "Error: element that should have been in list was not found\n");
@@ -59,6 +88,12 @@ void *run(void *threadid) {
         } else if(SortedList_delete(elem) == 1) {
             fprintf(stderr, "Error: corrupted pointer(s) in list found\n");
             exit(2);
+        }
+
+        if(opt_sync == M_SYNC) {
+            pthread_mutex_unlock(&mutex);
+        } else if(opt_sync == S_SYNC) {
+            __sync_lock_release(&spinlock);
         }
     }
     return NULL;
@@ -95,7 +130,7 @@ int main(int argc, char *argv[]) {
                 // opt_yield = 1;
                 break;
             case 's':
-                // sync_str = optarg;
+                sync_str = optarg;
                 break;
             default:
                 // Handle unrecognized argument
@@ -150,13 +185,15 @@ int main(int argc, char *argv[]) {
 
     long n_elements = n_iters * n_threads;
     pool = malloc(sizeof(SortedListElement_t) * n_elements);
-    char** keys = malloc(n_elements * sizeof(char*));
+    keys = malloc(n_elements * sizeof(char*));
     for(long i=0; i<n_elements; i++) {
         keys[i] = malloc(sizeof(char));
         *keys[i] = 'A' + (rand() % 26);
         SortedListElement_t elem = {NULL, NULL, keys[i]};
         pool[i] = elem;
     }
+
+    atexit(cleanup);
 
     pthread_t threads[256];
     struct timespec start_tp, end_tp;
@@ -186,13 +223,6 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Error getting clock time: %s\n", strerror(errno));
         exit(1);
     }
-
-    // Destroy mutex lock as necessary
-    if(opt_sync == M_SYNC) pthread_mutex_destroy(&mutex);
-
-    for(int i=0; i<n_elements; i++) free(keys[i]);
-    free(keys);
-    free(pool);
     
     int length;
     if((length = SortedList_length(&list)) != 0) {
