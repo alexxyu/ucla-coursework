@@ -15,10 +15,10 @@ default: build
 build: lab2_add
 
 lab2_add:
-	$(CC) $(CFLAGS) lab2_add.c -o $@
+	$(CC) $(CFLAGS) -pthread lab2_add.c -o $@
 
 lab2_list:
-	$(CC) $(CFLAGS) lab2_list.c -o $@
+	$(CC) $(CFLAGS) -pthread lab2_list.c -o $@
 
 tests: lab2_add
 	./test.sh
@@ -27,8 +27,8 @@ graphs:
 	./lab2_add.gp
 
 dist: $(DISTNAME)
-dist-files = lab2_add.c SortedList.h SortedList.c lab2_list.c \
-			 Makefile *.csv *.png test.sh README
+dist-files = lab2_add.c SortedList.h SortedList.c  \
+			 Makefile test.sh README # *.csv *.png lab2_list.c
 $(DISTNAME): $(dist-files)
 	$(TAR) $(TARFLAGS) $@ $(dist-files)
 
