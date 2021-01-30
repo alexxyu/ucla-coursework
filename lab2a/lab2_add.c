@@ -22,8 +22,6 @@ ID: 105295708
 
 long long counter;
 long n_threads, n_iters;
-
-char sync_char;
 int opt_yield, opt_sync;
 
 long spinlock;
@@ -34,19 +32,20 @@ void print_usage_and_exit(char* exec) {
     exit(1);
 }
 
-void set_test_name(char* name, int size) {
-    char tmp[20];
+char* get_test_name() {
     if(opt_yield) {
-        strcpy(tmp, name);
-        snprintf(name, size, "%s-yield", tmp);
+        if(opt_sync == M_SYNC) return "add-yield-m";
+        if(opt_sync == S_SYNC) return "add-yield-s";
+        if(opt_sync == C_SYNC) return "add-yield-c";
+
+        return "add-yield-none";
     } 
 
-    strcpy(tmp, name);
-    if(opt_sync != NO_SYNC) {
-        snprintf(name, size, "%s-%c", tmp, sync_char);
-    } else {
-        snprintf(name, size, "%s-none", tmp);
-    }
+    if(opt_sync == M_SYNC) return "add-m";
+    if(opt_sync == S_SYNC) return "add-s";
+    if(opt_sync == C_SYNC) return "add-c";
+
+    return "add-none";
 }
 
 void add(long long *pointer, long long value) {
@@ -168,7 +167,7 @@ int main(int argc, char *argv[]) {
             print_usage_and_exit(argv[0]);
         }
 
-        switch((sync_char = sync_str[0])) {
+        switch(sync_str[0]) {
             case 'm':
                 opt_sync = M_SYNC;
                 pthread_mutex_init(&mutex, NULL);
@@ -225,9 +224,7 @@ int main(int argc, char *argv[]) {
     long run_time = end_tp.tv_nsec - start_tp.tv_nsec;
     long avg_time = run_time / n_operations;
 
-    char name[20] = "add";
-    set_test_name(name, 20);
-    fprintf(stdout, "%s,%ld,%ld,%ld,%ld,%ld,%lld\n", name, n_threads, n_iters, n_operations, 
+    fprintf(stdout, "%s,%ld,%ld,%ld,%ld,%ld,%lld\n", get_test_name(), n_threads, n_iters, n_operations, 
                                                      run_time, avg_time, counter);
 
     exit(0);
