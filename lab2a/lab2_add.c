@@ -216,7 +216,7 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    // Destory mutex lock as necessary
+    // Destroy mutex lock as necessary
     if(opt_sync == M_SYNC) pthread_mutex_destroy(&mutex);
 
     // Print out CSV record of results
