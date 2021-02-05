@@ -3,6 +3,8 @@
 ADDFN=lab2_add.csv
 LISTFN=lab2_list.csv
 
+rm $ADDFN $LISTFN
+
 echo "Testing add-none"
 for x in 1 2 4 8 12; do 
     for y in 10 20 40 80 100 1000 10000 100000; do 
@@ -68,21 +70,24 @@ echo "Completed add tests and output to $ADDFN"
 
 yield_options=(i l d il dl id ild)
 echo "Testing list-none-none"
-for x in 1 2 4 8 12; do 
-    for y in 1 10 100 1000 10000 20000; do 
+for y in 1 10 100 1000 10000 20000; do 
+    ./lab2_list --threads=1 --iterations=$y >> $LISTFN 2> /dev/null
+done
+for x in 2 4 8 12; do 
+    for y in 1 10 100 1000; do 
         ./lab2_list --threads=$x --iterations=$y >> $LISTFN 2> /dev/null
     done
 done
 
 echo "Testing list-none-m"
-for x in 2 4 8 12; do 
+for x in 1 2 4 8 12 16 24; do 
     for y in 1 10 100 1000; do 
         ./lab2_list --threads=$x --iterations=$y --sync=m >> $LISTFN 2> /dev/null
     done
 done
 
 echo "Testing list-none-s"
-for x in 2 4 8 12; do 
+for x in 1 2 4 8 12 16 24; do 
     for y in 1 10 100 1000; do 
         ./lab2_list --threads=$x --iterations=$y --sync=s >> $LISTFN 2> /dev/null
     done
