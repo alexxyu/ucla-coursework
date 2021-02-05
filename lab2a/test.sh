@@ -3,7 +3,7 @@
 ADDFN=lab2_add.csv
 LISTFN=lab2_list.csv
 
-rm $ADDFN $LISTFN
+rm $ADDFN $LISTFN 2> /dev/null
 
 echo "Testing add-none"
 for x in 1 2 4 8 12; do 

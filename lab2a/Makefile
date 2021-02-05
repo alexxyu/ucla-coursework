@@ -28,6 +28,7 @@ graphs:
 	./lab2_list.gp
 
 dist: tests graphs $(DISTNAME)
+distonly: $(DISTNAME)
 dist-files = lab2_add.c SortedList.h SortedList.c lab2_list.c Makefile test.sh README \
 	lab2_add.gp lab2_list.gp
 $(DISTNAME): $(dist-files)
