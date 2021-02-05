@@ -1,4 +1,9 @@
-#include <stdio.h>
+/*
+NAME: Alex Yu
+EMAIL: alexy23@g.ucla.edu
+ID: 105295708
+*/
+
 #include <sched.h>
 #include <stdlib.h>
 #include "SortedList.h"

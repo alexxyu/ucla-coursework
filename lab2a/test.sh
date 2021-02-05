@@ -1,4 +1,7 @@
 #!/bin/bash
+# NAME: Alex Yu
+# EMAIL: alexy23@g.ucla.edu
+# ID: 105295708
 
 ADDFN=lab2_add.csv
 LISTFN=lab2_list.csv
