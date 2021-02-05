@@ -104,7 +104,6 @@ void *run(void *threadid) {
     }
 
     SortedList_length(&list);
-    // fprintf(stderr, "%d\n", SortedList_length(&list));
 
     for(long i=0; i<n_iters; i++) {
         if(opt_sync == M_SYNC) {
@@ -277,7 +276,7 @@ int main(int argc, char *argv[]) {
     
     int length;
     if((length = SortedList_length(&list)) != 0) {
-        fprintf(stderr, "Error: final length of list is %d\n", length);
+        fprintf(stderr, "Error: final length of list is not 0 (returned %d)\n", length);
         exit(2);
     }
 
