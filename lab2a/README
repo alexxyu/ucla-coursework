@@ -2,6 +2,22 @@ NAME: Alex Yu
 EMAIL: alexy23@g.ucla.edu
 ID: 105295708
 
+The following files are included:
+* lab2_add.c is a C program that implements a shared variable add function with yield and synchronization options
+* lab2_add.gp is a gnuplot data reduction script used to generate graphs for lab2_add
+* lab2_add.csv is a csv file that contains all of the data generated from lab2_add tests
+* lab2_add-1.png, lab2_add-2.png, lab2_add-3.png, lab2_add-4.png, lab2_add-5.png are graphs generated using data from 
+the lab2_add tests
+* lab2_list.c is a C program that implements shared doubly linked-list functions with yield and synchronization options
+* lab2_list.gp is a gnuplot data reduction script used to generate graphs for lab2_list
+* lab2_list.csv is a csv file that contains all of the data generated from lab2_list tests
+* lab2_list-1.png, lab2_list-2.png, lab2_list-3.png, lab2_list-4.png are graphs generated using data from the lab2_list
+tests
+* SortedList.h, SortedList.c are a header file and a C module that define and implement doubly linked-lists
+* Makefile provides targets to build, test, plot data, and clean up the program(s)
+* test.sh is a script that tests lab2_add and lab2_list and stores the results in the csv files
+* README is a text file that documents the included files and provides answers to the questions from the spec
+
 QUESTION 2.1.1 - causing conflicts:
     It takes many iterations before errors are seen because there are more opportunities for race conditions to occur.
     With a few iterations, the threads finish executing their operations faster, and thus they are less likely to be
@@ -18,18 +34,44 @@ QUESTION 2.1.2 - cost of yielding:
     itself implies that context switching occurs afterward, which takes an undetermined time.
 
 QUESTION 2.1.3 - measurement errors:
-    Why does the average cost per operation drop with increasing iterations?
-    If the cost per iteration is a function of the number of iterations, how do we know how many iterations to run (or what the "correct" cost is)?
+    The time taken to create and destroy threads is included in the total run time. As the iterations increase, the
+    cost of creating and destroying threads in terms of time is amortized. As a result, the cost per operation appears
+    to decrease.
+    
+    We should run as many iterations as possible, as the effect of the number of iterations on the cost per iteration 
+    will lessen as we increase the number of iterations due to amortization. 
 
 QUESTION 2.1.4 - costs of serialization:
-    Why do all of the options perform similarly for low numbers of threads?
-    Why do the three protected operations slow down as the number of threads rises?
+    When there are only a few threads, there are fewer contentions for the counter variable, so threads do not need
+    to wait very long for others to exit the critical section since there are relatively few competing for the 
+    resource.
+    
+    As the number of threads rises, the three protected operations slow down because there are more threads that are
+    blocked by the thread that is currently using the counter variable. This means that there are more threads that 
+    need to wait for another one to exit the critical section, slowing down the operations.
 
 QUESTION 2.2.1 - scalability of Mutex
-    Compare the variation in time per mutex-protected operation vs the number of threads in Part-1 (adds) and Part-2 (sorted lists).
-    Comment on the general shapes of the curves, and explain why they have this shape.
-    Comment on the relative rates of increase and differences in the shapes of the curves, and offer an explanation for these differences.
+    The general shapes of both curves are roughly linear and monotonically increasing. This makes sense because when 
+    the number of threads increases, the cost per operation also increases since each thread has to wait longer for
+    others to exit the critical section.
+
+    As the number of threads increases, the curve for Part-1 adds increases less relative to the curve for Part-2 
+    list operations. One explanation that may account for these differences is that the critical section for the list 
+    operations is much longer/complex than the critical section for the add operations. As a result, each thread has 
+    to wait longer in Part-2, so the cost per operation increases more in Part-2 than in Part-1.
 
 QUESTION 2.2.2 - scalability of spin locks
-    Compare the variation in time per protected operation vs the number of threads for list operations protected by Mutex vs Spin locks. Comment on the general shapes of the curves, and explain why they have this shape.
-    Comment on the relative rates of increase and differences in the shapes of the curves, and offer an explanation for these differences.
+    The general shapes of both curves are roughly linear and monotonically increasing. This makes sense because when 
+    the number of threads increases, the cost per operation also increases since each thread has to wait longer for
+    others to exit the critical section.
+
+    As the number of threads increases, the curve for protected mutex increases less relative to the curve for 
+    protected spin locks. One explanation that may account for these differences is that the spin lock wastes clock 
+    cycles since each thread effectively loops until the resource is free. On the other hand, the mutex lets each
+    blocked thread yield for the thread that is currently in the critical section, meaning that the threads do not 
+    have to wait as long. Thus, the cost per operation increases less with mutex than with spin lock.
+
+I consulted the following resources:
+* https://computing.llnl.gov/tutorials/pthreads/ for help on pthreads and mutexes
+* https://man7.org/linux/man-pages/man2/clock_gettime.2.html for documentation on a high-resolution timer
+* http://gcc.gnu.org/onlinedocs/gcc-4.4.3/gcc/Atomic-Builtins.html for compare-and-swap
