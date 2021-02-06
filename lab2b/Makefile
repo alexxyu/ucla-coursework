@@ -3,7 +3,7 @@
 # ID: 105295708
 
 CC = gcc
-CFLAGS = -Wextra -Wall
+CFLAGS = -g -Wextra -Wall
 
 TAR = tar
 TARFLAGS = -czvf
@@ -21,11 +21,15 @@ tests: lab2_list
 graphs:
 	./lab2_list.gp
 
-dist: tests graphs $(DISTNAME)
+profile: lab2_list
+	LD_PRELOAD=/usr/lib64/libprofiler.so.0 CPUPROFILE=./raw.gperf ./lab2_list --threads=12 --iterations=1000 --sync=s
+	pprof --list=run ./lab2_list ./raw.gperf > profile.out
+	rm raw.gperf
+
+dist: tests graphs profile $(DISTNAME)
 distonly: $(DISTNAME)
-dist-files = SortedList.h SortedList.c lab2_list.c Makefile test.sh README lab2_list.gp
-$(DISTNAME): $(dist-files)
-	$(TAR) $(TARFLAGS) $@ $(dist-files) *.csv *.png
+$(DISTNAME):
+	$(TAR) $(TARFLAGS) $@ SortedList.h SortedList.c lab2_list.c Makefile test.sh README lab2_list.gp *.csv *.png profile.out
 
 clean:
 	rm -rf *.o *.$(TAREXT) lab2_list
