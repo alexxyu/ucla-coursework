@@ -191,7 +191,7 @@ int main(int argc, char *argv[]) {
     struct timespec start_tp, end_tp;
 
     // Get high resolution start time of run
-    if(clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start_tp) < 0) {
+    if(clock_gettime(CLOCK_MONOTONIC, &start_tp) < 0) {
         fprintf(stderr, "Error getting clock time: %s\n", strerror(errno));
         exit(1);
     }
@@ -211,7 +211,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Get high resolution end time of run
-    if(clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end_tp) < 0) {
+    if(clock_gettime(CLOCK_MONOTONIC, &end_tp) < 0) {
         fprintf(stderr, "Error getting clock time: %s\n", strerror(errno));
         exit(1);
     }
@@ -220,12 +220,12 @@ int main(int argc, char *argv[]) {
     if(opt_sync == M_SYNC) pthread_mutex_destroy(&mutex);
 
     // Print out CSV record of results
-    long n_operations = n_threads * n_iters * 2;
-    long run_time = end_tp.tv_nsec - start_tp.tv_nsec;
-    long avg_time = run_time / n_operations;
+    long long n_operations = (long long) n_threads * n_iters * 2;
+    long long run_time = 1000000000L * (end_tp.tv_sec - start_tp.tv_sec) + (end_tp.tv_nsec - start_tp.tv_nsec);
+    long long avg_time = run_time / n_operations;
 
-    fprintf(stdout, "%s,%ld,%ld,%ld,%ld,%ld,%lld\n", get_test_name(), n_threads, n_iters, n_operations, 
-                                                     run_time, avg_time, counter);
+    fprintf(stdout, "%s,%ld,%ld,%lld,%lld,%lld,%lld\n", get_test_name(), n_threads, n_iters, n_operations, 
+                                                        run_time, avg_time, counter);
 
     exit(0);
 
