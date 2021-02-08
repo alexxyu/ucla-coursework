@@ -32,7 +32,7 @@ done
 
 echo "Testing list partitioning (no yield, with synchronization)"
 for x in 1 2 4 8 12; do
-    for y in 1 4 8 16; do
+    for y in 4 8 16; do
         ./lab2_list --threads=$x --iterations=1000 --lists=$y --sync=m >> $LISTFN 2> /dev/null
         ./lab2_list --threads=$x --iterations=1000 --lists=$y --sync=s >> $LISTFN 2> /dev/null
     done
