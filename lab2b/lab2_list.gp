@@ -33,7 +33,7 @@ set terminal png
 set datafile separator ","
 
 # throughput vs number of threads (mutex or spin lock protected)
-set title "Lab2b-1: Throughput vs Number of Threads with Synchronization"
+set title "Lab2b-1: Throughput with Synchronization"
 set xlabel "Threads"
 set logscale x 2
 set xrange [0.75:]
@@ -79,7 +79,7 @@ plot \
     title "spin lock" with points pointtype 2 lc rgb "#00FF0000"
 
 # throughput vs number of threads (mutex protected with sublists)
-set title "Lab2b-4: Throughput vs Number of Threads with Mutex and Sublists"
+set title "Lab2b-4: Throughput with Mutex and Partitioned Lists"
 set xlabel "Threads"
 set logscale x 2
 set xrange [0.75:]
@@ -98,7 +98,7 @@ plot \
     title '16 Sublists' with linespoints lc rgb 'orange'
 
 # throughput vs number of threads (spin lock protected with sublists)
-set title "Lab2b-5: Throughput vs Number of Threads with Spin Lock and Sublists"
+set title "Lab2b-5: Throughput with Spin Lock and Partitioned Lists"
 set xlabel "Threads"
 set logscale x 2
 set xrange [0.75:]
