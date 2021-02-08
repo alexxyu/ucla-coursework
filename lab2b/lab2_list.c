@@ -16,6 +16,7 @@ ID: 105295708
 
 #define DEFAULT_THREADS 1
 #define DEFAULT_ITERS 1
+#define DEFAULT_LISTS 1
 
 #define NO_SYNC 0
 #define M_SYNC 1
@@ -23,10 +24,11 @@ ID: 105295708
 
 char** keys;
 long long* wait_time;
-SortedList_t list, *pool;
+SortedList_t *lists;
+SortedListElement_t *pool;
 
 int opt_sync, opt_yield;
-long n_threads, n_iters, spinlock;
+long n_threads, n_iters, n_lists, spinlock;
 pthread_mutex_t mutex;
 
 static void handle_segfault() {
@@ -106,7 +108,9 @@ void *run(void *threadid) {
             clock_gettime(CLOCK_MONOTONIC, &end_tp);
         }
 
-        SortedList_insert(&list, &pool[i+offset]);
+        const char* key = pool[i+offset].key;
+        int idx = (*key) % n_lists;
+        SortedList_insert(&lists[idx], &pool[i+offset]);
 
         if(opt_sync == M_SYNC) {
             pthread_mutex_unlock(&mutex);
@@ -117,7 +121,9 @@ void *run(void *threadid) {
         wait_time[tid] += calc_time_diff(start_tp, end_tp);
     }
 
-    SortedList_length(&list);
+    for(int i=0; i<=n_lists; i++) {
+        SortedList_length(&lists[i]);
+    }
 
     for(long i=0; i<n_iters; i++) {
         if(opt_sync == M_SYNC) {
@@ -130,7 +136,9 @@ void *run(void *threadid) {
             clock_gettime(CLOCK_MONOTONIC, &end_tp);
         }
 
-        SortedListElement_t *elem = SortedList_lookup(&list, pool[i+offset].key);
+        const char* key = pool[i+offset].key;
+        long idx = *key % n_lists;
+        SortedListElement_t *elem = SortedList_lookup(&lists[idx], key);
         if(elem == NULL) {
             fprintf(stderr, "Error: element that should have been in list was not found\n");
             exit(2);
@@ -157,12 +165,14 @@ int main(int argc, char *argv[]) {
         {"iterations", required_argument, 0, 'i'},
         {"yield", required_argument, 0, 'y'},
         {"sync", required_argument, 0, 's'},
+        {"lists", required_argument, 0, 'l'},
         {0, 0, 0, 0}
     };
 
     // Set default values
     n_threads = DEFAULT_THREADS;
     n_iters = DEFAULT_ITERS;
+    n_lists = DEFAULT_LISTS;
     opt_yield = 0;
     opt_sync = NO_SYNC;
 
@@ -176,6 +186,9 @@ int main(int argc, char *argv[]) {
                 break;
             case 'i':
                 n_iters = strtol(optarg, NULL, 10);
+                break;
+            case 'l':
+                n_lists = strtol(optarg, NULL, 10);
                 break;
             case 'y':
                 yield_str = optarg;
@@ -199,6 +212,10 @@ int main(int argc, char *argv[]) {
     }
     if(n_iters <= 0) {
         fprintf(stderr, "Please enter a valid number of iterations\n");
+        print_usage_and_exit(argv[0]);
+    }
+    if(n_lists <= 0) {
+        fprintf(stderr, "Please enter a valid number of lists\n");
         print_usage_and_exit(argv[0]);
     }
     if(sync_str) {
@@ -245,10 +262,12 @@ int main(int argc, char *argv[]) {
     sa.sa_handler = handle_segfault;
     sigaction(SIGSEGV, &sa, NULL);
 
-    // Initialize list and generate pool of elements for threads
-    list.next = &list;
-    list.prev = &list;
-    list.key = NULL;
+    lists = (SortedList_t*) malloc(n_lists * sizeof(SortedList_t));
+    for(int i=0; i<n_lists; i++) {
+        lists[i].next = &lists[i];
+        lists[i].prev = &lists[i];
+        lists[i].key = NULL;
+    }
 
     time_t t;
     srand((unsigned) time(&t));
@@ -294,13 +313,15 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Error getting clock time: %s\n", strerror(errno));
         exit(1);
     }
-    
-    int length;
-    if((length = SortedList_length(&list)) != 0) {
-        fprintf(stderr, "Error: final length of list is not 0 (returned %d)\n", length);
-        exit(2);
-    }
 
+    int length;
+    for(int i=0; i<n_lists; i++) {
+        if((length = SortedList_length(&lists[i])) != 0) {
+            fprintf(stderr, "Error: final length of sublist %d is not 0 (returned %d)\n", i, length);
+            exit(2);
+        }
+    }
+    
     // Print out CSV record of results
     long long n_operations = (long long) n_threads * n_iters * 3;
     long long run_time = calc_time_diff(start_tp, end_tp);
@@ -314,8 +335,8 @@ int main(int argc, char *argv[]) {
 
     char name[20];
     set_test_name(name, sizeof(name));
-    fprintf(stdout, "%s,%ld,%ld,%d,%lld,%lld,%lld,%lld\n", name, n_threads, n_iters, 1, n_operations, 
-                                                           run_time, avg_time_per_op, avg_wait_time);
+    fprintf(stdout, "%s,%ld,%ld,%ld,%lld,%lld,%lld,%lld\n", name, n_threads, n_iters, n_lists, n_operations, 
+                                                            run_time, avg_time_per_op, avg_wait_time);
 
     exit(0);
 
