@@ -32,7 +32,7 @@
 set terminal png
 set datafile separator ","
 
-# throughput vs threads (mutex or spin lock protected)
+# throughput vs number of threads (mutex or spin lock protected)
 set title "Lab2b-1: Throughput vs Number of Threads with Synchronization"
 set xlabel "Threads"
 set logscale x 2
@@ -48,7 +48,7 @@ plot \
     title 'spin lock' with linespoints lc rgb 'green'
 
 # average wait-for-lock time and operation time against number of threads (w/ mutex)
-set title "Lab2b-1: Average Operation Times vs Number of Threads (Mutex)"
+set title "Lab2b-2: Average Operation Times vs Number of Threads (Mutex)"
 set xlabel "Threads"
 set logscale x 2
 set xrange [0.75:]
@@ -61,3 +61,41 @@ plot \
     title 'average wait-for-lock' with linespoints lc rgb 'red', \
      "< grep 'list-none-m' lab2b_list.csv" using ($2):($7) \
     title 'average time/operation' with linespoints lc rgb 'green'
+
+# throughput vs number of threads (mutex protected with sublists)
+set title "Lab2b-4: Throughput vs Number of Threads with Mutex and Sublists"
+set xlabel "Threads"
+set logscale x 2
+set xrange [0.75:]
+set ylabel "Throughput (operations/s)"
+set logscale y 10
+set output 'lab2b_4.png'
+
+plot \
+     "< grep -e 'list-none-m,[0-9]*,1000,1' lab2b_list.csv" using ($2):(1000000000/($7)) \
+    title '1 List' with linespoints lc rgb 'red', \
+     "< grep -e 'list-none-m,[0-9]*,1000,4' lab2b_list.csv" using ($2):(1000000000/($7)) \
+    title '4 Sublists' with linespoints lc rgb 'green'
+     "< grep -e 'list-none-m,[0-9]*,1000,8' lab2b_list.csv" using ($2):(1000000000/($7)) \
+    title '8 Sublists' with linespoints lc rgb 'blue'
+     "< grep -e 'list-none-m,[0-9]*,1000,16' lab2b_list.csv" using ($2):(1000000000/($7)) \
+    title '16 Sublists' with linespoints lc rgb 'orange'
+
+# throughput vs number of threads (spin lock protected with sublists)
+set title "Lab2b-5: Throughput vs Number of Threads with Spin Lock and Sublists"
+set xlabel "Threads"
+set logscale x 2
+set xrange [0.75:]
+set ylabel "Throughput (operations/s)"
+set logscale y 10
+set output 'lab2b_5.png'
+
+plot \
+     "< grep -e 'list-none-s,[0-9]*,1000,1' lab2b_list.csv" using ($2):(1000000000/($7)) \
+    title '1 List' with linespoints lc rgb 'red', \
+     "< grep -e 'list-none-s,[0-9]*,1000,4' lab2b_list.csv" using ($2):(1000000000/($7)) \
+    title '4 Sublists' with linespoints lc rgb 'green'
+     "< grep -e 'list-none-s,[0-9]*,1000,8' lab2b_list.csv" using ($2):(1000000000/($7)) \
+    title '8 Sublists' with linespoints lc rgb 'blue'
+     "< grep -e 'list-none-s,[0-9]*,1000,16' lab2b_list.csv" using ($2):(1000000000/($7)) \
+    title '16 Sublists' with linespoints lc rgb 'orange'
