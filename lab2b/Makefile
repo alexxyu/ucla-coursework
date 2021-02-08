@@ -22,8 +22,10 @@ graphs:
 	./lab2_list.gp
 
 profile: lab2_list
+	rm -rf profile.out
 	LD_PRELOAD=/usr/lib64/libprofiler.so.0 CPUPROFILE=./raw.gperf ./lab2_list --threads=12 --iterations=1000 --sync=s
-	pprof --list=run ./lab2_list ./raw.gperf > profile.out
+	pprof --text ./lab2_list ./raw.gperf >> profile.out
+	pprof --list=run ./lab2_list ./raw.gperf >> profile.out
 	rm raw.gperf
 
 dist: tests graphs profile $(DISTNAME)
