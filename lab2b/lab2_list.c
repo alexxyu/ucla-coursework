@@ -28,7 +28,9 @@ SortedList_t *lists;
 SortedListElement_t *pool;
 
 int opt_sync, opt_yield;
-long n_threads, n_iters, n_lists, spinlock;
+long n_threads, n_iters, n_lists;
+
+long* spinlocks;
 pthread_mutex_t* mutexes;
 
 static void handle_segfault() {
@@ -41,14 +43,16 @@ void cleanup() {
         for(int i=0; i<n_lists; i++) {
             pthread_mutex_destroy(&mutexes[i]);
         }
-    } 
+        free(mutexes);
+    } else if(opt_sync == S_SYNC) {
+        free(spinlocks);
+    }
 
     int n_elements = n_iters * n_threads;
     for(int i=0; i<n_elements; i++) free(keys[i]);
     free(keys);
     free(pool);
     free(wait_time);
-    free(mutexes);
 }
 
 void print_usage_and_exit(char* exec) {
@@ -112,7 +116,7 @@ void *run(void *threadid) {
             clock_gettime(CLOCK_MONOTONIC, &end_tp);
         } else if(opt_sync == S_SYNC) {
             clock_gettime(CLOCK_MONOTONIC, &start_tp);
-            while(__sync_lock_test_and_set(&spinlock, 1) == 1);
+            while(__sync_lock_test_and_set(&spinlocks[idx], 1) == 1);
             clock_gettime(CLOCK_MONOTONIC, &end_tp);
         }
 
@@ -121,14 +125,32 @@ void *run(void *threadid) {
         if(opt_sync == M_SYNC) {
             pthread_mutex_unlock(&mutexes[idx]);
         } else if(opt_sync == S_SYNC) {
-            __sync_lock_release(&spinlock);
+            __sync_lock_release(&spinlocks[idx]);
         }
 
         wait_time[tid] += calc_time_diff(start_tp, end_tp);
     }
 
-    for(int i=0; i<=n_lists; i++) {
+    for(int i=0; i<n_lists; i++) {
+        if(opt_sync == M_SYNC) {
+            clock_gettime(CLOCK_MONOTONIC, &start_tp);
+            pthread_mutex_lock(&mutexes[i]);
+            clock_gettime(CLOCK_MONOTONIC, &end_tp);
+        } else if(opt_sync == S_SYNC) {
+            clock_gettime(CLOCK_MONOTONIC, &start_tp);
+            while(__sync_lock_test_and_set(&spinlocks[i], 1) == 1);
+            clock_gettime(CLOCK_MONOTONIC, &end_tp);
+        }
+
         SortedList_length(&lists[i]);
+
+        if(opt_sync == M_SYNC) {
+            pthread_mutex_unlock(&mutexes[i]);
+        } else if(opt_sync == S_SYNC) {
+            __sync_lock_release(&spinlocks[i]);
+        }
+
+        wait_time[tid] += calc_time_diff(start_tp, end_tp);
     }
 
     for(long i=0; i<n_iters; i++) {
@@ -141,7 +163,7 @@ void *run(void *threadid) {
             clock_gettime(CLOCK_MONOTONIC, &end_tp);
         } else if(opt_sync == S_SYNC) {
             clock_gettime(CLOCK_MONOTONIC, &start_tp);
-            while(__sync_lock_test_and_set(&spinlock, 1) == 1);
+            while(__sync_lock_test_and_set(&spinlocks[idx], 1) == 1);
             clock_gettime(CLOCK_MONOTONIC, &end_tp);
         }
 
@@ -157,7 +179,7 @@ void *run(void *threadid) {
         if(opt_sync == M_SYNC) {
             pthread_mutex_unlock(&mutexes[idx]);
         } else if(opt_sync == S_SYNC) {
-            __sync_lock_release(&spinlock);
+            __sync_lock_release(&spinlocks[idx]);
         }
 
         wait_time[tid] += calc_time_diff(start_tp, end_tp);
@@ -234,10 +256,14 @@ int main(int argc, char *argv[]) {
         switch(sync_str[0]) {
             case 'm':
                 opt_sync = M_SYNC;
+                mutexes = (pthread_mutex_t*) malloc(n_lists * sizeof(pthread_mutex_t));
+                for(int i=0; i<n_lists; i++) {
+                    pthread_mutex_init(&mutexes[i], NULL);
+                }
                 break;
             case 's':
                 opt_sync = S_SYNC;
-                spinlock = 0;
+                spinlocks = (long*) calloc(n_lists, sizeof(long));
                 break;
             default:
                 fprintf(stderr, "Please provide a valid synchronization option\n");
@@ -274,12 +300,6 @@ int main(int argc, char *argv[]) {
         lists[i].next = &lists[i];
         lists[i].prev = &lists[i];
         lists[i].key = NULL;
-    }
-    if(opt_sync == M_SYNC) {
-        mutexes = (pthread_mutex_t*) malloc(n_lists * sizeof(pthread_mutex_t));
-        for(int i=0; i<n_lists; i++) {
-            pthread_mutex_init(&mutexes[i], NULL);
-        }
     }
 
     time_t t;
