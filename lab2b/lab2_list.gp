@@ -62,6 +62,21 @@ plot \
      "< grep 'list-none-m' lab2b_list.csv" using ($2):($7) \
     title 'average time/operation' with linespoints lc rgb 'green'
 
+# partitioned lists with run without failure
+set title "Lab2b-3: Iterations on Partitioned Lists that run without failure"
+set xlabel "Threads"
+set logscale x 2
+set ylabel "successful iterations"
+set logscale y 10
+set output 'lab2b_3.png'
+plot \
+     "< grep -e 'list-id-none,[0-9]*,[0-9]*,4' lab2b_list.csv" using ($2):($3) \
+    with points lc rgb "blue" title "unprotected", \
+     "< grep -e 'list-id-m,[0-9]*,[0-9]*,4' lab2b_list.csv" using ($2):($3) \
+    with points lc rgb "red" title "mutex", \
+     "< grep -e 'list-id-s,[0-9]*,[0-9]*,4' lab2b_list.csv" using ($2):($3) \
+    with points lc rgb "green" title "spin lock"
+
 # throughput vs number of threads (mutex protected with sublists)
 set title "Lab2b-4: Throughput vs Number of Threads with Mutex and Sublists"
 set xlabel "Threads"
