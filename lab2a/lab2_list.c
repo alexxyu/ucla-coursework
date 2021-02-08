@@ -88,6 +88,7 @@ void *run(void *threadid) {
     long tid = (long) threadid;
     long offset = tid * n_iters;
     for(long i=0; i<n_iters; i++) {
+        // Lock as needed and insert into list
         if(opt_sync == M_SYNC) {
             pthread_mutex_lock(&mutex);
         } else if(opt_sync == S_SYNC) {
@@ -103,9 +104,23 @@ void *run(void *threadid) {
         }
     }
 
+    // Lock as needed and get length of list
+    if(opt_sync == M_SYNC) {
+        pthread_mutex_lock(&mutex);
+    } else if(opt_sync == S_SYNC) {
+        while(__sync_lock_test_and_set(&spinlock, 1) == 1);
+    }
+
     SortedList_length(&list);
 
+    if(opt_sync == M_SYNC) {
+        pthread_mutex_unlock(&mutex);
+    } else if(opt_sync == S_SYNC) {
+        __sync_lock_release(&spinlock);
+    }
+
     for(long i=0; i<n_iters; i++) {
+        // Lock as needed, lookup element in list, and delete
         if(opt_sync == M_SYNC) {
             pthread_mutex_lock(&mutex);
         } else if(opt_sync == S_SYNC) {
