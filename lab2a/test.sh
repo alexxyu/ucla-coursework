@@ -14,36 +14,10 @@ for x in 1 2 4 8 12; do
         ./lab2_add --threads=$x --iterations=$y >> $ADDFN 2> /dev/null
     done
 done
-for x in 1 2 4 8 12; do 
-    for y in 10 100 1000 10000 100000; do 
-        ./lab2_add --threads=$x --iterations=$y >> $ADDFN 2> /dev/null
-    done
-done
 
-echo "Testing add-m"
+echo "Testing add-yield-none"
 for x in 1 2 4 8 12; do 
-    for y in 10 100 1000 10000 100000; do 
-        ./lab2_add --threads=$x --iterations=$y --sync=m >> $ADDFN 2> /dev/null
-    done
-done
-
-echo "Testing add-s"
-for x in 1 2 4 8 12; do 
-    for y in 10 100 1000 10000; do 
-        ./lab2_add --threads=$x --iterations=$y --sync=s >> $ADDFN 2> /dev/null
-    done
-done
-
-echo "Testing add-c"
-for x in 1 2 4 8 12; do 
-    for y in 10 100 1000 10000; do 
-        ./lab2_add --threads=$x --iterations=$y --sync=c >> $ADDFN 2> /dev/null
-    done
-done
-
-echo "Testing add-yield"
-for x in 1 2 4 8 12; do 
-    for y in 10 100 1000 10000; do 
+    for y in 10 20 40 80 100 1000 10000 100000; do 
         ./lab2_add --threads=$x --iterations=$y --yield >> $ADDFN 2> /dev/null
     done
 done
@@ -66,6 +40,28 @@ echo "Testing add-yield-c"
 for x in 1 2 4 8 12; do 
     for y in 10 100 1000 10000; do 
         ./lab2_add --threads=$x --iterations=$y --yield --sync=c >> $ADDFN 2> /dev/null
+    done
+done
+
+
+echo "Testing add-m"
+for x in 1 2 4 8 12; do 
+    for y in 10 100 1000 10000 100000; do 
+        ./lab2_add --threads=$x --iterations=$y --sync=m >> $ADDFN 2> /dev/null
+    done
+done
+
+echo "Testing add-s"
+for x in 1 2 4 8 12; do 
+    for y in 10 100 1000 10000; do 
+        ./lab2_add --threads=$x --iterations=$y --sync=s >> $ADDFN 2> /dev/null
+    done
+done
+
+echo "Testing add-c"
+for x in 1 2 4 8 12; do 
+    for y in 10 100 1000 10000; do 
+        ./lab2_add --threads=$x --iterations=$y --sync=c >> $ADDFN 2> /dev/null
     done
 done
 
