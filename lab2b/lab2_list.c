@@ -29,7 +29,7 @@ SortedListElement_t *pool;
 
 int opt_sync, opt_yield;
 long n_threads, n_iters, n_lists, spinlock;
-pthread_mutex_t mutex;
+pthread_mutex_t* mutexes;
 
 static void handle_segfault() {
     fprintf(stderr, "Error: received and caught segfault during execution\n");
@@ -37,17 +37,22 @@ static void handle_segfault() {
 }
 
 void cleanup() {
-    if(opt_sync == M_SYNC) pthread_mutex_destroy(&mutex);
+    if(opt_sync == M_SYNC) {
+        for(int i=0; i<n_lists; i++) {
+            pthread_mutex_destroy(&mutexes[i]);
+        }
+    } 
 
     int n_elements = n_iters * n_threads;
     for(int i=0; i<n_elements; i++) free(keys[i]);
     free(keys);
     free(pool);
     free(wait_time);
+    free(mutexes);
 }
 
 void print_usage_and_exit(char* exec) {
-    fprintf(stderr, "Usage: %s [-iterations=<ITERS>] [--threads=<THREADS>] [--yield=[idl]] [--sync={m|s}}]\n", exec);
+    fprintf(stderr, "Usage: %s [-iterations=<ITERS>] [--threads=<THREADS>] [--yield=[idl]] [--sync={m|s}}] [--lists=<LISTS>]\n", exec);
     exit(1);
 }
 
@@ -98,9 +103,12 @@ void *run(void *threadid) {
     struct timespec start_tp, end_tp;
 
     for(long i=0; i<n_iters; i++) {
+        const char* key = pool[i+offset].key;
+        int idx = (*key) % n_lists;
+
         if(opt_sync == M_SYNC) {
             clock_gettime(CLOCK_MONOTONIC, &start_tp);
-            pthread_mutex_lock(&mutex);
+            pthread_mutex_lock(&mutexes[idx]);
             clock_gettime(CLOCK_MONOTONIC, &end_tp);
         } else if(opt_sync == S_SYNC) {
             clock_gettime(CLOCK_MONOTONIC, &start_tp);
@@ -108,12 +116,10 @@ void *run(void *threadid) {
             clock_gettime(CLOCK_MONOTONIC, &end_tp);
         }
 
-        const char* key = pool[i+offset].key;
-        int idx = (*key) % n_lists;
         SortedList_insert(&lists[idx], &pool[i+offset]);
 
         if(opt_sync == M_SYNC) {
-            pthread_mutex_unlock(&mutex);
+            pthread_mutex_unlock(&mutexes[idx]);
         } else if(opt_sync == S_SYNC) {
             __sync_lock_release(&spinlock);
         }
@@ -126,9 +132,12 @@ void *run(void *threadid) {
     }
 
     for(long i=0; i<n_iters; i++) {
+        const char* key = pool[i+offset].key;
+        long idx = *key % n_lists;
+
         if(opt_sync == M_SYNC) {
             clock_gettime(CLOCK_MONOTONIC, &start_tp);
-            pthread_mutex_lock(&mutex);
+            pthread_mutex_lock(&mutexes[idx]);
             clock_gettime(CLOCK_MONOTONIC, &end_tp);
         } else if(opt_sync == S_SYNC) {
             clock_gettime(CLOCK_MONOTONIC, &start_tp);
@@ -136,8 +145,6 @@ void *run(void *threadid) {
             clock_gettime(CLOCK_MONOTONIC, &end_tp);
         }
 
-        const char* key = pool[i+offset].key;
-        long idx = *key % n_lists;
         SortedListElement_t *elem = SortedList_lookup(&lists[idx], key);
         if(elem == NULL) {
             fprintf(stderr, "Error: element that should have been in list was not found\n");
@@ -148,7 +155,7 @@ void *run(void *threadid) {
         }
 
         if(opt_sync == M_SYNC) {
-            pthread_mutex_unlock(&mutex);
+            pthread_mutex_unlock(&mutexes[idx]);
         } else if(opt_sync == S_SYNC) {
             __sync_lock_release(&spinlock);
         }
@@ -227,7 +234,6 @@ int main(int argc, char *argv[]) {
         switch(sync_str[0]) {
             case 'm':
                 opt_sync = M_SYNC;
-                pthread_mutex_init(&mutex, NULL);
                 break;
             case 's':
                 opt_sync = S_SYNC;
@@ -262,17 +268,25 @@ int main(int argc, char *argv[]) {
     sa.sa_handler = handle_segfault;
     sigaction(SIGSEGV, &sa, NULL);
 
+    // Initialize sublists and mutex locks
     lists = (SortedList_t*) malloc(n_lists * sizeof(SortedList_t));
     for(int i=0; i<n_lists; i++) {
         lists[i].next = &lists[i];
         lists[i].prev = &lists[i];
         lists[i].key = NULL;
     }
+    if(opt_sync == M_SYNC) {
+        mutexes = (pthread_mutex_t*) malloc(n_lists * sizeof(pthread_mutex_t));
+        for(int i=0; i<n_lists; i++) {
+            pthread_mutex_init(&mutexes[i], NULL);
+        }
+    }
 
     time_t t;
     srand((unsigned) time(&t));
     wait_time = calloc(n_threads, sizeof(long long));
 
+    // Initialize pool of keys to insert/delete
     long n_elements = n_iters * n_threads;
     pool = malloc(sizeof(SortedListElement_t) * n_elements);
     keys = malloc(n_elements * sizeof(char*));
