@@ -249,16 +249,24 @@ int main(int argc, char *argv[]) {
     srand((unsigned) time(&t));
 
     long n_elements = n_iters * n_threads;
-    pool = malloc(sizeof(SortedListElement_t) * n_elements);
-    keys = malloc(n_elements * sizeof(char*));
+    atexit(cleanup);
+    if((pool = malloc(sizeof(SortedListElement_t) * n_elements)) == NULL) {
+        fprintf(stderr, "Error allocating memory: %s", strerror(errno));
+        exit(1);
+    }
+    if((keys = malloc(n_elements * sizeof(char*))) == NULL) {
+        fprintf(stderr, "Error allocating memory: %s", strerror(errno));
+        exit(1);
+    }
     for(long i=0; i<n_elements; i++) {
-        keys[i] = malloc(sizeof(char));
+        if((keys[i] = malloc(sizeof(char))) == NULL) {
+            fprintf(stderr, "Error allocating memory: %s", strerror(errno));
+            exit(1);
+        }
         *keys[i] = 'A' + (rand() % 26);
         SortedListElement_t elem = {NULL, NULL, keys[i]};
         pool[i] = elem;
     }
-
-    atexit(cleanup);
 
     pthread_t threads[256];
     struct timespec start_tp, end_tp;
