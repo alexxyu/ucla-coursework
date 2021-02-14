@@ -52,6 +52,7 @@ void cleanup() {
     for(int i=0; i<n_elements; i++) free(keys[i]);
     free(keys);
     free(pool);
+    free(lists);
     free(wait_time);
 }
 
@@ -256,14 +257,20 @@ int main(int argc, char *argv[]) {
         switch(sync_str[0]) {
             case 'm':
                 opt_sync = M_SYNC;
-                mutexes = (pthread_mutex_t*) malloc(n_lists * sizeof(pthread_mutex_t));
+                if((mutexes = (pthread_mutex_t*) malloc(n_lists * sizeof(pthread_mutex_t))) == NULL) {
+                    fprintf(stderr, "Error allocating memory: %s", strerror(errno));
+                    exit(1);
+                }
                 for(int i=0; i<n_lists; i++) {
                     pthread_mutex_init(&mutexes[i], NULL);
                 }
                 break;
             case 's':
                 opt_sync = S_SYNC;
-                spinlocks = (long*) calloc(n_lists, sizeof(long));
+                if((spinlocks = (long*) calloc(n_lists, sizeof(long))) == NULL) {
+                    fprintf(stderr, "Error allocating memory: %s", strerror(errno));
+                    exit(1);
+                }
                 break;
             default:
                 fprintf(stderr, "Please provide a valid synchronization option\n");
@@ -295,7 +302,11 @@ int main(int argc, char *argv[]) {
     sigaction(SIGSEGV, &sa, NULL);
 
     // Initialize sublists and mutex locks
-    lists = (SortedList_t*) malloc(n_lists * sizeof(SortedList_t));
+    atexit(cleanup);
+    if((lists = (SortedList_t*) malloc(n_lists * sizeof(SortedList_t))) == NULL) {
+        fprintf(stderr, "Error allocating memory: %s", strerror(errno));
+        exit(1);
+    }
     for(int i=0; i<n_lists; i++) {
         lists[i].next = &lists[i];
         lists[i].prev = &lists[i];
@@ -304,20 +315,30 @@ int main(int argc, char *argv[]) {
 
     time_t t;
     srand((unsigned) time(&t));
-    wait_time = calloc(n_threads, sizeof(long long));
+    if((wait_time = calloc(n_threads, sizeof(long long))) == NULL) {
+        fprintf(stderr, "Error allocating memory: %s", strerror(errno));
+        exit(1);
+    }
 
     // Initialize pool of keys to insert/delete
     long n_elements = n_iters * n_threads;
-    pool = malloc(sizeof(SortedListElement_t) * n_elements);
-    keys = malloc(n_elements * sizeof(char*));
+    if((pool = malloc(sizeof(SortedListElement_t) * n_elements)) == NULL) {
+        fprintf(stderr, "Error allocating memory: %s", strerror(errno));
+        exit(1);
+    }
+    if((keys = malloc(n_elements * sizeof(char*))) == NULL) {
+        fprintf(stderr, "Error allocating memory: %s", strerror(errno));
+        exit(1);
+    }
     for(long i=0; i<n_elements; i++) {
-        keys[i] = malloc(sizeof(char));
+        if((keys[i] = malloc(sizeof(char))) == NULL) {
+            fprintf(stderr, "Error allocating memory: %s", strerror(errno));
+            exit(1);
+        }
         *keys[i] = 'A' + (rand() % 26);
         SortedListElement_t elem = {NULL, NULL, keys[i]};
         pool[i] = elem;
     }
-
-    atexit(cleanup);
 
     pthread_t threads[256];
     struct timespec start_tp, end_tp;
