@@ -3,7 +3,7 @@
 # ID: 105295708
 
 CC = gcc
-CFLAGS = -g -Wextra -Wall
+CFLAGS = -Wextra -Wall
 
 TAR = tar
 TARFLAGS = -czvf
@@ -19,25 +19,28 @@ default: lab2_list
 lab2_list:
 	$(CC) $(CFLAGS) -pthread lab2_list.c SortedList.c -o $@
 
+lab2_list_debug:
+	$(CC) $(CFLAGS) -pthread -g lab2_list.c SortedList.c -o lab2_list
+
 tests: lab2_list
 	./test.sh
 
 graphs:
 	./lab2_list.gp
 
-profile: lab2_list
+profile: lab2_list_debug
 	rm -rf profile.out
 	LD_PRELOAD=/usr/lib64/libprofiler.so.0 CPUPROFILE=./raw.gperf ./lab2_list --threads=12 --iterations=1000 --sync=s
 	pprof --text ./lab2_list ./raw.gperf >> profile.out
 	pprof --list=run ./lab2_list ./raw.gperf >> profile.out
 	rm raw.gperf
 
-dist:  $(DISTNAME)
+dist: $(DISTNAME)
 $(DISTNAME): lab2_list
 	if [ ! -f lab2b_list.csv ]; then \
 		./test.sh; \
 	fi; \
-	if [ ! -f lab2b_1.png ] || [ ! -f lab2b_2.png ] || [ ! -f lab2b_3.png ] \
+	if [ ! -f lab2b_1.png ] || [ ! -f lab2b_2.png ] || [ ! -f lab2b_3.png ] || \
 	   [ ! -f lab2b_4.png ] || [ ! -f lab2b_5.png ]; then \
 		./lab2_list.gp; \
 	fi; \
