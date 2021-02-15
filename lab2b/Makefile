@@ -36,7 +36,7 @@ profile: lab2_list_debug
 	rm raw.gperf
 
 dist: $(DISTNAME)
-$(DISTNAME): lab2_list
+$(DISTNAME): lab2_list_debug
 	if [ ! -f lab2b_list.csv ]; then \
 		./test.sh; \
 	fi; \
