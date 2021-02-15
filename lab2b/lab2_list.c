@@ -115,10 +115,12 @@ void *run(void *threadid) {
             clock_gettime(CLOCK_MONOTONIC, &start_tp);
             pthread_mutex_lock(&mutexes[idx]);
             clock_gettime(CLOCK_MONOTONIC, &end_tp);
+            wait_time[tid] += calc_time_diff(start_tp, end_tp);
         } else if(opt_sync == S_SYNC) {
             clock_gettime(CLOCK_MONOTONIC, &start_tp);
             while(__sync_lock_test_and_set(&spinlocks[idx], 1) == 1);
             clock_gettime(CLOCK_MONOTONIC, &end_tp);
+            wait_time[tid] += calc_time_diff(start_tp, end_tp);
         }
 
         SortedList_insert(&lists[idx], &pool[i+offset]);
@@ -128,19 +130,19 @@ void *run(void *threadid) {
         } else if(opt_sync == S_SYNC) {
             __sync_lock_release(&spinlocks[idx]);
         }
-
-        wait_time[tid] += calc_time_diff(start_tp, end_tp);
     }
 
-    for(int i=0; i<n_lists; i++) {
+    for(long i=0; i<n_lists; i++) {
         if(opt_sync == M_SYNC) {
             clock_gettime(CLOCK_MONOTONIC, &start_tp);
             pthread_mutex_lock(&mutexes[i]);
             clock_gettime(CLOCK_MONOTONIC, &end_tp);
+            wait_time[tid] += calc_time_diff(start_tp, end_tp);
         } else if(opt_sync == S_SYNC) {
             clock_gettime(CLOCK_MONOTONIC, &start_tp);
             while(__sync_lock_test_and_set(&spinlocks[i], 1) == 1);
             clock_gettime(CLOCK_MONOTONIC, &end_tp);
+            wait_time[tid] += calc_time_diff(start_tp, end_tp);
         }
 
         SortedList_length(&lists[i]);
@@ -150,8 +152,6 @@ void *run(void *threadid) {
         } else if(opt_sync == S_SYNC) {
             __sync_lock_release(&spinlocks[i]);
         }
-
-        wait_time[tid] += calc_time_diff(start_tp, end_tp);
     }
 
     for(long i=0; i<n_iters; i++) {
@@ -162,10 +162,12 @@ void *run(void *threadid) {
             clock_gettime(CLOCK_MONOTONIC, &start_tp);
             pthread_mutex_lock(&mutexes[idx]);
             clock_gettime(CLOCK_MONOTONIC, &end_tp);
+            wait_time[tid] += calc_time_diff(start_tp, end_tp);
         } else if(opt_sync == S_SYNC) {
             clock_gettime(CLOCK_MONOTONIC, &start_tp);
             while(__sync_lock_test_and_set(&spinlocks[idx], 1) == 1);
             clock_gettime(CLOCK_MONOTONIC, &end_tp);
+            wait_time[tid] += calc_time_diff(start_tp, end_tp);
         }
 
         SortedListElement_t *elem = SortedList_lookup(&lists[idx], key);
@@ -182,8 +184,6 @@ void *run(void *threadid) {
         } else if(opt_sync == S_SYNC) {
             __sync_lock_release(&spinlocks[idx]);
         }
-
-        wait_time[tid] += calc_time_diff(start_tp, end_tp);
     }
     return NULL;
 }
@@ -297,7 +297,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    struct sigaction sa;
+    struct sigaction sa = {0};
     sa.sa_handler = handle_segfault;
     sigaction(SIGSEGV, &sa, NULL);
 
