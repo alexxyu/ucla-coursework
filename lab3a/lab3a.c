@@ -1,3 +1,9 @@
+/*
+NAME: Alex Yu
+EMAIL: alexy23@g.ucla.edu
+ID: 105295708
+*/
+
 #include <time.h>
 #include <stdio.h>
 #include <errno.h>
