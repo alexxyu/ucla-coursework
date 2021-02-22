@@ -144,6 +144,9 @@ void read_inode(int i, unsigned int offset) {
     struct ext2_inode inode;
     pread(img_fd, &inode, sizeof(inode), offset + (i-1)*sizeof(inode));
 
+    // Return if unallocated entry
+    if(inode.i_mode == 0) return;
+
     // Format time information
     char c_timestr[TIME_STR_SIZE], m_timestr[TIME_STR_SIZE], a_timestr[TIME_STR_SIZE];
     set_timestr(c_timestr, TIME_STR_SIZE, inode.i_ctime);
@@ -151,9 +154,6 @@ void read_inode(int i, unsigned int offset) {
     set_timestr(a_timestr, TIME_STR_SIZE, inode.i_atime);
 
     char file_type = get_file_type(inode.i_mode);
-    if(file_type == '?') {
-        return;
-    }
 
     fprintf(stdout, "INODE,%u,%c,%o,%u,%u,%u,%s,%s,%s,%u,%u",
         i,
@@ -286,7 +286,7 @@ int main(int argc, char* argv[]) {
     }
     free(block_bitmap);
     
-    int start_inode = group * super_block.s_inodes_per_group + 1;
+    unsigned int start_inode = group * super_block.s_inodes_per_group + 1;
     int inode_offset = get_start_of_block(group_desc.bg_inode_table);
     
     char *inode_bitmap = (char *) malloc(block_size);

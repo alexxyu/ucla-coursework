@@ -1,0 +1,16 @@
+NAME: Alex Yu
+EMAIL: alexy23@g.ucla.edu
+ID: 105295708
+
+The following files are included:
+* lab3a.c is the C source file for the filesystem analyzer
+* ext2_fs.h is a header file that defines constants and structs about the EXT2 filesystem
+* Makefile provides targets to build the program, clean the working directory, and create the deliverable tarball
+* README documents the included files and reference materials
+
+I consulted http://man7.org/linux/man-pages/man2/pread.2.html for reference on pread usage. I also referenced TA 
+Tianxiang Li's Lab 3A discussion slides to learn about the EXT2 filesystem structure.
+
+For testing, I compared the output of the program when given trivial.img against the provided trivial.csv. I also 
+tested for appropriate error messages when given erroneous arguments. I also checked for reasonableness in the 
+program's output when given EXT2_test.img.
