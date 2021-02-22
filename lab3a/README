@@ -1,0 +1,9 @@
+NAME: Alex Yu
+EMAIL: alexy23@g.ucla.edu
+ID: 105295708
+
+The following files are included:
+* lab3a.c is the C source file for the filesystem analyzer
+* ext2_fs.h is a header file that defines constants and structs about the EXT2 filesystem
+* Makefile provides targets to build the program, clean the working directory, and create the deliverable tarball
+* README documents the included files and reference materials
