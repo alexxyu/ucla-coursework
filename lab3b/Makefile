@@ -2,25 +2,23 @@
 # EMAIL: alexy23@g.ucla.edu
 # ID: 105295708
 
-CC = gcc
-CFLAGS = -Wextra -Wall
-
 TAR = tar
 TARFLAGS = -czvf
 TAREXT = tar.gz
-DISTNAME = lab3a-105295708.$(TAREXT)
+DISTNAME = lab3b-105295708.$(TAREXT)
 
-TARGET = lab3a
+TARGET = lab3b
 
 default: $(TARGET)
 
-$(TARGET):
-	$(CC) $(CFLAGS) lab3a.c -o $@
+$(TARGET): clean
+	ln lab3b.py $(TARGET)
+	chmod +x $(TARGET)
 
 dist: $(DISTNAME)
-dist-files = lab3a.c Makefile README ext2_fs.h
+dist-files = lab3b.py Makefile README
 $(DISTNAME): 
 	$(TAR) $(TARFLAGS) $@ $(dist-files)
 
 clean:
-	rm -rf *.o *.$(TAREXT) $(TARGET)
+	rm -rf *.$(TAREXT) $(TARGET)
