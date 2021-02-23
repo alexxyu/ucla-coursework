@@ -91,7 +91,7 @@ void read_inode(int i, unsigned int offset) {
     pread(img_fd, &inode, sizeof(inode), offset + (i-1)*sizeof(inode));
 
     // Return if unallocated entry
-    if(inode.i_mode == 0) return;
+    if(inode.i_mode == 0 && inode.i_links_count == 0) return;
 
     // Format time information
     char c_timestr[TIME_STR_SIZE], m_timestr[TIME_STR_SIZE], a_timestr[TIME_STR_SIZE];
