@@ -1,7 +1,7 @@
 /*
-NAME: Alex Yu
-EMAIL: alexy23@g.ucla.edu
-ID: 105295708
+NAME: Alex Yu,Nicolas Trammer
+EMAIL: alexy23@g.ucla.edu,colet@g.ucla.edu
+ID: 105295708,005395690
 */
 
 #include <time.h>
@@ -49,12 +49,15 @@ unsigned int get_start_of_block(unsigned int block) {
 }
 
 struct block_iter {
-    void *indirect[3];
-    int indexes[4];
-    int limits[4];
+    unsigned int *indirect[3];
+    int indexes[3];
+    int limits[3];
+    unsigned int parents[3];
     int level;
     int inode_number;
     int print;
+    int on_indirect;
+    unsigned int logical_offset;
     struct ext2_inode *inode;
 };
 
@@ -76,10 +79,67 @@ void destroy_block_iter(struct block_iter *iter) {
 }
 
 unsigned int get_next_block(struct block_iter *iter) {
-    if (iter->indexes[0] > iter->limits[0]){
-        return 0;
+restart:
+    for (;;) {
+        for (int level = iter->level; level >= 0; level--) {
+            if (iter->indexes[level] >= iter->limits[level]) {
+                // This means, for example, the singly indirect block that is part of doubly indirect block has been exhausted.
+                if (level < iter->level) {                    
+                    // Since this level's indirect block is done, a new one must be fetched from a block with a higher level of indirection.
+                    unsigned int indirect_block = iter->indirect[level + 1][iter->indexes[level + 1]++];
+                    if (indirect_block == 0) {
+                        for (int i = 0; i <= level; i++) {
+                            iter->logical_offset += iter->limits[i];
+                        }
+                        // The loop must be restarted so that all the bounds checking works properly
+                        goto restart;
+                    }
+
+                    if (iter->print) {
+                        fprintf(stdout, "INDIRECT,%d,%d,%u,%u,%u\n", iter->inode_number, level + 2, iter->logical_offset, 
+                            iter->parents[level + 1], indirect_block);
+                    }
+                    pread(img_fd, iter->indirect[level], block_size, get_start_of_block(indirect_block));
+                    iter->indexes[level] = 0;
+                    iter->parents[level] = indirect_block;
+                    continue;
+                }
+                
+                // No more levels
+                if (level == 3) {
+                    return 0;
+                }
+
+                // We need to start iterating the next level.
+                for (level = !iter->on_indirect ? 0 : level + 1; level < 3; level++) {
+                    unsigned int new_indirect_block = iter->inode->i_block[N_DIRECT_IBLOCKS + level];
+                    if (new_indirect_block != 0) {
+                        iter->level = level;
+                        pread(img_fd, iter->indirect[level], block_size, get_start_of_block(new_indirect_block));
+                        iter->limits[level] = block_size / sizeof(unsigned int);
+                        iter->indexes[level] = 0;
+                        iter->parents[level] = new_indirect_block;
+                        iter->on_indirect = 1;
+                        goto restart;
+                    }
+                    iter->indexes[level] = iter->limits[level];
+                }
+
+                // There were no more indirect blocks.
+                return 0;
+            }
+        }
+
+        unsigned int *block_array = !iter->on_indirect ? iter->inode->i_block : iter->indirect[0];
+        unsigned int current_block = block_array[iter->indexes[0]++];
+        iter->logical_offset++;
+        if (current_block != 0) {
+            if (iter->print && iter->on_indirect) {
+                fprintf(stdout, "INDIRECT,%d,1,%u,%u,%u\n", iter->inode_number, iter->logical_offset - 1, iter->parents[0], current_block);
+            }
+            return current_block;
+        }
     }
-    return iter->inode->i_block[iter->indexes[0]++];
 }
 
 /*
@@ -193,7 +253,6 @@ void read_inode(int i, unsigned int offset) {
     if(file_type == 'd') {
         read_dirents(&inode, i);
     }
-
     read_indirect(&inode, i);
 }
 

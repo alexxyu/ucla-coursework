@@ -1,6 +1,6 @@
-# NAME: Alex Yu
-# EMAIL: alexy23@g.ucla.edu
-# ID: 105295708
+# NAME: Alex Yu,Nicolas Trammer
+# EMAIL: alexy23@g.ucla.edu,colet@g.ucla.edu
+# ID: 105295708,005395690
 
 CC = gcc
 CFLAGS = -Wextra -Wall
@@ -19,7 +19,7 @@ $(TARGET): lab3a.c
 
 dist: $(DISTNAME)
 dist-files = lab3a.c Makefile README ext2_fs.h
-$(DISTNAME): 
+$(DISTNAME): $(dist-files)
 	$(TAR) $(TARFLAGS) $@ $(dist-files)
 
 clean:

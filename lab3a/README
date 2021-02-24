@@ -1,6 +1,6 @@
-NAME: Alex Yu
-EMAIL: alexy23@g.ucla.edu
-ID: 105295708
+NAME: Alex Yu,Nicolas Trammer
+EMAIL: alexy23@g.ucla.edu,colet@g.ucla.edu
+ID: 105295708,005395690
 
 The following files are included:
 * lab3a.c is the C source file for the filesystem analyzer
