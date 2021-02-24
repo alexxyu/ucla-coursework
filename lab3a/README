@@ -7,3 +7,9 @@ The following files are included:
 * ext2_fs.h is a header file that defines constants and structs about the EXT2 filesystem
 * Makefile provides targets to build the program, clean the working directory, and create the deliverable tarball
 * README documents the included files and reference materials
+
+We used http://www.nongnu.org/ext2-doc/ext2.html and discussion slides as reference for the EXT2 filesystem structure.
+
+For testing, we compared the output of the program when given trivial.img against the provided trivial.csv. We also 
+tested for appropriate error messages when given erroneous arguments. We also checked for reasonableness in the 
+program's output when given EXT2_test.img.
