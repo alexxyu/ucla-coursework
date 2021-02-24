@@ -14,7 +14,7 @@ TARGET = lab3a
 
 default: $(TARGET)
 
-$(TARGET):
+$(TARGET): lab3a.c
 	$(CC) $(CFLAGS) lab3a.c -o $@
 
 dist: $(DISTNAME)

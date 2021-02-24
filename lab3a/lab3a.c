@@ -48,6 +48,40 @@ unsigned int get_start_of_block(unsigned int block) {
     return ROOT_BLOCK_SIZE + (block - 1) * block_size;
 }
 
+struct block_iter {
+    void *indirect[3];
+    int indexes[4];
+    int limits[4];
+    int level;
+    int inode_number;
+    int print;
+    struct ext2_inode *inode;
+};
+
+void init_block_iter(struct block_iter *iter, struct ext2_inode *inode, int inode_number, int print) {
+    memset(iter, 0, sizeof(*iter));
+    iter->indirect[0] = malloc(block_size);
+    iter->indirect[1] = malloc(block_size);
+    iter->indirect[2] = malloc(block_size);
+    iter->limits[0] = N_DIRECT_IBLOCKS;
+    iter->print = print;
+    iter->inode = inode;
+    iter->inode_number = inode_number;
+}
+
+void destroy_block_iter(struct block_iter *iter) {
+    free(iter->indirect[0]);
+    free(iter->indirect[1]);
+    free(iter->indirect[2]);
+}
+
+unsigned int get_next_block(struct block_iter *iter) {
+    if (iter->indexes[0] > iter->limits[0]){
+        return 0;
+    }
+    return iter->inode->i_block[iter->indexes[0]++];
+}
+
 /*
 * DIRENT
 * parent inode number (decimal) ... the I-node number of the directory that contains this entry
@@ -58,6 +92,33 @@ unsigned int get_start_of_block(unsigned int block) {
 * name (string, surrounded by single-quotes). Don't worry about escaping, we promise there will be no single-quotes or 
 *   commas in any of the file names.
 */
+
+void read_dirents(struct ext2_inode *inode, int i) {
+    // NOTE: dirents cannot span more than one data block so we can scan blocks one by one, and blocks must start with a dirent.
+
+    struct block_iter iter;
+    init_block_iter(&iter, inode, i, 0);
+    void *block = malloc(block_size);
+    unsigned int data_offset = 0;
+    unsigned int block_index;
+    while ((block_index = get_next_block(&iter))) {
+        pread(img_fd, block, block_size, get_start_of_block(block_index));
+
+        unsigned int block_offset = 0;
+        for (struct ext2_dir_entry *dirent = block; block_offset < block_size; dirent = block + block_offset){
+            if (dirent->inode != 0) {
+                char name[EXT2_NAME_LEN + 1];
+                memcpy(name, dirent->name, dirent->name_len);
+                name[dirent->name_len] = '\0';
+                fprintf(stdout, "DIRENT,%u,%u,%u,%u,%u,'%s'\n", i, data_offset + block_offset, dirent->inode, dirent->rec_len, dirent->name_len, name);
+            }
+            block_offset += dirent->rec_len;
+        }
+        data_offset += block_size;
+    }
+    free(block);
+    destroy_block_iter(&iter);
+}
 
 /*
 * INDIRECT
@@ -71,6 +132,14 @@ unsigned int get_start_of_block(unsigned int block) {
 *   recursive scan), but the lower level block that contains the block reference reported by this entry.
 * block number of the referenced block (decimal)
 */
+void read_indirect(struct ext2_inode *inode, int i) {
+    struct block_iter iter;
+    init_block_iter(&iter, inode, i, 1);
+    unsigned int block_index;
+    while ((block_index = get_next_block(&iter))) 
+        ;
+    destroy_block_iter(&iter);
+}
 
 /*
 * INODE
@@ -122,11 +191,10 @@ void read_inode(int i, unsigned int offset) {
     fprintf(stdout, "\n");
 
     if(file_type == 'd') {
-        // TODO: read directory entries
+        read_dirents(&inode, i);
     }
 
-    // TODO: read indirect block entries
-    // NOTE: need to read directory entries if the indirect block points to a directory filetype
+    read_indirect(&inode, i);
 }
 
 int main(int argc, char* argv[]) {
