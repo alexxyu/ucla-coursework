@@ -82,15 +82,25 @@ unsigned int get_next_block(struct block_iter *iter) {
 restart:
     for (;;) {
         for (int level = iter->level; level >= 0; level--) {
-            if (iter->indexes[level] >= iter->limits[level]) {
+            int finished_level = 1;
+            for (int i = 0; i <= level; i++) {
+                if (iter->indexes[i] < iter->limits[i]) {
+                    finished_level = 0;
+                    break;
+                }
+            }
+
+            if (finished_level) {
                 // This means, for example, the singly indirect block that is part of doubly indirect block has been exhausted.
                 if (level < iter->level) {                    
                     // Since this level's indirect block is done, a new one must be fetched from a block with a higher level of indirection.
                     unsigned int indirect_block = iter->indirect[level + 1][iter->indexes[level + 1]++];
                     if (indirect_block == 0) {
+                        int blocks_skipped = 1;
                         for (int i = 0; i <= level; i++) {
-                            iter->logical_offset += iter->limits[i];
+                            blocks_skipped *= iter->limits[i];
                         }
+                        iter->logical_offset += blocks_skipped;
                         // The loop must be restarted so that all the bounds checking works properly
                         goto restart;
                     }
