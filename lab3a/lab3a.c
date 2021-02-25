@@ -1,7 +1,7 @@
 /*
-NAME: Alex Yu
-EMAIL: alexy23@g.ucla.edu
-ID: 105295708
+NAME: Alex Yu,Nicolas Trammer
+EMAIL: alexy23@g.ucla.edu,colet@g.ucla.edu
+ID: 105295708,005395690
 */
 
 #include <time.h>
@@ -48,6 +48,110 @@ unsigned int get_start_of_block(unsigned int block) {
     return ROOT_BLOCK_SIZE + (block - 1) * block_size;
 }
 
+struct block_iter {
+    unsigned int *indirect[3];
+    int indexes[3];
+    int limits[3];
+    unsigned int parents[3];
+    int level;
+    int inode_number;
+    int print;
+    int on_indirect;
+    unsigned int logical_offset;
+    struct ext2_inode *inode;
+};
+
+void init_block_iter(struct block_iter *iter, struct ext2_inode *inode, int inode_number, int print) {
+    memset(iter, 0, sizeof(*iter));
+    iter->indirect[0] = malloc(block_size);
+    iter->indirect[1] = malloc(block_size);
+    iter->indirect[2] = malloc(block_size);
+    iter->limits[0] = N_DIRECT_IBLOCKS;
+    iter->print = print;
+    iter->inode = inode;
+    iter->inode_number = inode_number;
+}
+
+void destroy_block_iter(struct block_iter *iter) {
+    free(iter->indirect[0]);
+    free(iter->indirect[1]);
+    free(iter->indirect[2]);
+}
+
+unsigned int get_next_block(struct block_iter *iter) {
+restart:
+    for (;;) {
+        for (int level = iter->level; level >= 0; level--) {
+            int finished_level = 1;
+            for (int i = 0; i <= level; i++) {
+                if (iter->indexes[i] < iter->limits[i]) {
+                    finished_level = 0;
+                    break;
+                }
+            }
+
+            if (finished_level) {
+                // This means, for example, the singly indirect block that is part of doubly indirect block has been exhausted.
+                if (level < iter->level) {                    
+                    // Since this level's indirect block is done, a new one must be fetched from a block with a higher level of indirection.
+                    unsigned int indirect_block = iter->indirect[level + 1][iter->indexes[level + 1]++];
+                    if (indirect_block == 0) {
+                        int blocks_skipped = 1;
+                        for (int i = 0; i <= level; i++) {
+                            blocks_skipped *= iter->limits[i];
+                        }
+                        iter->logical_offset += blocks_skipped;
+                        // The loop must be restarted so that all the bounds checking works properly
+                        goto restart;
+                    }
+
+                    if (iter->print) {
+                        fprintf(stdout, "INDIRECT,%d,%d,%u,%u,%u\n", iter->inode_number, level + 2, iter->logical_offset, 
+                            iter->parents[level + 1], indirect_block);
+                    }
+                    pread(img_fd, iter->indirect[level], block_size, get_start_of_block(indirect_block));
+                    iter->indexes[level] = 0;
+                    iter->parents[level] = indirect_block;
+                    continue;
+                }
+                
+                // No more levels
+                if (level == 3) {
+                    return 0;
+                }
+
+                // We need to start iterating the next level.
+                for (level = !iter->on_indirect ? 0 : level + 1; level < 3; level++) {
+                    unsigned int new_indirect_block = iter->inode->i_block[N_DIRECT_IBLOCKS + level];
+                    if (new_indirect_block != 0) {
+                        iter->level = level;
+                        pread(img_fd, iter->indirect[level], block_size, get_start_of_block(new_indirect_block));
+                        iter->limits[level] = block_size / sizeof(unsigned int);
+                        iter->indexes[level] = 0;
+                        iter->parents[level] = new_indirect_block;
+                        iter->on_indirect = 1;
+                        goto restart;
+                    }
+                    iter->indexes[level] = iter->limits[level];
+                }
+
+                // There were no more indirect blocks.
+                return 0;
+            }
+        }
+
+        unsigned int *block_array = !iter->on_indirect ? iter->inode->i_block : iter->indirect[0];
+        unsigned int current_block = block_array[iter->indexes[0]++];
+        iter->logical_offset++;
+        if (current_block != 0) {
+            if (iter->print && iter->on_indirect) {
+                fprintf(stdout, "INDIRECT,%d,1,%u,%u,%u\n", iter->inode_number, iter->logical_offset - 1, iter->parents[0], current_block);
+            }
+            return current_block;
+        }
+    }
+}
+
 /*
 * DIRENT
 * parent inode number (decimal) ... the I-node number of the directory that contains this entry
@@ -58,32 +162,32 @@ unsigned int get_start_of_block(unsigned int block) {
 * name (string, surrounded by single-quotes). Don't worry about escaping, we promise there will be no single-quotes or 
 *   commas in any of the file names.
 */
-void read_directory(int parent_inode, unsigned int block) {
-    if(block != 0) {
-        struct ext2_dir_entry dir_entry;
-        unsigned int inode_offset = 0;
-        unsigned int iblock_start = get_start_of_block(block);
 
-        while(inode_offset < block_size) {
-            pread(img_fd, &dir_entry, sizeof(dir_entry), iblock_start + inode_offset);
-            if(dir_entry.inode != 0) {
-                char file_name[EXT2_NAME_LEN+1];
-                memcpy(file_name, dir_entry.name, dir_entry.name_len);
-                file_name[dir_entry.name_len] = 0;
-                fprintf(stdout, "DIRENT,%u,%u,%u,%u,%u,\'%s\'\n",
-                    parent_inode,
-                    inode_offset,
-                    dir_entry.inode,
-                    dir_entry.rec_len,
-                    dir_entry.name_len,
-                    file_name
-                );
+void read_dirents(struct ext2_inode *inode, int i) {
+    // NOTE: dirents cannot span more than one data block so we can scan blocks one by one, and blocks must start with a dirent.
+
+    struct block_iter iter;
+    init_block_iter(&iter, inode, i, 0);
+    void *block = malloc(block_size);
+    unsigned int data_offset = 0;
+    unsigned int block_index;
+    while ((block_index = get_next_block(&iter))) {
+        pread(img_fd, block, block_size, get_start_of_block(block_index));
+
+        unsigned int block_offset = 0;
+        for (struct ext2_dir_entry *dirent = block; block_offset < block_size; dirent = block + block_offset){
+            if (dirent->inode != 0) {
+                char name[EXT2_NAME_LEN + 1];
+                memcpy(name, dirent->name, dirent->name_len);
+                name[dirent->name_len] = '\0';
+                fprintf(stdout, "DIRENT,%u,%u,%u,%u,%u,'%s'\n", i, data_offset + block_offset, dirent->inode, dirent->rec_len, dirent->name_len, name);
             }
-
-            // Increment offset to next entry
-            inode_offset += dir_entry.rec_len;
+            block_offset += dirent->rec_len;
         }
+        data_offset += block_size;
     }
+    free(block);
+    destroy_block_iter(&iter);
 }
 
 /*
@@ -98,32 +202,13 @@ void read_directory(int parent_inode, unsigned int block) {
 *   recursive scan), but the lower level block that contains the block reference reported by this entry.
 * block number of the referenced block (decimal)
 */
-void read_indirect(int block, int inode, int logical_offset, int n_entries, int level, int is_dir) {
-    if(level <= 0) {
-        return;
-    }
-
-    unsigned int* entries = (unsigned int*) malloc(n_entries * sizeof(unsigned int));
-    pread(img_fd, entries, block_size, get_start_of_block(block));
-    for(int i=0; i<n_entries; i++) {
-        if(entries[i] != 0) {
-            if(is_dir) {
-                // All directory entries need to be printed
-                read_directory(inode, entries[i]);
-            }
-            fprintf(stdout, "INDIRECT,%d,%d,%d,%d,%d\n", 
-                inode, 
-                level, 
-                logical_offset+i, 
-                block, 
-                entries[i]
-            );
-
-            // Recursively read indirect entries
-            read_indirect(entries[i], inode, logical_offset+i, n_entries, level-1, is_dir);
-        }
-    }
-    free(entries);
+void read_indirect(struct ext2_inode *inode, int i) {
+    struct block_iter iter;
+    init_block_iter(&iter, inode, i, 1);
+    unsigned int block_index;
+    while ((block_index = get_next_block(&iter))) 
+        ;
+    destroy_block_iter(&iter);
 }
 
 /*
@@ -176,22 +261,9 @@ void read_inode(int i, unsigned int offset) {
     fprintf(stdout, "\n");
 
     if(file_type == 'd') {
-        for(int iblock=0; iblock < N_DIRECT_IBLOCKS; iblock++) {
-            read_directory(i, inode.i_block[iblock]);
-        }
+        read_dirents(&inode, i);
     }
-
-    // Check indirect blocks
-    int logical_offset = N_DIRECT_IBLOCKS, res = 1;
-    int n_entries = block_size / sizeof(unsigned int);
-    for(int k=0; k<N_TOTAL_IBLOCKS - N_DIRECT_IBLOCKS; k++) {
-        read_indirect(inode.i_block[N_DIRECT_IBLOCKS+k], i, logical_offset, n_entries, k+1, file_type == 'd');
-
-        // Each k-level indirection block references n^k blocks (k > 1)
-        // logical_offset: 12 for k=1, 12+256 for k=2, 12+256+65536 for k=3 if n_entries = 256
-        res *= n_entries;
-        logical_offset += res; 
-    }
+    read_indirect(&inode, i);
 }
 
 int main(int argc, char* argv[]) {
