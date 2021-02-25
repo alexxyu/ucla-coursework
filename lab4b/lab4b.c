@@ -12,6 +12,7 @@
 
 #define B 4275
 #define R0 100000
+#define BUTTON_PORT 60
 #define TEMP_SENSOR_PORT 1
 
 #define BUFFER_SIZE 256
@@ -28,6 +29,10 @@ void print_usage_and_exit(char* exec) {
 void handle_interrupt(int sig) {
     if(sig == SIGINT)
         run_flag = 0;
+}
+
+void handle_button_interrupt() {
+    run_flag = 0;
 }
 
 float calculate_temp(float R, int in_celsius) {
@@ -99,12 +104,17 @@ int main(int argc, char* argv[]) {
 
     // Initialize AIO
     mraa_aio_context aio = mraa_aio_init(TEMP_SENSOR_PORT);
-    if (aio == NULL) {
-        fprintf(stderr, "Failed to initialize AIO\n");
+    mraa_gpio_context gpio = mraa_gpio_init(BUTTON_PORT);
+    if (aio == NULL || gpio == NULL) {
+        if(aio == NULL) fprintf(stderr, "Failed to initialize AIO\n");
+        if(gpio == NULL) fprintf(stderr, "Failed to initialize GPIO\n");
         mraa_deinit();
         exit(1);
     }
 
+    mraa_gpio_dir(gpio, MRAA_GPIO_IN);
+
+    mraa_gpio_isr(gpio, MRAA_GPIO_EDGE_RISING, &handle_button_interrupt, NULL);
     signal(SIGINT, handle_interrupt);
 
     time_t curr_t;
@@ -126,8 +136,9 @@ int main(int argc, char* argv[]) {
     }
 
     // Close AIO
-    int status = mraa_aio_close(aio);
-    if (status != MRAA_SUCCESS) {
+    int aio_status = mraa_aio_close(aio);
+    int gpio_status = mraa_gpio_close(gpio);
+    if (aio_status != MRAA_SUCCESS || gpio_status != MRAA_SUCCESS) {
         exit(1);
     }
 
