@@ -1,5 +1,6 @@
 #include <math.h>
 #include <time.h>
+#include <poll.h>
 #include <mraa.h>
 #include <stdio.h>
 #include <fcntl.h>
@@ -19,7 +20,16 @@
 #define DEFAULT_IN_CELSIUS 0
 #define DEFAULT_SAMPLE_INTERVAL 1
 
+struct pollfd pollfds[1];
+int curr_command_length = 0;
+char curr_command_buffer[BUFFER_SIZE];
+char commands_buffer[BUFFER_SIZE];
+
 sig_atomic_t volatile run_flag = 1;
+
+char* logfile;
+int sample_interval, fd_log;
+int print_celsius, should_report;
 
 void print_usage_and_exit(char* exec) {
     fprintf(stderr, "Usage: %s [--log=<LOGFILE>] [--scale={C|F}] [--period=<PERIOD>]\n", exec);
@@ -31,8 +41,79 @@ void handle_interrupt(int sig) {
         run_flag = 0;
 }
 
-void handle_button_interrupt() {
+void shutdown() {
+    time_t curr_t;
+    struct tm* tm_struct;
+    char buffer[BUFFER_SIZE];
+
+    time(&curr_t);
+    tm_struct = localtime(&curr_t);
+    int nbytes = sprintf(buffer, "%.2d:%.2d:%.2d SHUTDOWN\n", tm_struct->tm_hour, tm_struct->tm_min, tm_struct->tm_sec);
+    fprintf(stdout, "%s", buffer);
+    if(logfile) {
+        write(fd_log, buffer, nbytes);
+    }
+
     run_flag = 0;
+}
+
+void handle_command(char* command_str, int length) {
+    int should_shutdown = 0;
+
+    // Check whether command matches any correct format and take appropriate action
+    if(strncmp(command_str, "SCALE=F", length) == 0) {
+        print_celsius = 0;
+    } else if(strncmp(command_str, "SCALE=C", length) == 0) {
+        print_celsius = 1;
+    } else if(strncmp(command_str, "PERIOD=", strlen("PERIOD=")) == 0) {
+        int parsed_val = (int) strtol(command_str+strlen("PERIOD="), NULL, 10);
+        if(parsed_val > 0) {
+            // Only set sample interval if value is valid
+            sample_interval = parsed_val;
+        }
+    } else if(strncmp(command_str, "STOP", length) == 0) {
+        should_report = 0;
+    } else if(strncmp(command_str, "START", length) == 0) {
+        should_report = 1;
+    } else if(strncmp(command_str, "LOG ", strlen("LOG ")) == 0) {
+        // Do nothing special: LOG is a valid command but simply prints to log file
+    } else if(strncmp(command_str, "OFF", length) == 0) {
+        should_shutdown = 1;
+    } else {
+        // Invalid command provided, so return
+        return;
+    }
+
+    if(logfile) {
+        dprintf(fd_log, "%s\n", command_str);
+    }
+    if(should_shutdown) {
+        shutdown();
+    }
+}
+
+void parse_commands() {
+    int read_size, i;
+    
+    if( poll(pollfds, 1, 0) > 0 && (pollfds[0].revents & POLLIN) ) {
+        read_size = read(STDIN_FILENO, commands_buffer, BUFFER_SIZE);
+        for(i=0; i<read_size; i++) {
+            char c = commands_buffer[i];
+
+            // Newline character indicates that the full command has been sent
+            if(c == '\n') {
+                curr_command_buffer[curr_command_length] = '\0';
+                handle_command(curr_command_buffer, curr_command_length);
+
+                // Reset current command buffer
+                memset(curr_command_buffer, 0, BUFFER_SIZE);
+                curr_command_length = 0;
+            } else {
+                // Copy character into buffer
+                curr_command_buffer[curr_command_length++] = c;
+            }
+        }
+    }
 }
 
 float calculate_temp(float R, int in_celsius) {
@@ -47,8 +128,13 @@ float calculate_temp(float R, int in_celsius) {
 }
 
 int main(int argc, char* argv[]) {
-    int print_celsius = DEFAULT_IN_CELSIUS;
-    int sample_interval = DEFAULT_SAMPLE_INTERVAL;
+    logfile = NULL;
+    should_report = 1;
+    print_celsius = DEFAULT_IN_CELSIUS;
+    sample_interval = DEFAULT_SAMPLE_INTERVAL;
+
+    pollfds[0].fd = STDIN_FILENO;
+    pollfds[0].events = POLLIN;
 
     const struct option long_options[] = {
         {"log", required_argument, 0, 'l'},
@@ -58,11 +144,11 @@ int main(int argc, char* argv[]) {
     };
 
     int c, opt_index;
-    char* log = NULL, *scale_str = NULL;
+    char* scale_str = NULL;
     while( (c = getopt_long(argc, argv, "", long_options, &opt_index)) != -1 ) {
         switch(c) {
             case 'l':
-                log = optarg;
+                logfile = optarg;
                 break;
             case 's':
                 scale_str = optarg;
@@ -80,7 +166,7 @@ int main(int argc, char* argv[]) {
     if(optind < argc)
         print_usage_and_exit(argv[0]);
 
-    // Check and parse provided arguments
+    // Check validity and parse provided arguments
     if(scale_str != NULL) {
         if(strlen(scale_str) != 1 || (scale_str[0] != 'C' && scale_str[0] != 'F')) {
             fprintf(stderr, "Please provide a valid scale\n");
@@ -93,16 +179,15 @@ int main(int argc, char* argv[]) {
         fprintf(stderr, "Please enter a valid period\n");
         print_usage_and_exit(argv[0]);
     }
-    int fd_log;
-    if(log) {
-        fd_log = creat(log, 0666);
+    if(logfile) {
+        fd_log = creat(logfile, 0666);
         if(fd_log < 0) {
-            fprintf(stderr, "Unable to create log file %s: %s\n", log, strerror(errno));
+            fprintf(stderr, "Unable to create log file %s: %s\n", logfile, strerror(errno));
             exit(1);
         }
     }
 
-    // Initialize AIO
+    // Initialize AIO and GPIO
     mraa_aio_context aio = mraa_aio_init(TEMP_SENSOR_PORT);
     mraa_gpio_context gpio = mraa_gpio_init(BUTTON_PORT);
     if (aio == NULL || gpio == NULL) {
@@ -111,40 +196,42 @@ int main(int argc, char* argv[]) {
         mraa_deinit();
         exit(1);
     }
-
     mraa_gpio_dir(gpio, MRAA_GPIO_IN);
-
-    mraa_gpio_isr(gpio, MRAA_GPIO_EDGE_RISING, &handle_button_interrupt, NULL);
+    mraa_gpio_isr(gpio, MRAA_GPIO_EDGE_RISING, &shutdown, NULL);
     signal(SIGINT, handle_interrupt);
 
     time_t curr_t;
     struct tm* tm_struct;
     char buffer[BUFFER_SIZE];
 
+    // Main loop that generates reports
     while(run_flag) {
-        time(&curr_t);
-        tm_struct = localtime(&curr_t);
-        int temp_reading = mraa_aio_read(aio);
-        int nbytes = sprintf(buffer, "%.2d:%.2d:%.2d %.1f\n", tm_struct->tm_hour, tm_struct->tm_min, tm_struct->tm_sec, 
-                                                              calculate_temp(temp_reading, print_celsius));
-        fprintf(stdout, "%s", buffer);
-        if(log) {
-            write(fd_log, buffer, nbytes);
+        if(should_report) {
+            time(&curr_t);
+            tm_struct = localtime(&curr_t);
+            int temp_reading = mraa_aio_read(aio);
+            int nbytes = sprintf(buffer, "%.2d:%.2d:%.2d %.1f\n", tm_struct->tm_hour, tm_struct->tm_min, tm_struct->tm_sec, 
+                                                                  calculate_temp(temp_reading, print_celsius));
+            fprintf(stdout, "%s", buffer);
+            if(logfile) {
+                write(fd_log, buffer, nbytes);
+            }
         }
         
+        parse_commands();
         sleep(sample_interval);
     }
 
-    // Close AIO
+    // Close AIO and GPIO
     int aio_status = mraa_aio_close(aio);
     int gpio_status = mraa_gpio_close(gpio);
     if (aio_status != MRAA_SUCCESS || gpio_status != MRAA_SUCCESS) {
         exit(1);
     }
 
-    if(log) {
+    if(logfile) {
         if(close(fd_log) < 0) {
-            fprintf(stderr, "Unable to close log file %s: %s\n", log, strerror(errno));
+            fprintf(stderr, "Unable to close log file %s: %s\n", logfile, strerror(errno));
             exit(1);
         }
     }
