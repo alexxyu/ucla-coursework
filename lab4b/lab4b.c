@@ -31,6 +31,9 @@ void handle_interrupt(int sig) {
 }
 
 float calculate_temp(float R, int in_celsius) {
+    R = 1023.0/R-1.0;
+    R = R0*R;
+
     float temp = 1.0/(log(R/R0) / B + 1/298.15) - 273.15;
     if(in_celsius) {
         return temp;
@@ -111,7 +114,7 @@ int main(int argc, char* argv[]) {
     while(run_flag) {
         time(&curr_t);
         tm_struct = localtime(&curr_t);
-        float temp_reading = mraa_aio_read_float(aio);
+        int temp_reading = mraa_aio_read(aio);
         int nbytes = sprintf(buffer, "%.2d:%.2d:%.2d %.1f\n", tm_struct->tm_hour, tm_struct->tm_min, tm_struct->tm_sec, 
                                                               calculate_temp(temp_reading, print_celsius));
         fprintf(stdout, "%s", buffer);

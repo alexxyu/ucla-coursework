@@ -3,7 +3,7 @@
 # ID: 105295708
 
 CC = gcc
-CFLAGS = -Wextra -Wall -lmraa
+CFLAGS = -Wextra -Wall -lmraa -lm
 
 TAR = tar
 TARFLAGS = -czvf
