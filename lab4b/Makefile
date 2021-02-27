@@ -17,8 +17,11 @@ default: $(TARGET)
 $(TARGET):
 	$(CC) $(CFLAGS) lab4b.c -o $@
 
+check: $(TARGET)
+	./test.sh
+
 dist: $(DISTNAME)
-dist-files = lab4b.c Makefile README
+dist-files = lab4b.c Makefile README test.sh
 $(DISTNAME): 
 	$(TAR) $(TARFLAGS) $@ $(dist-files)
 
