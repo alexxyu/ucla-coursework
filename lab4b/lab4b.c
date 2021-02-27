@@ -1,7 +1,12 @@
+/*
+NAME: Alex Yu
+EMAIL: alexy23@g.ucla.edu
+ID: 105295708
+*/
+
 #include <math.h>
 #include <time.h>
 #include <poll.h>
-#include <mraa.h>
 #include <stdio.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -11,12 +16,67 @@
 #include <getopt.h>
 #include <string.h>
 
+#ifdef DUMMY
+#define MRAA_SUCCESS 0
+#define MRAA_GPIO_IN 0
+#define MRAA_GPIO_EDGE_RISING 0
+
+typedef int* mraa_aio_context;
+typedef int* mraa_gpio_context;
+
+void mraa_deinit() {
+}
+
+/*
+Define AIO functions
+*/
+mraa_aio_context mraa_aio_init(int p) {
+    int* context = (int*) malloc(sizeof(int));
+    *context = p;
+    return context;
+}
+int mraa_aio_read(mraa_aio_context c) {
+    return 650 + *c;
+}
+int mraa_aio_close(mraa_aio_context c) {
+    free(c);
+    return MRAA_SUCCESS;
+}
+
+/*
+Define GPIO functions
+*/
+mraa_gpio_context mraa_gpio_init(int p) {
+    int* context = (int*) malloc(sizeof(int));
+    *context = p;
+    return context;
+}
+void mraa_gpio_dir(mraa_gpio_context c, int d) {
+    *c = *c+d-d;
+}
+void mraa_gpio_isr(mraa_gpio_context c, int edge, void* fptr, void* args) {
+    if(fptr == NULL || args == NULL)
+        return;
+    *c = *c+edge;
+}
+int mraa_gpio_read(mraa_gpio_context c) {
+    return 650 + *c;
+}
+int mraa_gpio_close(mraa_gpio_context c) {
+    free(c);
+    return MRAA_SUCCESS;
+}
+#else
+#include <mraa.h>
+#endif
+
 #define B 4275
 #define R0 100000
 #define BUTTON_PORT 60
 #define TEMP_SENSOR_PORT 1
 
 #define BUFFER_SIZE 256
+#define POLL_INTERVAL 50
 #define DEFAULT_IN_CELSIUS 0
 #define DEFAULT_SAMPLE_INTERVAL 1
 
@@ -95,7 +155,7 @@ void handle_command(char* command_str, int length) {
 void parse_commands() {
     int read_size, i;
     
-    if( poll(pollfds, 1, 0) > 0 && (pollfds[0].revents & POLLIN) ) {
+    if( poll(pollfds, 1, POLL_INTERVAL) > 0 && (pollfds[0].revents & POLLIN) ) {
         read_size = read(STDIN_FILENO, commands_buffer, BUFFER_SIZE);
         for(i=0; i<read_size; i++) {
             char c = commands_buffer[i];
@@ -200,15 +260,19 @@ int main(int argc, char* argv[]) {
     mraa_gpio_isr(gpio, MRAA_GPIO_EDGE_RISING, &shutdown, NULL);
     signal(SIGINT, handle_interrupt);
 
-    time_t curr_t;
     struct tm* tm_struct;
+    time_t time_of_report, curr_time;
+    time_t elapsed_since_last_report = 0;
+
+    time(&time_of_report);
+
     char buffer[BUFFER_SIZE];
 
     // Main loop that generates reports
     while(run_flag) {
-        if(should_report) {
-            time(&curr_t);
-            tm_struct = localtime(&curr_t);
+        if(should_report && elapsed_since_last_report >= sample_interval) {
+            time(&time_of_report);
+            tm_struct = localtime(&time_of_report);
             int temp_reading = mraa_aio_read(aio);
             int nbytes = sprintf(buffer, "%.2d:%.2d:%.2d %.1f\n", tm_struct->tm_hour, tm_struct->tm_min, tm_struct->tm_sec, 
                                                                   calculate_temp(temp_reading, print_celsius));
@@ -216,10 +280,14 @@ int main(int argc, char* argv[]) {
             if(logfile) {
                 write(fd_log, buffer, nbytes);
             }
+
+            elapsed_since_last_report = 0;
         }
-        
+
         parse_commands();
-        sleep(sample_interval);
+        
+        time(&curr_time);
+        elapsed_since_last_report = curr_time - time_of_report;
     }
 
     // Close AIO and GPIO
