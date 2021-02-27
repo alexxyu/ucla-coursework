@@ -3,7 +3,7 @@
 # ID: 105295708
 
 CC = gcc
-CFLAGS = -Wextra -Wall -lm -lmraa
+CFLAGS = -Wextra -Wall -lm
 
 TAR = tar
 TARFLAGS = -czvf
@@ -15,7 +15,11 @@ TARGET = lab4b
 default: $(TARGET)
 
 $(TARGET):
-	$(CC) $(CFLAGS) lab4b.c -o $@
+	if [ `uname -a | grep -c "lasr.cs.ucla.edu"` -ne 0 ] || [ `uname -a | grep -c "beaglebone"` -ne 0 ]; then \
+		$(CC) $(CFLAGS) -lmraa lab4b.c -o $@ ; \
+	else \
+		$(CC) $(CFLAGS) -DDUMMY lab4b.c -o $@ ; \
+	fi
 
 check: $(TARGET)
 	./test.sh
