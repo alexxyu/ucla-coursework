@@ -149,9 +149,9 @@ for block in block_to_inode.keys():
             exit_code = CORRUPTED_EXIT_CODE
 
 # Report unreferenced blocks
-for block in range(1, n_total_blocks+1):
+for block in range(1, n_total_blocks):
     if block not in block_to_inode and block not in free_blocks and block not in reserved_blocks:
-        # print("UNREFERENCED BLOCK %d" % block)
+        print("UNREFERENCED BLOCK %d" % block)
         exit_code = CORRUPTED_EXIT_CODE
 
 # Report allocated inodes that were denoted as free in bitmap
