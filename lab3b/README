@@ -6,3 +6,6 @@ The following files are included:
 * lab3b.py is the Python script that analyzes the provided filesystem summary for inconsistencies/corruption
 * Makefile provides targets to build the program, clean the working directory, and create the deliverable tarball
 * README documents the included files and reference materials
+
+We tested our program using the provided sanity script, and we checked that when provided trivial.img, the program did
+not output any errors indicating that the image was corrupted.

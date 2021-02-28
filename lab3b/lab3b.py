@@ -24,6 +24,7 @@ def print_block_error(block, offset, level, inode, error):
         indirectness_label = " TRIPLE INDIRECT"
     print("%s%s BLOCK %d IN INODE %d AT OFFSET %d" % (error, indirectness_label, block, inode, offset))
 
+# Check for arguments
 if len(sys.argv) != 2:
     print("Usage: python %s <FS_SUMMARY>" % sys.argv[0], file=sys.stderr)
     exit(1)
@@ -53,7 +54,11 @@ dirents = []
 
 # Parse filesystem summary
 with open(sys.argv[1], 'r') as file:
-    reader = list(csv.reader(file, delimiter=','))
+    try:
+        reader = list(csv.reader(file, delimiter=','))
+    except:
+        print("File %s cannot be parsed as a csv" % sys.argv[1], file=sys.stderr)
+        exit(1)
 
     for row in reader:
         if row[0] == "SUPERBLOCK":
@@ -94,8 +99,8 @@ with open(sys.argv[1], 'r') as file:
             if inode not in inode_blocks:
                 inode_blocks[inode] = []
 
-            filetype, mode, link_count = row[2], int(row[3]), int(row[6])
-            inode_info[inode] = (filetype, mode, link_count)
+            filetype, size, link_count = row[2], int(row[10]), int(row[6])
+            inode_info[inode] = (filetype, size, link_count)
 
             # Extract block numbers, logical offset, and level of indirectness
             for offset, s in enumerate(row[12:]):
@@ -126,7 +131,11 @@ block_to_inode = dict()     # reverse maps block number to inode references
 
 # Report invalid and allocated blocks
 for inode in inode_blocks.keys():
-    filetype, mode, link_count = inode_info[inode]
+    filetype, size, link_count = inode_info[inode]    
+    if filetype == 's' and size < 60:
+        # If size of symlink is less than 60 bytes, the name will be stored in the space for block pointers
+        continue
+
     for block, offset, level in inode_blocks[inode]:
         if block == 0:
             continue
@@ -147,7 +156,7 @@ for inode in inode_blocks.keys():
 # Report duplicated blocks
 for block in block_to_inode.keys():
     if len(block_to_inode[block]) > 1:
-        for inode, offset, level, filetype, mode, link_count in block_to_inode[block]:
+        for inode, offset, level, _, _, _ in block_to_inode[block]:
             print_block_error(block, offset, level, inode, "DUPLICATE")
             exit_code = CORRUPTED_EXIT_CODE
 
