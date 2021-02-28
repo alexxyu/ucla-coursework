@@ -49,6 +49,8 @@ inode_blocks = dict()           # maps inode number to data block numbers
 free_blocks = set()
 free_inodes = set()
 
+dirents = []
+
 # Parse filesystem summary
 with open(sys.argv[1], 'r') as file:
     reader = list(csv.reader(file, delimiter=','))
@@ -116,7 +118,8 @@ with open(sys.argv[1], 'r') as file:
             block, offset, level = int(row[5]), int(row[3]), int(row[2])-1
             inode_blocks[inode].append((block, offset, level))
         elif type == "DIRENT":
-            pass
+            parent, inode, name = int(row[1]), int(row[3]), row[6]
+            dirents.append((parent, inode, name))
 
 duplicates = []
 block_to_inode = dict()     # reverse maps block number to inode references
@@ -166,10 +169,48 @@ for inode in range(first_avail_inode, n_total_inodes+1):
         print("UNALLOCATED INODE %d NOT ON FREELIST" % inode)
         exit_code = CORRUPTED_EXIT_CODE
 
-# TODO: Report inodes with wrong link count
+# Report inodes with wrong link count
+real_counts = dict()
+for inode in inode_info:
+    real_counts[inode] = 0
+for (_, inode, _) in dirents:
+    if inode in real_counts:
+        real_counts[inode] += 1
+for inode in inode_blocks:
+    (_, _, link_count) = inode_info[inode]
+    if link_count != real_counts[inode]:
+        print("INODE %d HAS %d LINKS BUT LINKCOUNT IS %d" % (inode, real_counts[inode], link_count))
+        exit_code = CORRUPTED_EXIT_CODE
 
-# TODO: Check validity and allocation status of each dirent inode
+# Check validity and allocation status of each dirent inode
+# Note that the code currently doesn't care if a directory has more than one parent (which should be reported somehow but the
+# spec does not mention it. It also does not complain if a directory is missing a . or .. entry (which again the spec ignores).
+for (parent, inode, name) in dirents:
+    if inode < 1 or inode > n_total_inodes:
+        print("DIRECTORY INODE %d NAME %s INVALID INODE %d" % (parent, name, inode))
+        exit_code = CORRUPTED_EXIT_CODE
+    elif inode in free_inodes and not inode in inode_info:
+        print("DIRECTORY INODE %d NAME %s UNALLOCATED INODE %d" % (parent, name, inode))
+        exit_code = CORRUPTED_EXIT_CODE
 
-# TODO: Check validity of '.' and '..' inodes in dirent
+# Check validity of '.' and '..' inodes in dirent
+parents = dict()
+# Root inode is its own parent
+parents[2] = 2
+for (parent, inode, name) in dirents:
+    # Note that directories must have exactly 1 parent, so the fact that the parent field is overwritten does not matter
+    if name != "'.'" and name != "'..'":
+        parents[inode] = parent
+for (directory, target_inode, name) in dirents:
+    expected = 0
+    if name == "'.'":
+        expected = directory
+    elif name == "'..'" and directory in parents:
+        expected = parents[directory]
+    else:
+        continue
+    if target_inode != expected:
+        print("DIRECTORY INODE %d NAME %s LINK TO INODE %d SHOULD BE %d" % (directory, name, target_inode, expected))
+        exit_code = CORRUPTED_EXIT_CODE
 
 exit(exit_code)
