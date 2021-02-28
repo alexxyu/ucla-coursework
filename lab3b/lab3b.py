@@ -8,6 +8,7 @@ ID: 105295708,005395690
 
 import sys
 import csv
+import math
 from os import path
 
 CORRUPTED_EXIT_CODE = 2
@@ -35,10 +36,12 @@ exit_code = 0
 block_size = 0
 n_total_blocks = 0
 n_total_inodes = 0
+inode_size = 0
 first_avail_inode = 0
 
-# TODO: reserved blocks
-reserved_blocks = []
+# Boot block is always reserved
+reserved_blocks = set()
+reserved_blocks.add(0)
 
 inode_info = dict()             # stores info gathered about inode (like link count)
 inode_blocks = dict()           # maps inode number to data block numbers
@@ -55,9 +58,19 @@ with open(sys.argv[1], 'r') as file:
             n_total_blocks = int(row[1])
             n_total_inodes = int(row[2])
             block_size = int(row[3])
+            inode_size = int(row[4])
             first_avail_inode = int(row[7])
 
     entries_per_indirect_block = block_size / 4
+    if block_size == 1024:
+        # Superblock
+        reserved_blocks.add(1)
+        # Block group descriptor table
+        reserved_blocks.add(2)
+    else:
+        # Super block is already reserved as part of the boot block
+        # Block group descriptor table
+        reserved_blocks.add(1)
 
     for row in reader:
         type, num = row[:2]
@@ -65,6 +78,15 @@ with open(sys.argv[1], 'r') as file:
             free_inodes.add(int(num))
         elif type == "BFREE":
             free_blocks.add(int(num))
+        elif type == "GROUP":
+            # Both the block and inode bitmaps must be exactly one block long.
+            reserved_blocks.add(int(row[6]))
+            reserved_blocks.add(int(row[7]))
+            # The inode table length, however, varies.
+            inode_table_length = int(row[3]) * inode_size
+            inode_table_block_start = int(row[8])
+            for i in range(math.ceil(inode_table_length / block_size)):
+                reserved_blocks.add(inode_table_block_start + i)
         elif type == "INODE":
             inode = int(num)
             if inode not in inode_blocks:
@@ -99,7 +121,6 @@ with open(sys.argv[1], 'r') as file:
 duplicates = []
 block_to_inode = dict()     # reverse maps block number to inode references
 
-# TODO: Report reserved blocks
 # Report invalid and allocated blocks
 for inode in inode_blocks.keys():
     filetype, mode, link_count = inode_info[inode]
@@ -113,7 +134,7 @@ for inode in inode_blocks.keys():
             print("ALLOCATED BLOCK %d ON FREELIST" % block)
             exit_code = CORRUPTED_EXIT_CODE
         if block in reserved_blocks:
-            # print_block_error(block, offset, level, inode, "RESERVED")
+            print_block_error(block, offset, level, inode, "RESERVED")
             exit_code = CORRUPTED_EXIT_CODE
         
         if block not in block_to_inode:
