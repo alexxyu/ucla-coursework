@@ -139,9 +139,6 @@ void handle_command(char* command_str, int length) {
         // Do nothing special: LOG is a valid command but simply prints to log file
     } else if(strncmp(command_str, "OFF", length) == 0) {
         should_shutdown = 1;
-    } else {
-        // Invalid command provided, so return
-        return;
     }
 
     if(logfile) {
