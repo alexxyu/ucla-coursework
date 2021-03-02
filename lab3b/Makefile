@@ -1,6 +1,6 @@
-# NAME: Alex Yu
-# EMAIL: alexy23@g.ucla.edu
-# ID: 105295708
+# NAME: Alex Yu,Nicolas Trammer
+# EMAIL: alexy23@g.ucla.edu,colet@g.ucla.edu
+# ID: 105295708,005395690
 
 TAR = tar
 TARFLAGS = -czvf
@@ -12,7 +12,7 @@ TARGET = lab3b
 default: $(TARGET)
 
 $(TARGET): clean
-	ln lab3b.py $(TARGET)
+	ln -s lab3b.py $(TARGET)
 	chmod +x $(TARGET)
 
 dist: $(DISTNAME)
