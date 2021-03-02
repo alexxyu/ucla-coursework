@@ -15,7 +15,7 @@ TARGET = lab4b
 default: $(TARGET)
 
 $(TARGET):
-	if [ `uname -a | grep -c "lasr.cs.ucla.edu"` -ne 0 ] || [ `uname -a | grep -c "beaglebone"` -ne 0 ]; then \
+	if [ `uname -a | grep -c "armv7l"` -ne 0 ]; then \
 		$(CC) $(CFLAGS) -lmraa lab4b.c -o $@ ; \
 	else \
 		$(CC) $(CFLAGS) -DDUMMY lab4b.c -o $@ ; \
