@@ -32,4 +32,4 @@ $(DISTNAME):
 	$(TAR) $(TARFLAGS) $@ $(dist-files)
 
 clean:
-	rm -rf *.o *.$(TAREXT) $(TARGET)
+	rm -rf *.o *.$(TAREXT) lab4c_tcp lab4c_tls
