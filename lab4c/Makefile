@@ -10,7 +10,7 @@ TARFLAGS = -czvf
 TAREXT = tar.gz
 DISTNAME = lab4c-105295708.$(TAREXT)
 
-default: lab4c_tcp lab4b_tls
+default: lab4c_tcp lab4c_tls
 
 lab4c_tcp:
 	if [ `uname -a | grep -c "armv7l"` -ne 0 ]; then \
