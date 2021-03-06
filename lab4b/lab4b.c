@@ -96,11 +96,6 @@ void print_usage_and_exit(char* exec) {
     exit(1);
 }
 
-void handle_interrupt(int sig) {
-    if(sig == SIGINT)
-        run_flag = 0;
-}
-
 void shutdown() {
     time_t curr_t;
     struct tm* tm_struct;
@@ -257,7 +252,6 @@ int main(int argc, char* argv[]) {
     }
     mraa_gpio_dir(gpio, MRAA_GPIO_IN);
     mraa_gpio_isr(gpio, MRAA_GPIO_EDGE_RISING, &shutdown, NULL);
-    signal(SIGINT, handle_interrupt);
 
     struct tm* tm_struct;
     time_t time_of_report, curr_time;
