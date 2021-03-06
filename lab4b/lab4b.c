@@ -166,8 +166,10 @@ void parse_commands() {
                 memset(curr_command_buffer, 0, BUFFER_SIZE);
                 curr_command_length = 0;
             } else {
-                // Copy character into buffer
-                curr_command_buffer[curr_command_length++] = c;
+                if(curr_command_length || (c != ' ' && c != '\t')) {
+                    // Copy character into buffer but skip opening spaces/tabs
+                    curr_command_buffer[curr_command_length++] = c;
+                }
             }
         }
     }
