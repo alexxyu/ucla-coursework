@@ -1,0 +1,9 @@
+NAME: Alex Yu
+EMAIL: alexy23@g.ucla.edu
+ID: 105295708
+
+The following files are included:
+* lab4c_tcp.c is the C source file for the temperature sampling application that connects to the TCP logging server
+* lab4c_tls.c is the C source file for the temperature sampling application that connects to the TLS logging server
+* Makefile provides targets to build the program, create the tarball, and clean the current working directory
+* README documents the listed files and other information about development
