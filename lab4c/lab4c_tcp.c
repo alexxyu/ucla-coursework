@@ -21,11 +21,7 @@ ID: 105295708
 
 #ifdef DUMMY
 #define MRAA_SUCCESS 0
-#define MRAA_GPIO_IN 0
-#define MRAA_GPIO_EDGE_RISING 0
-
 typedef int* mraa_aio_context;
-typedef int* mraa_gpio_context;
 
 void mraa_deinit() {
 }
@@ -42,30 +38,6 @@ int mraa_aio_read(mraa_aio_context c) {
     return 650 + *c;
 }
 int mraa_aio_close(mraa_aio_context c) {
-    free(c);
-    return MRAA_SUCCESS;
-}
-
-/*
-Define GPIO functions
-*/
-mraa_gpio_context mraa_gpio_init(int p) {
-    int* context = (int*) malloc(sizeof(int));
-    *context = p;
-    return context;
-}
-void mraa_gpio_dir(mraa_gpio_context c, int d) {
-    *c = *c+d-d;
-}
-void mraa_gpio_isr(mraa_gpio_context c, int edge, void* fptr, void* args) {
-    if(fptr == NULL || args == NULL)
-        return;
-    *c = *c+edge;
-}
-int mraa_gpio_read(mraa_gpio_context c) {
-    return 650 + *c;
-}
-int mraa_gpio_close(mraa_gpio_context c) {
     free(c);
     return MRAA_SUCCESS;
 }
@@ -316,17 +288,13 @@ int main(int argc, char* argv[]) {
         exit(1);
     }
 
-    // Initialize AIO and GPIO
+    // Initialize AIO
     mraa_aio_context aio = mraa_aio_init(TEMP_SENSOR_PORT);
-    mraa_gpio_context gpio = mraa_gpio_init(BUTTON_PORT);
-    if (aio == NULL || gpio == NULL) {
+    if (aio == NULL) {
         if(aio == NULL) fprintf(stderr, "Failed to initialize AIO\n");
-        if(gpio == NULL) fprintf(stderr, "Failed to initialize GPIO\n");
         mraa_deinit();
         exit(1);
     }
-    mraa_gpio_dir(gpio, MRAA_GPIO_IN);
-    mraa_gpio_isr(gpio, MRAA_GPIO_EDGE_RISING, &perform_shutdown, NULL);
 
     // Connect to server and set up polling
     connect_to_server(host, port);
@@ -357,7 +325,7 @@ int main(int argc, char* argv[]) {
             int temp_reading = mraa_aio_read(aio);
             nbytes = sprintf(buffer, "%.2d:%.2d:%.2d %.1f\n", tm_struct->tm_hour, tm_struct->tm_min, tm_struct->tm_sec, 
                                                               calculate_temp(temp_reading, print_celsius));
-            
+
             write_to_server_and_log(buffer, nbytes);
 
             elapsed_since_last_report = 0;
@@ -371,10 +339,9 @@ int main(int argc, char* argv[]) {
 
     fprintf(stderr, "Shutting down...\n");
 
-    // Close AIO and GPIO
+    // Close AIO
     int aio_status = mraa_aio_close(aio);
-    int gpio_status = mraa_gpio_close(gpio);
-    if (aio_status != MRAA_SUCCESS || gpio_status != MRAA_SUCCESS) {
+    if (aio_status != MRAA_SUCCESS) {
         exit(1);
     }
 
