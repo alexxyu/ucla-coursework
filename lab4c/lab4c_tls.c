@@ -75,6 +75,7 @@ void print_usage_and_exit(char* exec) {
 }
 
 void cleanup_io_on_shutdown() {
+    fprintf(stderr, "Shutting down...\n");
     shutdown(sockfd, SHUT_RDWR);
     if(close(fd_log) < 0) {
         fprintf(stderr, "Unable to close log file %s: %s\n", logfile, strerror(errno));
@@ -379,8 +380,6 @@ int main(int argc, char* argv[]) {
         time(&curr_time);
         elapsed_since_last_report = curr_time - time_of_report;
     }
-
-    fprintf(stderr, "Shutting down...\n");
 
     // Close AIO
     int aio_status = mraa_aio_close(aio);
