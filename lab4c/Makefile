@@ -21,9 +21,9 @@ lab4c_tcp:
 
 lab4c_tls:
 	if [ `uname -a | grep -c "armv7l"` -ne 0 ]; then \
-		$(CC) $(CFLAGS) -lmraa $@.c -o $@ ; \
+		$(CC) $(CFLAGS) -lmraa -lssl -lcrypto $@.c -o $@ ; \
 	else \
-		$(CC) $(CFLAGS) -DDUMMY $@.c -o $@ ; \
+		$(CC) $(CFLAGS) -DDUMMY -lssl -lcrypto $@.c -o $@ ; \
 	fi
 
 dist: $(DISTNAME)
