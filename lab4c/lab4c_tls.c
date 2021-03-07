@@ -79,7 +79,7 @@ void cleanup_io_on_shutdown() {
     shutdown(sockfd, SHUT_RDWR);
     if(close(fd_log) < 0) {
         fprintf(stderr, "Unable to close log file %s: %s\n", logfile, strerror(errno));
-        exit(1);
+        exit(2);
     }
     if(ssl_client != NULL) {
         SSL_shutdown(ssl_client);
@@ -90,11 +90,11 @@ void cleanup_io_on_shutdown() {
 void write_to_server_and_log(char* msg, int nbytes) {
     if(SSL_write(ssl_client, msg, nbytes) <= 0) {
         fprintf(stderr, "Error writing message to server\n");
-        exit(1);
+        exit(2);
     }
     if(write(fd_log, msg, nbytes) < 0) {
         fprintf(stderr, "Error writing message to log: %s\n", strerror(errno));
-        exit(1);
+        exit(2);
     }
 }
 
@@ -147,9 +147,9 @@ void parse_commands() {
     int read_size, i;
     
     if( poll(pollfds, 1, POLL_INTERVAL) > 0 && (pollfds[0].revents & POLLIN) ) {
-        if((read_size = SSL_read(ssl_client, commands_buffer, BUFFER_SIZE)) <= 0) {
-            fprintf(stderr, "Error writing message to server\n");
-            exit(1);
+        if( (read_size = SSL_read(ssl_client, commands_buffer, BUFFER_SIZE)) <= 0 ) {
+            fprintf(stderr, "Error reading message from server\n");
+            exit(2);
         }
         for(i=0; i<read_size; i++) {
             char c = commands_buffer[i];
@@ -191,7 +191,7 @@ void connect_to_server(char* host, int port) {
     sockfd = socket(AF_INET /*protocol domain*/, SOCK_STREAM /*type*/, 0 /*protocol*/);
     if(sockfd < 0) {
         fprintf(stderr, "Error creating socket: %s\n", strerror(errno));
-        exit(1);
+        exit(2);
     }
 
     // Initialize server address struct
@@ -209,7 +209,7 @@ void connect_to_server(char* host, int port) {
     // Connect to server
     if(connect(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
         fprintf(stderr, "Error connecting to server: %s\n", strerror(errno));
-        exit(1);
+        exit(2);
     }
 }
 
@@ -221,27 +221,27 @@ void init_and_attach_ssl_to_socket() {
     SSL_CTX* ssl_context = SSL_CTX_new(TLSv1_client_method());
     if(ssl_context == NULL) {
         fprintf(stderr, "Error creating SSL context\n");
-        exit(1);
+        exit(2);
     }
 
     ssl_client = SSL_new(ssl_context);
     if(ssl_client == NULL) {
         fprintf(stderr, "Error creating SSL structure\n");
-        exit(1);
+        exit(2);
     }
 
     if(SSL_set_fd(ssl_client, sockfd) == 0) {
         fprintf(stderr, "Error connecting SSL object to socket file descriptor\n");
-        exit(1);
+        exit(2);
     }
 
     int ret = SSL_connect(ssl_client);
     if(ret == 0) {
         fprintf(stderr, "TLS/SSL handshake not successful but controlled shutdown\n");
-        exit(1);
+        exit(2);
     } else if(ret < 0) {
         fprintf(stderr, "Fatal error attempting TLS/SSL handshake\n");
-        exit(1);
+        exit(2);
     }
 }
 
@@ -328,7 +328,7 @@ int main(int argc, char* argv[]) {
     fd_log = creat(logfile, 0666);
     if(fd_log < 0) {
         fprintf(stderr, "Unable to create log file %s: %s\n", logfile, strerror(errno));
-        exit(1);
+        exit(2);
     }
 
     // Initialize AIO
@@ -336,7 +336,7 @@ int main(int argc, char* argv[]) {
     if (aio == NULL) {
         if(aio == NULL) fprintf(stderr, "Failed to initialize AIO\n");
         mraa_deinit();
-        exit(1);
+        exit(2);
     }
 
     // Connect to server and set up polling
@@ -384,7 +384,7 @@ int main(int argc, char* argv[]) {
     // Close AIO
     int aio_status = mraa_aio_close(aio);
     if (aio_status != MRAA_SUCCESS) {
-        exit(1);
+        exit(2);
     }
 
     exit(0);
