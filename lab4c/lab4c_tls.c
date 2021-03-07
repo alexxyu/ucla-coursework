@@ -18,6 +18,7 @@ ID: 105295708
 #include <string.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <openssl/err.h>
 #include <openssl/ssl.h>
 
 #ifdef DUMMY
@@ -69,7 +70,7 @@ int sample_interval, fd_log, sockfd;
 SSL* ssl_client = NULL;
 
 void print_usage_and_exit(char* exec) {
-    fprintf(stderr, "Usage: %s port --id=id --host=hostname [--log=logfile] [--scale={C|F}] [--period=period]\n", exec);
+    fprintf(stderr, "Usage: %s port --id=id --host=hostname --log=logfile [--scale={C|F}] [--period=period]\n", exec);
     exit(1);
 }
 
@@ -86,13 +87,10 @@ void cleanup_io_on_shutdown() {
 }
 
 void write_to_server_and_log(char* msg, int nbytes) {
-    /*
-    if(write(sockfd, msg, nbytes) < 0) {
-        fprintf(stderr, "Error writing message to server: %s\n", strerror(errno));
+    if(SSL_write(ssl_client, msg, nbytes) <= 0) {
+        fprintf(stderr, "Error writing message to server\n");
         exit(1);
     }
-    */
-    SSL_write(ssl_client, msg, nbytes);
     if(write(fd_log, msg, nbytes) < 0) {
         fprintf(stderr, "Error writing message to log: %s\n", strerror(errno));
         exit(1);
@@ -148,7 +146,10 @@ void parse_commands() {
     int read_size, i;
     
     if( poll(pollfds, 1, POLL_INTERVAL) > 0 && (pollfds[0].revents & POLLIN) ) {
-        read_size = SSL_read(ssl_client, commands_buffer, BUFFER_SIZE);
+        if((read_size = SSL_read(ssl_client, commands_buffer, BUFFER_SIZE)) <= 0) {
+            fprintf(stderr, "Error writing message to server\n");
+            exit(1);
+        }
         for(i=0; i<read_size; i++) {
             char c = commands_buffer[i];
 
@@ -215,11 +216,32 @@ void init_and_attach_ssl_to_socket() {
     SSL_library_init();
     SSL_load_error_strings();       // Initialize error messages
     OpenSSL_add_all_algorithms();
+
     SSL_CTX* ssl_context = SSL_CTX_new(TLSv1_client_method());
+    if(ssl_context == NULL) {
+        fprintf(stderr, "Error creating SSL context\n");
+        exit(1);
+    }
 
     ssl_client = SSL_new(ssl_context);
-    SSL_set_fd(ssl_client, sockfd);
-    SSL_connect(ssl_client);
+    if(ssl_client == NULL) {
+        fprintf(stderr, "Error creating SSL structure\n");
+        exit(1);
+    }
+
+    if(SSL_set_fd(ssl_client, sockfd) == 0) {
+        fprintf(stderr, "Error connecting SSL object to socket file descriptor\n");
+        exit(1);
+    }
+
+    int ret = SSL_connect(ssl_client);
+    if(ret == 0) {
+        fprintf(stderr, "TLS/SSL handshake not successful but controlled shutdown\n");
+        exit(1);
+    } else if(ret < 0) {
+        fprintf(stderr, "Fatal error attempting TLS/SSL handshake\n");
+        exit(1);
+    }
 }
 
 int main(int argc, char* argv[]) {
