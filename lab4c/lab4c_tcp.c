@@ -67,7 +67,7 @@ int print_celsius, should_report;
 int sample_interval, fd_log, sockfd;
 
 void print_usage_and_exit(char* exec) {
-    fprintf(stderr, "Usage: %s port --id=id --host=hostname [--log=logfile] [--scale={C|F}] [--period=period]\n", exec);
+    fprintf(stderr, "Usage: %s port --id=id --host=hostname --log=logfile [--scale={C|F}] [--period=period]\n", exec);
     exit(1);
 }
 
@@ -344,7 +344,6 @@ int main(int argc, char* argv[]) {
     if (aio_status != MRAA_SUCCESS) {
         exit(1);
     }
-
 
     exit(0);
 }
