@@ -148,6 +148,7 @@ void parse_commands() {
     int read_size, i;
     
     if( poll(pollfds, 1, POLL_INTERVAL) > 0 && (pollfds[0].revents & POLLIN) ) {
+        bzero(commands_buffer, BUFFER_SIZE);
         read_size = read(STDIN_FILENO, commands_buffer, BUFFER_SIZE);
         for(i=0; i<read_size; i++) {
             char c = commands_buffer[i];
