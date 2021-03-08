@@ -140,6 +140,7 @@ void parse_commands() {
     int read_size, i;
     
     if( poll(pollfds, 1, POLL_INTERVAL) > 0 && (pollfds[0].revents & POLLIN) ) {
+        bzero(commands_buffer, BUFFER_SIZE);
         if( (read_size = read(sockfd, commands_buffer, BUFFER_SIZE)) < 0 ) {
             fprintf(stderr, "Error reading message from server: %s\n", strerror(errno));
             exit(2);
