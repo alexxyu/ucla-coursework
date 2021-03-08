@@ -7,3 +7,10 @@ The following files are included:
 * lab4c_tls.c is the C source file for the temperature sampling application that connects to the TLS logging server
 * Makefile provides targets to build the program, create the tarball, and clean the current working directory
 * README documents the listed files and other information about development
+
+I used the following as references:
+* https://www.openssl.org/docs/man1.0.2/man3/ for documentation on the OpenSSL library
+* TA discussion slides for a useful guide on the lab
+
+Testing involved connecting the applications to the TCP logging server and the TLS logging server and checking for 
+appropriate log messages. I also used the sanity script to check for functionality of the applications.
