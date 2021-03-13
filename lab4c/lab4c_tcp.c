@@ -73,11 +73,14 @@ void print_usage_and_exit(char* exec) {
 
 void cleanup_io_on_shutdown() {
     fprintf(stderr, "Shutting down...\n");
-    shutdown(sockfd, SHUT_RDWR);
     if(close(fd_log) < 0) {
         fprintf(stderr, "Unable to close log file %s: %s\n", logfile, strerror(errno));
         exit(2);
     }
+    if(shutdown(sockfd, SHUT_RDWR) != 0) {
+        fprintf(stderr, "Error while shutting down socket connection: %s\n", strerror(errno));
+        exit(2);
+    };
 }
 
 void write_to_server_and_log(char* msg, int nbytes) {
