@@ -69,32 +69,3 @@ let filter_reachable g =
     let (start_symbol, rules) = g in
     let reachable_symbols = find_reachable_rules rules [start_symbol] in
     start_symbol, (List.filter (fun rule -> List.mem (get_lhs rule) reachable_symbols) rules);;
-
-(* Test cases and helper print functions *)
-let print_bool b = 
-    if b then print_string "true"
-    else print_string "false";;
-
-let rec print_list a = 
-    match a with
-    [] -> ()
-    | e::l -> print_int e ; print_string " " ; print_list l;;
-
-print_bool (subset [3;4] [3;7;8]);;
-print_newline ();;
-print_bool (subset [3;4] [3;4;7;8]);;
-print_newline ();;
-
-let a = [1;2;3;4];;
-let b = [5;6;7;1;2];;
-let c = set_union a b;;
-print_list c;;
-print_newline ();;
-
-let k = [[1;2;3];[2;3]];;
-let m = set_all_union k;;
-print_list m;;
-print_newline ();;
-
-print_int (computed_fixed_point (=) (fun x -> x * x) 100);;
-print_newline ();;
