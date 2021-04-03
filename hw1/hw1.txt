@@ -1,0 +1,11 @@
+Homework 1 after-action report:
+
+I chose my approach to the filter reachable rules problem because it is relatively straightforward and familiar in its
+methodology. It is essentially a breadth-first search to find the connected component of a graph consisting of the 
+nonterminal symbols as nodes and the rules as edges. This was also influenced by discussions about the problem during
+discussion section. Starting from the start symbol, my algorithm finds the set of all reachable nonterminal symbols and
+then returns the rules whose LHS is a symbol from this set.
+
+A slightly different approach that I considered was to create the filtered list of rules during the recursive process, 
+but I realized that this method would not necessarily preserve the original order of the rules. Thus, I modified my 
+approach to find the reachable nonterminal symbols first before filtering the list of rules at the end.
