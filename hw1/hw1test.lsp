@@ -30,7 +30,7 @@
 (assert (IS-SAME (SUB-LIST '(1 2 3 4) 2 0) NIL))
 
 ; SPLIT-LIST TESTS
-(assert (IS-SAME (SPLIT-LIST NIL) NIL))
+(assert (IS-SAME (SPLIT-LIST NIL) '(NIL NIL)))
 (assert (IS-SAME (SPLIT-LIST '(1)) '((1) NIL)))
 (assert (IS-SAME (SPLIT-LIST '(1 2 3 4)) '((1 2) (3 4))))
 (assert (IS-SAME (SPLIT-LIST '(1 2 3 4 5)) '((1 2 3) (4 5))))
@@ -44,6 +44,7 @@
 (assert (= (BTREE-HEIGHT '(((1 2) (3 4)) ((5 6) (7 8)))) 3))
 
 ; LIST2BTREE TESTS
+(assert (IS-SAME (LIST2BTREE NIL) NIL))
 (assert (IS-SAME (LIST2BTREE '(1)) 1))
 (assert (IS-SAME (LIST2BTREE '(1 2)) '(1 2)))
 (assert (IS-SAME (LIST2BTREE '(1 2 3)) '((1 2) 3)))
@@ -52,6 +53,7 @@
 (assert (IS-SAME (LIST2BTREE '(1 2 3 4 5 6 7 8)) '(((1 2) (3 4)) ((5 6) (7 8)))))
 
 ; BTREE2LIST TESTS
+(assert (IS-SAME (BTREE2LIST NIL) NIL))
 (assert (IS-SAME (BTREE2LIST 1) '(1)))
 (assert (IS-SAME (BTREE2LIST '(1 2)) '(1 2)))
 (assert (IS-SAME (BTREE2LIST '((1 2) 3)) '(1 2 3)))
@@ -60,6 +62,8 @@
 (assert (IS-SAME (BTREE2LIST '(((1 2) (3 4)) ((5 6) (7 8)))) '(1 2 3 4 5 6 7 8)))
 
 ; IS-SAME TESTS
+(assert (IS-SAME NIL '()))
+(assert (not (IS-SAME '(3 4) NIL)))
 (assert (IS-SAME 3 3))
 (assert (not (IS-SAME 5 3)))
 (assert (not (IS-SAME '(3) 3)))
