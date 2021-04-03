@@ -8,10 +8,7 @@
                 (TREE-CONTAINS N (first TREE))
                 (TREE-CONTAINS N (third TREE))
             )
-            (if (= N TREE)
-                T
-                NIL
-            )
+            (= N TREE)
         )
     )
 )
@@ -19,9 +16,12 @@
 ; Q2: TREE-MIN takes an ordered tree TREE and returns the minimum number in TREE
 ; Recursively finds the bottom-leftmost number in TREE since that is the minimum number
 (defun TREE-MIN (TREE)
-    (if (not (listp TREE))
-        TREE
-        (TREE-MIN (first TREE))
+    (if (null TREE)
+        NIL
+        (if (not (listp TREE))
+            TREE
+            (TREE-MIN (first TREE))
+        )
     )
 )
 
@@ -40,11 +40,14 @@
 ;     from position START with length LEN
 ; Recursively moves to position START in L and then recursively adds LEN number of elements in L to the sub-list
 (defun SUB-LIST (L START LEN)
-    (if (> START 0)
-        (SUB-LIST (rest L) (- START 1) LEN)
-        (if (> LEN 0)
-            (cons (car L) (SUB-LIST (rest L) START (- LEN 1)))
-            NIL
+    (if (null L)
+        NIL
+        (if (> START 0)
+            (SUB-LIST (rest L) (- START 1) LEN)
+            (if (> LEN 0)
+                (cons (car L) (SUB-LIST (rest L) START (- LEN 1)))
+                NIL
+            )
         )
     )
 )
@@ -108,60 +111,3 @@
         )
     )
 )
-
-(print "TREE-CONTAINS TESTS")
-(print (TREE-CONTAINS 3 3))
-(print (TREE-CONTAINS 3 '(1 2 3)))
-(print (TREE-CONTAINS 3 '((1 2 3) 7 8)))
-(print (TREE-CONTAINS 3 '((1 2 3) 5 (6 8 (9 10 (11 12 13))))))
-
-(print (TREE-CONTAINS 5 3))
-(print (TREE-CONTAINS 5 '(1 2 3)))
-(print (TREE-CONTAINS 5 '((1 2 3) 7 8)))
-(print (TREE-CONTAINS 333 '((1 2 3) 5 (6 8 (9 10 (11 12 13))))))
-
-(print "TREE-MIN TESTS")
-(print (TREE-MIN 3))
-(print (TREE-MIN '((1 2 3) 7 8)))
-
-(print "TREE-ORDER TESTS")
-(print (TREE-ORDER 3))
-(print (TREE-ORDER '((1 2 3) 7 8)))
-
-(print "SUB-LIST TESTS")
-(print (SUB-LIST '(a b c d) 0 3))
-(print (SUB-LIST '(a b c d) 3 1))
-(print (SUB-LIST '(a b c d) 2 0))
-
-(print "SPLIT-LIST TESTS")
-(print (SPLIT-LIST '(a b c d)))
-(print (SPLIT-LIST '(a b c d e)))
-
-(print "BTREE-HEIGHT TESTS")
-(print (BTREE-HEIGHT 1))
-(print (BTREE-HEIGHT '(1 2)))
-(print (BTREE-HEIGHT '(1 (2 3)))) 
-(print (BTREE-HEIGHT '((1 2) (3 4)))) 
-(print (BTREE-HEIGHT '((1 (2 3)) ((4 5) (6 7))))) 
-(print (BTREE-HEIGHT '(((1 2) (3 4)) ((5 6) (7 8)))))
-
-(print "LIST2BTREE TESTS")
-(print (LIST2BTREE '(1)))
-(print (LIST2BTREE '(1 2)))
-(print (LIST2BTREE '(1 2 3)))
-(print (LIST2BTREE '(1 2 3 4)))
-(print (LIST2BTREE '(1 2 3 4 5 6 7)))
-(print (LIST2BTREE '(1 2 3 4 5 6 7 8)))
-
-(print "BTREE2LIST TESTS")
-(print (BTREE2LIST 1))
-(print (BTREE2LIST '(1 2)))
-(print (BTREE2LIST '((1 2) 3)))
-(print (BTREE2LIST '((1 2) (3 4))))
-(print (BTREE2LIST '(((1 2) (3 4)) ((5 6) 7))))
-(print (BTREE2LIST '(((1 2) (3 4)) ((5 6) (7 8)))))
-
-(print "IS-SAME TESTS")
-(print (IS-SAME '((1 2 3) 7 8) '((1 2 3) 7 8)))
-(print (IS-SAME '(1 2 3 7 8) '((1 2 3) 7 8)))
-(print (IS-SAME '((1 2 3) 7 8) '((1 2 3) 7)))
