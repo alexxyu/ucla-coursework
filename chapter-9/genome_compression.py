@@ -1,4 +1,52 @@
-import time
+def construct_suffix_array(text):
+    arr = []
+    for i in range(len(text)):
+        arr.append((text[i:], i))
+    return [x[1] for x in sorted(arr, key=lambda x: x[0])]
+
+"""
+Returns all starting positions where the given pattern appears in text
+"""
+def find_pos_in_text(text, pattern, suffix_array):
+    # Search for the pattern in the suffix array
+    min_idx = 0
+    max_idx = len(suffix_array)-1
+    while min_idx < max_idx:
+        mid_idx = (min_idx + max_idx) // 2
+        if pattern > text[suffix_array[mid_idx]:]:
+            min_idx = mid_idx + 1
+        else:
+            max_idx = mid_idx
+
+    if pattern != text[suffix_array[min_idx] : suffix_array[min_idx]+len(pattern)]:
+        return []
+    first = min_idx
+
+    # Iterate to find first and last occurence of the pattern in the suffix array
+    while first >= 0 and pattern == text[suffix_array[first] : suffix_array[first]+len(pattern)]:
+        first -= 1
+    first += 1
+
+    last = first
+    while last < len(suffix_array) and pattern == text[suffix_array[last]:suffix_array[last]+len(pattern)]:
+        last += 1
+    return [suffix_array[idx] for idx in range(first, last)]
+
+"""
+List all starting positions where a pattern appears in the given text
+"""
+def suffix_array_match(file):
+    with open('genome_compression.txt', 'r') as f:
+        lines = f.read().splitlines()
+        text = lines[0]
+        patterns = lines[1:]
+
+        suffix_array = construct_suffix_array(text)
+        matching_pos = []
+        for p in patterns:
+            matching_pos.extend(find_pos_in_text(text, p, suffix_array))
+        matching_pos.sort()
+        print(' '.join([str(p) for p in matching_pos]))
 
 """
 Compress text using Burrows-Wheeler Transform (BWT)
@@ -151,6 +199,6 @@ def better_bwt_match(file):
                     occurences.append(str(bottom - top + 1))
                     break
 
-        print(' '.join(occurences))
+        #print(' '.join(occurences))
 
-better_bwt_match("genome_compression.txt")
+suffix_array_match("genome_compression.txt")
