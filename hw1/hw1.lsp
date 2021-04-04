@@ -1,4 +1,6 @@
-; Q1: TREE-CONTAINS takes a number N and an ordered tree TREE, and returns whether N appears in TREE
+; Q1: TREE-CONTAINS
+; ARGUMENTS: a number N and an ordered tree TREE
+; RETURNS: whether N appears in TREE
 ; Checks whether middle number is N, otherwise recursively checks left and right subtrees
 (defun TREE-CONTAINS (N TREE)
     (if (null TREE)
@@ -13,7 +15,9 @@
     )
 )
 
-; Q2: TREE-MIN takes an ordered tree TREE and returns the minimum number in TREE
+; Q2: TREE-MIN 
+; ARGUMENTS: an ordered tree TREE
+; RETURNS: the minimum number in TREE
 ; Recursively finds the bottom-leftmost number in TREE since that is the minimum number
 (defun TREE-MIN (TREE)
     (if (null TREE)
@@ -25,7 +29,9 @@
     )
 )
 
-; Q3: TREE-ORDER takes an ordered tree TREE and returns a pre-ordered list of numbers appearing in TREE
+; Q3: TREE-ORDER
+; ARGUMENTS: an ordered tree TREE
+; RETURNS: a pre-ordered list of numbers appearing in TREE
 ; Creates a list out of the middle number and the recusively created lists of the left subtree and right subtree
 (defun TREE-ORDER (TREE)
     (if (not (null TREE))
@@ -36,8 +42,9 @@
     )
 )
 
-; Q4: SUB-LIST takes a list L and two non-negative integers START and LEN, and returns a sub-list of L starting 
-;     from position START with length LEN
+; Q4: SUB-LIST
+; ARGUMENTS: a list L and two non-negative integers START and LEN
+; RETURNS: a sub-list of L starting from position START of L with length LEN
 ; Recursively moves to position START in L and then recursively adds LEN number of elements in L to the sub-list
 (defun SUB-LIST (L START LEN)
     (if (null L)
@@ -52,8 +59,10 @@
     )
 )
 
-; Q5: SPLIT-LIST takes a list L and returns two lists, L1 and L2, such that L is the result of appending L1 and L2,
-;     and the length of L1 minus the length of L2 is either 0 or 1
+; Q5: SPLIT-LIST
+; ARGUMENTS: a list L
+; RETURNS: two lists, L1 and L2, such that L is the result of appending L1 and L2, and the length of L1 minus the 
+;   length of L2 is either 0 or 1
 ; Uses the SUB-LIST function to generate the two lists, using the length of L to calculate START and LEN for L1 and L2
 (defun SPLIT-LIST (L)
     (let ((x (ceiling (/ (length L) 2))))
@@ -64,7 +73,9 @@
     )
 )
 
-; Q6: BTREE-HEIGHT takes a binary tree TREE and returns the height of TREE
+; Q6: BTREE-HEIGHT
+; ARGUMENTS: a binary tree TREE
+; RETURNS: the height of TREE
 ; Recusively counts the deepest level of a nested list within TREE
 (defun BTREE-HEIGHT (TREE)
     (if (or (atom TREE) (null TREE))
@@ -73,9 +84,10 @@
     )
 )
 
-; Q7: LIST2BTREE takes a list of atoms LEAVES and returns a binary tree such that the tree leaves are elements of
-;     LEAVES, and for any internal node, the number of leaves in its left branch minus the number of leaves in its
-;     right branch is either 0 or 1
+; Q7: LIST2BTREE
+; ARGUMENTS: a list of atoms LEAVES
+; RETURNS: a binary tree such that the tree leaves are the elements of LEAVES, and for any internal node, the number of
+;   leaves in its left branch minus the number of leaves in its right branch is either 0 or 1
 ; Recursively divides LEAVES using SPLIT-LIST and puts the generated sub-lists into a list
 (defun LIST2BTREE (LEAVES)
     (if (<= (length LEAVES) 1)
@@ -86,7 +98,9 @@
     )
 )
 
-; Q8: BTREE2LIST takes a binary tree TREE and returns a flattened list of the leaves in TREE
+; Q8: BTREE2LIST 
+; ARGUMENTS: a binary tree TREE
+; RETURNS: a flattened list of the leaves in TREE
 ; Recursively unpacks each nested list into a flattened list and appends the resulting lists together
 (defun BTREE2LIST (TREE)
     (if (not (listp TREE))
@@ -98,7 +112,9 @@
     )
 )
 
-; Q9: IS-SAME takes LISP expressions E1 and E2 (whose atoms are all numerical) and checks whether they are identical
+; Q9: IS-SAME
+; ARGUMENTS: two LISP expressions E1 and E2, whose atoms are all numerical 
+; RETURNS: whether E1 and E2 are identical
 ; Recursively checks each corresponding list and atom within E1 and E2 and checks equality using '='
 (defun IS-SAME (E1 E2)
     (if (and (listp E1) (listp E2))
