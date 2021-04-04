@@ -5,6 +5,7 @@ let my_subset_test3 = subset [3;4] [3;4;7;8]
 
 let my_equal_sets_test0 = equal_sets [] []
 let my_equal_sets_test1 = equal_sets [[1;2];[3;4]] [[1;2];[3;4]]
+let my_equal_sets_test2 = equal_sets [1;2;3;3] [1;2;3]
 
 let my_set_union_test0 = equal_sets (set_union [1;2;3] [3;2;1]) [1;2;3]
 let my_set_union_test1 = equal_sets (set_union [1;2;3] []) [1;2;3]

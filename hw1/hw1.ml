@@ -5,7 +5,7 @@ type ('nonterminal, 'terminal) symbol =
 (* Q1: Check if set a is a subset of set b *)
 let rec subset a b =
     match a with
-    [] -> true
+    | [] -> true
     | x::tl -> (List.mem x b) && (subset tl b);;
 
 (* Q2: Check if a and b are equal sets *)
@@ -15,7 +15,7 @@ let equal_sets a b =
 (* Q3: Find the union of set a and set b *)
 let rec uniq a = 
     match a with
-    [] -> []
+    | [] -> []
     | x::tl ->  let set = (uniq tl) in
                 if (List.mem x set) then set
                 else x::set;;
@@ -26,12 +26,14 @@ let set_union a b =
 (* Q4: Find the union of all sets in a *)
 let rec set_all_union a =
     match a with
-    [] -> []
+    | [] -> []
     | x::tl -> set_union x (set_all_union tl);;
 
 (* Q5: Check whether set s is a member of itself *)
-(* This is not possible to do because elements of a list in OCaml must be of the same type, and
-   it is not clear what type such a set that contains itself would be *)
+(* It is not possible to create such a function in OCaml because of the nature of type inference in the language, 
+   and it is not clear what type a list that contains itself would be. As an example, suppose we have a list of type
+   'int list'. A function in OCaml cannot check whether this list contains itself since such a list would necessarily 
+   be of type 'int list list', which contradicts the initial supposition that the list is of type 'int list'.  *)
 
 (* Q6: Return computed fixed point for f w.r.t. x with eq as equality predicate for f's domain*)
 let rec computed_fixed_point eq f x =
@@ -47,7 +49,7 @@ let get_lhs rule =
 
 let rec get_nonterminal_symbols rhs =
     match rhs with
-    [] -> []
+    | [] -> []
     | T s::tl -> get_nonterminal_symbols tl
     | N s::tl -> s::(get_nonterminal_symbols tl);;
 
@@ -56,7 +58,7 @@ let filter_symbol_rules rules symbols =
 
 let rec get_all_nonterminal_symbols rules =
     match rules with
-    [] -> []
+    | [] -> []
     | rule::tl -> set_union (get_nonterminal_symbols (get_rhs rule)) (get_all_nonterminal_symbols tl);;
 
 let rec find_reachable_rules rules seen =
