@@ -1,5 +1,11 @@
 Homework 1 after-action report:
 
+The subset, set_union, and set_all_union functions use pattern matching and recursion to incrementally build the
+returned set because I thought this was the most natural way to solve each problem in OCaml. The equal_set function
+simply checks whether (subset a b) = (subset b a) since two sets are equal if they are subsets of each other. 
+computed_fixed_point also makes use of recursion to find the fixed point of a function since the definition of the
+computed fixed point naturally warrants a recursive solution. 
+
 I chose my approach to the filter reachable rules problem because it is relatively straightforward and familiar in its
 methodology. It is essentially a breadth-first search to find the connected component of a graph consisting of the 
 nonterminal symbols as nodes and the rules as edges. This was also influenced by discussions about the problem during
