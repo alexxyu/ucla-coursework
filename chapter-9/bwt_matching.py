@@ -4,9 +4,6 @@ def construct_suffix_array(text):
         arr.append((text[i:], i))
     return [x[1] for x in sorted(arr, key=lambda x: x[0])]
 
-"""
-Returns all starting positions where the given pattern appears in text
-"""
 def find_pos_in_text(text, pattern, suffix_array):
     # Search for the pattern in the suffix array
     min_idx = 0
@@ -33,7 +30,10 @@ def find_pos_in_text(text, pattern, suffix_array):
     return [suffix_array[idx] for idx in range(first, last)]
 
 """
-List all starting positions where a pattern appears in the given text
+Code Challenge: Solve the Multiple Pattern Matching Problem.
+
+Input: A string Text followed by a collection of strings Patterns.
+Output: All starting positions in Text where a string from Patterns appears as a substring.
 """
 def suffix_array_match(file):
     with open(file, 'r') as f:
@@ -49,7 +49,10 @@ def suffix_array_match(file):
         print(' '.join([str(p) for p in matching_pos]))
 
 """
-Compress text using Burrows-Wheeler Transform (BWT)
+Burrows-Wheeler Transform Construction Problem: Construct the Burrows-Wheeler transform of a string.
+
+Input: A string Text.
+Output: BWT(Text).
 """
 def compress(file):
     with open(file, 'r') as f:
@@ -69,7 +72,10 @@ def compress(file):
         print(BWT)
 
 """
-Decompress text using Burrows-Wheeler Transform (BWT)
+Inverse Burrows-Wheeler Transform Problem: Reconstruct a string from its Burrows-Wheeler transform.
+
+Input: A string Transform (with a single "$" symbol).
+Output: The string Text such that BWT(Text) = Transform.
 """
 def decompress(file):
     with open(file, 'r') as f:
@@ -99,7 +105,10 @@ def decompress(file):
         print(text)
 
 """
-Match text in BWT form to list of patterns and get counts
+Implement BWMatching.
+
+Input: A string BWT(Text), followed by a collection of Patterns.
+Output: A list of integers, where the i-th integer corresponds to the number of substring matches of the i-th member of Patterns in Text.
 """
 def bwt_match(file):
     with open(file, 'r')  as f:
