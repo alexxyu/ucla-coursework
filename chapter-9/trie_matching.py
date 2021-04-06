@@ -13,6 +13,16 @@ def insert(string, trie):
             counter += 1
         curr = curr.children[c]
 
+"""
+Code Challenge: Solve the Trie Construction Problem.
+
+Input: A collection of strings Patterns.
+Output: The adjacency list corresponding to Trie(Patterns), in the following format. If Trie(Patterns) has n nodes, 
+first label the root with 0 and then label the remaining nodes with the integers 1 through n - 1 in any order you like. 
+Each edge of the adjacency list of Trie(Patterns) will be encoded by a triple: the first two members of the triple must 
+be the integers labeling the initial and terminal nodes of the edge, respectively; the third member of the triple must 
+be the symbol labeling the edge.
+"""
 def trie_matching(text, trie):
     k = 0
     all_pos = []
@@ -24,6 +34,12 @@ def trie_matching(text, trie):
 
     print(" ".join(all_pos))
 
+"""
+Code Challenge: Implement TrieMatching to solve the Multiple Pattern Matching Problem.
+
+Input: A string Text and a collection of strings Patterns.
+Output: All starting positions in Text where a string from Patterns appears as a substring.
+"""
 def prefix_trie_matching(string, trie):
     k = 0
     node = trie
