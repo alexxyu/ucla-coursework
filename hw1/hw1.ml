@@ -10,7 +10,7 @@ let rec subset a b =
 
 (* Q2: Check if a and b are equal sets *)
 let equal_sets a b = 
-    (subset a b) = (subset b a);;
+    (subset a b) && (subset b a);;
 
 (* Q3: Find the union of set a and set b *)
 let rec uniq a = 
