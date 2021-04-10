@@ -11,6 +11,11 @@ let rec fold_right init op = function
     | [] -> init
     | head::rest -> op head (fold_right init op rest);;
 
-let rec fold_left init op = function
-    | [] -> init
-    | head::rest -> op (fold_left init op rest) head;;
+let rec fold_left op acc = function
+    | [] -> acc
+    | head::rest -> fold_left op (op acc head) rest;;
+
+let rec range n acc =
+    match n with
+    | 0 -> acc
+    | _ -> range (n-1) (n::acc);;
