@@ -183,6 +183,7 @@
 ; TEST CASES
 (print (equal (BFS '((A (B)) C (D))) '(C A D B)))
 (print (equal (BFS '(A (B C) (D) (E (F G)))) '(A B C D E F G)))
+(print (equal (BFS '((A (B)) C ((D E) F G))) '(C A F G B D E)))
 
 (print (equal (DFS '((A (B)) C (D))) '(D C B A)))
 (print (equal (DFS '(A (B C) (D) (E (F G)))) '(G F E D C B A)))
@@ -190,6 +191,7 @@
 
 (print (equal (DFID '((A (B)) C (D)) 3) '(C A C D A B C D)))
 (print (equal (DFID '(A (B C) (D) (E (F G))) 3) '(A A B C D E A B C D E F G)))
+(print (equal (DFID '((A (B C) D) E ((F))) 3) '(E A D E A B C D E F)))
 
 (print (not (next-state '(3 3 t) 1 0)))
 (print (not (next-state '(1 1 t) 2 0)))
