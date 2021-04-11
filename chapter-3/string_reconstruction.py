@@ -70,7 +70,27 @@ def db_graph_from_text(file):
             adj_list[kmers[i-1]].append(kmers[i])
         return adj_list
 
-adj_list = db_graph_from_text("string_reconstruction.txt")
+"""
+De Bruijn Graph from k-mers Problem: Construct the de Bruijn graph from a set of k-mers.
+
+Input: A collection of k-mers Patterns.
+Output: The adjacency list of the de Bruijn graph DeBruijn(Patterns).
+"""
+def db_graph_from_kmers(file):
+    bases = ["A", "C", "G", "T"]
+    with open(file, 'r') as f:
+        patterns = f.read().splitlines()
+
+        adj_list = dict()
+        for p in patterns:
+            prefix = p[:-1]
+            suffix = p[1:]
+            if prefix not in adj_list.keys():
+                adj_list[prefix] = []
+            adj_list[prefix].append(suffix)
+        return adj_list
+
+adj_list = db_graph_from_kmers("string_reconstruction.txt")
 for k, v in sorted(adj_list.items(), key=lambda k: k[0]):
     if len(v) > 0:
         print(f"{k} -> {','.join(v)}")
