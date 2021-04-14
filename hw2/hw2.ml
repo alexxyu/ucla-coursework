@@ -56,6 +56,8 @@ let rec apply_rule prod_func accept rule frag =
     | h::t -> 
         match h with
         | N nonterm when frag != [] -> 
+            (* backtracked_accept allows us to continue matching the current rule to the remaining fragment after this 
+               nonterminal symbol's rules have been matched *)
             let backtracked_accept = (apply_rule prod_func accept t) in
             apply_rules prod_func backtracked_accept (prod_func nonterm) frag
         | T term when (frag != [] && term = (List.hd frag)) -> apply_rule prod_func accept t (List.tl frag)
@@ -72,3 +74,36 @@ and apply_rules prod_func accept rules frag =
 let make_matcher gram =
     match gram with
     | (start, prod_func) -> (fun accept frag -> apply_rules prod_func accept (prod_func start) frag);;
+
+(* Q4: Return parser for the given grammar *)
+let accept_parse_tree tree frag =
+    match frag with
+    | [] -> Some tree
+    | _ -> None;;
+
+let rec parse_with_rule prod_func accept rule parent children frag = 
+    match rule with
+    | [] -> accept (Node (parent, children)) frag
+    | h::t -> 
+        match h with
+        | N nonterm when frag != [] -> 
+            (* backtracked_accept allows us to continue matching the current rule to the remaining fragment after this 
+               nonterminal symbol's rules have been matched *)
+            let backtracked_accept subtree = (parse_with_rule prod_func accept t parent (children@[subtree])) in
+            parse_with_rules prod_func backtracked_accept (prod_func nonterm) nonterm frag
+        | T term when (frag != [] && term = (List.hd frag)) -> 
+            let updated_children = children @ [Leaf term] in
+            parse_with_rule prod_func accept t parent updated_children (List.tl frag)
+        | _ -> None
+
+and parse_with_rules prod_func accept rules parent frag =
+    match rules with
+    | [] -> None
+    | h::t ->
+        match (parse_with_rule prod_func accept h parent [] frag) with
+        | None -> parse_with_rules prod_func accept t parent frag
+        | Some a -> Some a;;
+
+let make_parser gram = 
+    match gram with
+    | (start, prod_func) -> (fun frag -> parse_with_rules prod_func accept_parse_tree (prod_func start) start frag);;
