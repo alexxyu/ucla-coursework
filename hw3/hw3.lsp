@@ -176,8 +176,18 @@
 ; this function as the goal testing function, A* will never
 ; terminate until the whole search space is exhausted.
 ;
+(defun check-row (r)
+  (cond ((null r) t)
+		((or (isBox (car r)) (isKeeper (car r))) nil)
+		(t (check-row (cdr r)))
+  )
+)
+
 (defun goal-test (s)
-  nil
+  (cond ((null s) t)
+		((check-row (car s)) (goal-test (cdr s)))
+		(t nil)
+  )
   );end defun
 
 ; EXERCISE: Modify this function to return the list of 
@@ -199,12 +209,112 @@
 ; Any NIL result returned from try-move can be removed by cleanUpList.
 ; 
 ;
+(defun get-row (s y)
+  (if (= y 0)
+    (car s)
+	(get-row (cdr s) (- y 1))
+  )
+)
+
+(defun get-col (s x)
+  (if (= x 0)
+	(car s)
+	(get-col (cdr s) (- x 1))
+  )
+)
+
+(defun get-square (s x y)
+  (let ((square (get-col (get-row s y) x)))
+	(if (null square)
+	  wall
+	  square
+	)
+  )
+)
+
+(defun set-col (s x v acc)
+  (if (= x 0)
+    (append acc (list v) (cdr s))
+	(set-col (cdr s) (- x 1) v (append acc (list (car s))))
+  )
+)
+
+(defun set-row (s x y v acc)
+  (if (= y 0)
+	(append acc (list (set-col (car s) x v nil)) (cdr s))
+	(set-row (cdr s) x (- y 1) v (append acc (list (car s))))
+  )
+)
+
+(defun set-square (s x y v)
+  (set-row s x y v nil)
+)
+
+(defun get-pos-in-dir (x y d)
+  (cond ((equal d 'U) (list x (- y 1)))
+		((equal d 'D) (list x (+ y 1)))
+		((equal d 'L) (list (- x 1) y))
+		(t (list (+ x 1) y))
+  )
+)
+
+(defun try-move-box (s x y d)
+  (let* ((new-pos (get-pos-in-dir x y d))
+	 (new-x (car new-pos))
+	 (new-y (cadr new-pos))
+	 (curr-square (get-square s x y))
+	 (next-square (get-square s new-x new-y))
+  	 )
+	(cond ((isBlank next-square) 
+			(set-square (set-square s new-x new-y box) x y (get-sole-square-value curr-square))
+		  )
+		  ((isStar next-square) 
+		  	(set-square (set-square s new-x new-y boxstar) x y (get-sole-square-value curr-square))
+		  )
+		  (t nil)
+	)   
+  )
+)
+
+(defun get-sole-square-value (v)
+  (cond ((isBoxStar v) star)
+		((isKeeperStar v) star)
+		(t blank)
+  )
+)
+
+(defun try-move (s x y d)
+  (let* ((new-pos (get-pos-in-dir x y d))
+	 (new-x (car new-pos))
+	 (new-y (cadr new-pos))
+	 (curr-square (get-square s x y))
+	 (next-square (get-square s new-x new-y))
+  	 )
+	(cond ((isWall next-square) nil)
+		  ((isBlank next-square) 
+		  	(set-square (set-square s new-x new-y keeper) x y (get-sole-square-value curr-square))
+		  )
+	      ((isStar next-square) 
+		  	(set-square (set-square s new-x new-y keeperstar) x y (get-sole-square-value curr-square))
+		  )
+		  (t 
+		  	(let ((move-box-result (try-move-box s new-x new-y d)))
+			  (if (null move-box-result) 
+			  	nil
+				(try-move move-box-result x y d)
+			  )
+			)
+		  )
+	)
+  )
+)
+
 (defun next-states (s)
   (let* ((pos (getKeeperPosition s 0))
 	 (x (car pos))
 	 (y (cadr pos))
 	 ;x and y are now the coordinate of the keeper in s.
-	 (result nil)
+	 (result (list (try-move s x y 'U) (try-move s x y 'D) (try-move s x y 'L) (try-move s x y 'R)))
 	 )
     (cleanUpList result);end
    );end let
@@ -214,12 +324,25 @@
 ; admissible heuristic.
 ;
 (defun h0 (s)
+  0
   )
 
 ; EXERCISE: Modify this function to compute the 
 ; number of misplaced boxes in s.
 ;
+; This is an admissable heuristic because each misplaced box requires at least one move for it to 
+; reach a goal position
+(defun count-misplaced-in-row (r)
+  (cond ((null r) 0)
+		((isBox (car r)) (+ 1 (count-misplaced-in-row (cdr r))))
+		(t (count-misplaced-in-row (cdr r)))
+    )
+  )
+
 (defun h1 (s)
+  (cond ((null s) 0)
+		(t (+ (count-misplaced-in-row (car s)) (h1 (cdr s))))
+    )
   )
 
 ; EXERCISE: Change the name of this function to h<UID> where
