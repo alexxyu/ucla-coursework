@@ -7,7 +7,6 @@ type ('nonterminal, 'terminal) parse_tree =
   | Leaf of 'terminal
 
 (* Q1: Convert HW1-style grammar to HW2-style grammar *)
-(* https://stackoverflow.com/questions/46883375/dynamically-generating-a-function-with-pattern-matching-in-ocaml *)
 let rec generate_alternative_lists rules = function
     | [] -> []
     | curr_symbol::t -> 
@@ -18,9 +17,6 @@ let rec generate_alternative_lists rules = function
             List.map (function (_, rhs) -> rhs) (List.filter (symbol_filter curr_symbol) rules)
         in
         (curr_symbol, symbol_rules)::(generate_alternative_lists rules t);;
-
-let key_to_value mapping key =
-    List.assoc key mapping;;
 
 let rec get_nonterminal_symbols = function
     | [] -> []
@@ -36,7 +32,7 @@ let rec convert_grammar gram1 =
         let mapping = 
             generate_alternative_lists rules (get_nonterminal_symbols rules)
         in
-        start_symbol, (key_to_value mapping);;
+        start_symbol, (fun symbol -> List.assoc symbol mapping);;
 
 (* Q2: Return list of leaves from left-to-right traversal of parse tree *)
 let rec search_subtree = function
@@ -50,37 +46,6 @@ let parse_tree_leaves tree =
     | Node (_, subtree) -> search_subtree subtree;;
 
 (* Q3: Return matcher for the given grammar *)
-let rec apply_rule prod_func accept rule frag = 
-    match rule with
-    | [] -> accept frag
-    | h::t -> 
-        match h with
-        | N nonterm when frag != [] -> 
-            (* chained_match allows us to continue matching the current rule to the remaining fragment after this 
-               nonterminal symbol's rules have been matched *)
-            let chained_match = (apply_rule prod_func accept t) in
-            apply_rules prod_func chained_match (prod_func nonterm) frag
-        | T term when (frag != [] && term = (List.hd frag)) -> apply_rule prod_func accept t (List.tl frag)
-        | _ -> None
-
-and apply_rules prod_func accept rules frag =
-    match rules with
-    | [] -> None
-    | h::t ->
-        match (apply_rule prod_func accept h frag) with
-        | None -> apply_rules prod_func accept t frag
-        | Some a -> Some a;;
-
-let make_matcher gram =
-    match gram with
-    | (start, prod_func) -> (fun accept frag -> apply_rules prod_func accept (prod_func start) frag);;
-
-(* Q4: Return parser for the given grammar *)
-let accept_parse_tree tree frag =
-    match frag with
-    | [] -> Some tree
-    | _ -> None;;
-
 let rec parse_with_rule prod_func accept rule parent children frag = 
     match rule with
     | [] -> accept (Node (parent, children)) frag
@@ -89,11 +54,12 @@ let rec parse_with_rule prod_func accept rule parent children frag =
         | N nonterm when frag != [] -> 
             (* chained_parse allows us to continue matching the current rule to the remaining fragment after this 
                nonterminal symbol's rules have been matched *)
-            let chained_parse subtree = (parse_with_rule prod_func accept t parent (children @ [subtree])) in
+            let 
+                chained_parse subtree = (parse_with_rule prod_func accept t parent (children @ [subtree])) 
+            in
             parse_with_rules prod_func chained_parse (prod_func nonterm) nonterm frag
         | T term when (frag != [] && term = (List.hd frag)) -> 
-            let updated_children = children @ [Leaf term] in
-            parse_with_rule prod_func accept t parent updated_children (List.tl frag)
+            parse_with_rule prod_func accept t parent (children @ [Leaf term]) (List.tl frag)
         | _ -> None
 
 and parse_with_rules prod_func accept rules parent frag =
@@ -104,6 +70,20 @@ and parse_with_rules prod_func accept rules parent frag =
         | None -> parse_with_rules prod_func accept t parent frag
         | Some a -> Some a;;
 
+let make_matcher gram =
+    match gram with
+    | (start, prod_func) -> 
+        fun accept frag -> 
+            let accept_wrapper unused frag = accept frag in
+            parse_with_rules prod_func accept_wrapper (prod_func start) start frag;;
+
+(* Q4: Return parser for the given grammar *)
+let accept_parse_tree tree frag =
+    match frag with
+    | [] -> Some tree
+    | _ -> None;;
+
 let make_parser gram = 
     match gram with
-    | (start, prod_func) -> (fun frag -> parse_with_rules prod_func accept_parse_tree (prod_func start) start frag);;
+    | (start, prod_func) -> 
+        fun frag -> parse_with_rules prod_func accept_parse_tree (prod_func start) start frag;;
