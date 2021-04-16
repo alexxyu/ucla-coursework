@@ -56,10 +56,10 @@ let rec apply_rule prod_func accept rule frag =
     | h::t -> 
         match h with
         | N nonterm when frag != [] -> 
-            (* backtracked_accept allows us to continue matching the current rule to the remaining fragment after this 
+            (* chained_match allows us to continue matching the current rule to the remaining fragment after this 
                nonterminal symbol's rules have been matched *)
-            let backtracked_accept = (apply_rule prod_func accept t) in
-            apply_rules prod_func backtracked_accept (prod_func nonterm) frag
+            let chained_match = (apply_rule prod_func accept t) in
+            apply_rules prod_func chained_match (prod_func nonterm) frag
         | T term when (frag != [] && term = (List.hd frag)) -> apply_rule prod_func accept t (List.tl frag)
         | _ -> None
 
@@ -87,10 +87,10 @@ let rec parse_with_rule prod_func accept rule parent children frag =
     | h::t -> 
         match h with
         | N nonterm when frag != [] -> 
-            (* backtracked_accept allows us to continue matching the current rule to the remaining fragment after this 
+            (* chained_parse allows us to continue matching the current rule to the remaining fragment after this 
                nonterminal symbol's rules have been matched *)
-            let backtracked_accept subtree = (parse_with_rule prod_func accept t parent (children@[subtree])) in
-            parse_with_rules prod_func backtracked_accept (prod_func nonterm) nonterm frag
+            let chained_parse subtree = (parse_with_rule prod_func accept t parent (children @ [subtree])) in
+            parse_with_rules prod_func chained_parse (prod_func nonterm) nonterm frag
         | T term when (frag != [] && term = (List.hd frag)) -> 
             let updated_children = children @ [Leaf term] in
             parse_with_rule prod_func accept t parent updated_children (List.tl frag)
