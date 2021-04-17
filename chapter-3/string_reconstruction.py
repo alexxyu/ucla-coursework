@@ -223,7 +223,6 @@ Input: An integer k followed by a list of k-mers Patterns.
 Output: A string Text with k-mer composition equal to Patterns. (If multiple answers exist, you may return any one.)
 """
 def reconstruct_string(file):
-    bases = ["A", "C", "G", "T"]
     adj_list = dict()
 
     # construct De Bruijn graph from patterns
