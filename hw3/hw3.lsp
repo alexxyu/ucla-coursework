@@ -277,6 +277,14 @@
 )
 
 ;
+; is-oob (s x y)
+; checks whether the given position x, y is out of bounds of the given state grid
+;
+(defun is-oob (s x y)
+	(or (< x 0) (< y 0) (>= y (length s)) (>= x (length (car s))))
+)
+
+;
 ; try-move-box (s x y d)
 ; returns the new state if one can move the box at position (x, y) in the given
 ; state s by checking whether the square in the given direction d is a blank or 
@@ -286,17 +294,22 @@
   (let* ((new-pos (get-pos-in-dir x y d))
 	 (new-x (car new-pos))
 	 (new-y (cadr new-pos))
-	 (curr-square (get-square s x y))
-	 (next-square (get-square s new-x new-y))
   	 )
-	(cond ((isBlank next-square) 
-			(set-square (set-square s new-x new-y box) x y (get-sole-square-value curr-square))
+	(if (is-oob s new-x new-y)
+		nil
+		(let ((curr-square (get-square s x y))
+	 	   (next-square (get-square s new-x new-y))
+		   )
+		  (cond ((isBlank next-square) 
+					(set-square (set-square s new-x new-y box) x y (get-sole-square-value curr-square))
+				)
+		  		((isStar next-square) 
+		  			(set-square (set-square s new-x new-y boxstar) x y (get-sole-square-value curr-square))
+		  		)
+		  		(t nil)
 		  )
-		  ((isStar next-square) 
-		  	(set-square (set-square s new-x new-y boxstar) x y (get-sole-square-value curr-square))
-		  )
-		  (t nil)
-	)   
+		)
+	)
   )
 )
 
@@ -325,24 +338,29 @@
   (let* ((new-pos (get-pos-in-dir x y d))
 	 (new-x (car new-pos))
 	 (new-y (cadr new-pos))
-	 (curr-square (get-square s x y))
-	 (next-square (get-square s new-x new-y))
   	 )
-	(cond ((isWall next-square) nil)
-		  ((isBlank next-square) 
-		  	(set-square (set-square s new-x new-y keeper) x y (get-sole-square-value curr-square))
-		  )
-	      ((isStar next-square) 
-		  	(set-square (set-square s new-x new-y keeperstar) x y (get-sole-square-value curr-square))
-		  )
-		  (t 
-		  	(let ((move-box-result (try-move-box s new-x new-y d)))
-			  (if (null move-box-result) 
-			  	nil
-				(try-move move-box-result x y d)
-			  )
+	(if (is-oob s new-x new-y)
+		nil
+		(let ((curr-square (get-square s x y))
+		   (next-square (get-square s new-x new-y))
+		   )
+		  (cond ((isWall next-square) nil)
+				((isBlank next-square) 
+					(set-square (set-square s new-x new-y keeper) x y (get-sole-square-value curr-square))
+				)
+				((isStar next-square) 
+					(set-square (set-square s new-x new-y keeperstar) x y (get-sole-square-value curr-square))
+				)
+				(t 
+					(let ((move-box-result (try-move-box s new-x new-y d)))
+					(if (null move-box-result) 
+						nil
+						(try-move move-box-result x y d)
+					)
+					)
+				)
 			)
-		  )
+		)
 	)
   )
 )
