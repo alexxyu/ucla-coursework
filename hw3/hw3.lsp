@@ -354,7 +354,66 @@
 ; The Lisp 'time' function can be used to measure the 
 ; running time of a function call.
 ;
-(defun hUID (s)
+(defun get-boxes-in-row (s x y acc)
+  (cond ((null s) acc)
+		((or (isKeeper (car s)) (isBox (car s))) (get-boxes-in-row (cdr s) (+ x 1) y (cons (list x y) acc)))
+		(t (get-boxes-in-row (cdr s) (+ x 1) y acc))
+  )
+)
+
+(defun get-boxes-in-rows (s y acc)
+  (cond ((null s) acc)
+		(t (get-boxes-in-rows (cdr s) (+ y 1) (append acc (get-boxes-in-row (car s) 0 y nil))))
+  )
+)
+
+(defun get-boxes (s)
+  (get-boxes-in-rows s 0 nil)
+)
+
+(defun get-goals-in-row (s x y acc)
+  (cond ((null s) acc)
+		((isStar (car s)) (get-goals-in-row (cdr s) (+ x 1) y (cons (list x y) acc)))
+		(t (get-goals-in-row (cdr s) (+ x 1) y acc))
+  )
+)
+
+(defun get-goals-in-rows (s y acc)
+  (cond ((null s) acc)
+		(t (get-goals-in-rows (cdr s) (+ y 1) (append acc (get-goals-in-row (car s) 0 y nil))))
+  )
+)
+
+(defun get-goals (s)
+  (get-goals-in-rows s 0 nil)
+)
+
+(defun get-dist (c1 c2)
+  (+ (abs (- (car c1) (car c2))) (abs (- (cadr c1) (cadr c2))))
+)
+
+(defun get-min-dist-to-goal (box goals acc)
+  (if (null goals)
+    acc
+  	(let ((goal (car goals)))
+      (get-min-dist-to-goal box (cdr goals) (min (get-dist box goal) acc))
+	)
+  )
+)
+
+(defun sum-box-dists-to-goals (boxes goals acc)
+  (if (null boxes)
+    acc
+	(sum-box-dists-to-goals (cdr boxes) goals (+ acc (get-min-dist-to-goal (car boxes) goals 10000)))
+  )
+)
+
+(defun h105295708 (s)
+  (let ((boxes (get-boxes s))
+	 (goals (get-goals s))
+	 )
+	(sum-box-dists-to-goals boxes goals 0)
+  )
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
