@@ -1,4 +1,106 @@
 """
+Code Challenge: Solve the String Reconstruction from Read-Pairs Problem.
+
+Input: Integers k and d followed by a collection of paired k-mers PairedReads.
+Output: A string Text with (k, d)-mer composition equal to PairedReads.
+"""
+def reconstruct_string_from_read_pairs(file):
+    adj_list = dict()
+    kmer_size = 0
+    d = 0
+
+    # construct De Bruijn graph from patterns
+    with open(file, 'r') as f:
+        patterns = f.read().splitlines()
+        kmer_size, d = patterns[0].split(' ')
+        kmer_size = int(kmer_size)
+        d = int(d)
+
+        for p in patterns[1:]:
+            pa, pb = p.split('|')
+
+            prefix = pa[:-1] + pb[:-1]
+            suffix = pa[1:] + pb[1:]
+            if prefix not in adj_list.keys():
+                adj_list[prefix] = []
+            adj_list[prefix].append(suffix)
+
+    # transform the graph into one with a eulerian cycle
+    unbalanced_from, unbalanced_to = None, None
+    degree_counts = {k: 0 for k in adj_list.keys()}
+    n_edges = 0
+    for k, v in adj_list.items():
+        degree_counts[k] -= len(v)
+        n_edges += len(v)
+        for n in v:
+            if n not in degree_counts.keys():
+                degree_counts[n] = 0
+            degree_counts[n] += 1
+    
+    for k, v in degree_counts.items():
+        if v > 0:
+            unbalanced_from = k
+        elif v < 0:
+            unbalanced_to = k
+
+    if unbalanced_from not in adj_list.keys():
+        adj_list[unbalanced_from] = []
+    adj_list[unbalanced_from].append(unbalanced_to)
+    n_edges += 1
+
+    # force unbalanced node to be last in path
+    for k, v in adj_list.items():
+        if unbalanced_from in v:
+            adj_list[k].remove(unbalanced_from)
+            adj_list[k].append(unbalanced_from)
+
+    insert_point = 0
+    curr_node = unbalanced_to
+    path = [curr_node]
+
+    # calculate eulerian path
+    while True:
+        # form a cycle and account for visited edges
+        new_cycle = []
+        start_node = curr_node
+        while True:
+            old_node = curr_node
+            curr_node = adj_list[curr_node][0]
+            adj_list[old_node].remove(curr_node)
+            n_edges -= 1
+
+            new_cycle.append(curr_node)
+            if curr_node == start_node:
+                break
+
+        path = path[:insert_point+1] + new_cycle + path[insert_point+1:]
+
+        # done if all edges have been used
+        if n_edges == 0:
+            break
+        
+        # find new node with unexplored edges
+        for i, n in enumerate(path):
+            if len(adj_list[n]) != 0:
+                curr_node = n
+                insert_point = i
+                break
+
+    # reconstruct sequence from eulerian path
+    path = path[:-1]
+    first_pair_path = [p[:len(p)//2] for p in path]
+    prefix_string = first_pair_path[0]
+    for s in first_pair_path[1:]:
+        prefix_string += s[-1]
+
+    second_pair_path = [p[len(p)//2:] for p in path]
+    suffix_string = second_pair_path[0]
+    for s in second_pair_path[1:]:
+        suffix_string += s[-1]
+
+    return prefix_string + suffix_string[-(kmer_size + d):]
+
+"""
 De Bruijn Graph from k-mers Problem: Construct the de Bruijn graph from a set of k-mers.
 
 Input: A collection of k-mers Patterns.
@@ -73,6 +175,4 @@ def generate_contigs(file):
 
     return maximal_nonbranching_paths(adj_list, reverse_adj_list)
 
-paths = sorted(generate_contigs("advanced_reconstruction.txt"))
-for p in paths:
-    print(p)
+print(reconstruct_string_from_read_pairs("advanced_reconstruction.txt"))
