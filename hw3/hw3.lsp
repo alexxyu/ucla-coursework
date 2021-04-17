@@ -168,13 +168,9 @@
 	);end cond
   );end 
 
-; EXERCISE: Modify this function to return true (t)
-; if and only if s is a goal state of the game.
-; (neither any boxes nor the keeper is on a non-goal square)
 ;
-; Currently, it always returns NIL. If A* is called with
-; this function as the goal testing function, A* will never
-; terminate until the whole search space is exhausted.
+; check-row (r)
+; recursively checks whether the current square within row r is a box or a keeper
 ;
 (defun check-row (r)
   (cond ((null r) t)
@@ -183,6 +179,13 @@
   )
 )
 
+; EXERCISE: Modify this function to return true (t)
+; if and only if s is a goal state of the game.
+; (neither any boxes nor the keeper is on a non-goal square)
+;
+; goal-test (s)
+; checks every row in s to see whether there are any boxes or keeper that is on a non-goal square
+;
 (defun goal-test (s)
   (cond ((null s) t)
 		((check-row (car s)) (goal-test (cdr s)))
@@ -190,24 +193,9 @@
   )
   );end defun
 
-; EXERCISE: Modify this function to return the list of 
-; sucessor states of s.
-;
-; This is the top-level next-states (successor) function.
-; Some skeleton code is provided below.
-; You may delete them totally, depending on your approach.
 ; 
-; If you want to use it, you will need to set 'result' to be 
-; the set of states after moving the keeper in each of the 4 directions.
-; A pseudo-code for this is:
-; 
-; ...
-; (result (list (try-move s UP) (try-move s DOWN) (try-move s LEFT) (try-move s RIGHT)))
-; ...
-; 
-; You will need to define the function try-move and decide how to represent UP,DOWN,LEFT,RIGHT.
-; Any NIL result returned from try-move can be removed by cleanUpList.
-; 
+; get-row (s y)
+; recursively finds and returns the row with index y within the state s
 ;
 (defun get-row (s y)
   (if (= y 0)
@@ -216,13 +204,22 @@
   )
 )
 
-(defun get-col (s x)
+;
+; get-col (r x) 
+; recursively finds and returns the square with index x within the row r
+;
+(defun get-col (r x)
   (if (= x 0)
-	(car s)
-	(get-col (cdr s) (- x 1))
+	(car r)
+	(get-col (cdr r) (- x 1))
   )
 )
 
+;
+; get-square (s x y)
+; uses get-row and get-col to find and return the value of the square at row y 
+; column x within state s
+; 
 (defun get-square (s x y)
   (let ((square (get-col (get-row s y) x)))
 	(if (null square)
@@ -232,13 +229,24 @@
   )
 )
 
-(defun set-col (s x v acc)
+;
+; set-col (r x v acc)
+; recursively constructs a new row to be a copy of the given row r, with the
+; square at index x within the new row to be value v
+;
+(defun set-col (r x v acc)
   (if (= x 0)
-    (append acc (list v) (cdr s))
-	(set-col (cdr s) (- x 1) v (append acc (list (car s))))
+    (append acc (list v) (cdr r))
+	(set-col (cdr r) (- x 1) v (append acc (list (car r))))
   )
 )
 
+;
+; set-row (s x y v acc)
+; recursively constructs a new state to be a copy of the given state s, with
+; the row at index y within the new state to have its square at index x set to 
+; the value v
+;
 (defun set-row (s x y v acc)
   (if (= y 0)
 	(append acc (list (set-col (car s) x v nil)) (cdr s))
@@ -246,10 +254,20 @@
   )
 )
 
+;
+; set-square (s x y v)
+; returns the state s with the square at column y row x set to the value v, 
+; using set-row as its helper function
+;
 (defun set-square (s x y v)
   (set-row s x y v nil)
 )
 
+;
+; get-pos-in-dir (x y d)
+; returns the new position if one moves 1 unit in the direction d ('U, 'D, 'L,
+; or 'R) from position (x, y)
+;
 (defun get-pos-in-dir (x y d)
   (cond ((equal d 'U) (list x (- y 1)))
 		((equal d 'D) (list x (+ y 1)))
@@ -258,6 +276,12 @@
   )
 )
 
+;
+; try-move-box (s x y d)
+; returns the new state if one can move the box at position (x, y) in the given
+; state s by checking whether the square in the given direction d is a blank or 
+; a goal; otherwise, it returns nil
+;
 (defun try-move-box (s x y d)
   (let* ((new-pos (get-pos-in-dir x y d))
 	 (new-x (car new-pos))
@@ -276,6 +300,12 @@
   )
 )
 
+;
+; get-sole-square-value (v)
+; returns the value of a square if a keeper or box was moved out of it (e.g.,
+; if the keeper moves out of a keeper-goal square, that square becomes a goal
+; square)
+;
 (defun get-sole-square-value (v)
   (cond ((isBoxStar v) star)
 		((isKeeperStar v) star)
@@ -283,6 +313,14 @@
   )
 )
 
+;
+; try-move (s x y d)
+; returns the new state if one can move the keeper at position (x, y) in
+; direction d given current state s by checking whether the new square
+; is blank or a goal. If a box is going to be pushed, it will also 
+; check whether that is a valid move using try-move-box; otherwise, 
+; it returns nil
+;
 (defun try-move (s x y d)
   (let* ((new-pos (get-pos-in-dir x y d))
 	 (new-x (car new-pos))
@@ -309,6 +347,27 @@
   )
 )
 
+; EXERCISE: Modify this function to return the list of 
+; sucessor states of s.
+;
+; This is the top-level next-states (successor) function.
+; Some skeleton code is provided below.
+; You may delete them totally, depending on your approach.
+; 
+; If you want to use it, you will need to set 'result' to be 
+; the set of states after moving the keeper in each of the 4 directions.
+; A pseudo-code for this is:
+; 
+; ...
+; (result (list (try-move s UP) (try-move s DOWN) (try-move s LEFT) (try-move s RIGHT)))
+; ...
+; 
+; You will need to define the function try-move and decide how to represent UP,DOWN,LEFT,RIGHT.
+; Any NIL result returned from try-move can be removed by cleanUpList.
+; 
+; next-states (s)
+; returns the list of successor states of s using try-move as a helper function
+;
 (defun next-states (s)
   (let* ((pos (getKeeperPosition s 0))
 	 (x (car pos))
@@ -323,27 +382,135 @@
 ; EXERCISE: Modify this function to compute the trivial 
 ; admissible heuristic.
 ;
+; h0 (s)
+; simply returns 0
+;
 (defun h0 (s)
   0
+  )
+
+;
+; count-misplaced-in-row (r count)
+; recursively counts the number of boxes in row r (count is the accumulator)
+;
+(defun count-misplaced-in-row (r count)
+  (cond ((null r) count)
+		((isBox (car r)) (count-misplaced-in-row (cdr r) (+ count 1)))
+		(t (count-misplaced-in-row (cdr r) count))
+    )
   )
 
 ; EXERCISE: Modify this function to compute the 
 ; number of misplaced boxes in s.
 ;
-; This is an admissable heuristic because each misplaced box requires at least one move for it to 
-; reach a goal position
-(defun count-misplaced-in-row (r)
-  (cond ((null r) 0)
-		((isBox (car r)) (+ 1 (count-misplaced-in-row (cdr r))))
-		(t (count-misplaced-in-row (cdr r)))
+; h1 (s)
+; returns the number of misplaced boxes in state s using count-misplaced-in-row. 
+; This is an admissable heuristic because each misplaced box requires at least 
+; one move for it to reach a goal position
+;
+(defun h1 (s)
+  (cond ((null s) 0)
+		(t (+ (count-misplaced-in-row (car s) 0) (h1 (cdr s))))
     )
   )
 
-(defun h1 (s)
-  (cond ((null s) 0)
-		(t (+ (count-misplaced-in-row (car s)) (h1 (cdr s))))
-    )
+;
+; get-boxes-in-row (r x y acc)
+; recursively adds (x, y) to the accumulator acc if the square at row y column 
+; x in state s is a box or is the keeper
+;
+(defun get-boxes-in-row (r x y acc)
+  (cond ((null r) acc)
+		((or (isKeeper (car r)) (isBox (car r))) (get-boxes-in-row (cdr r) (+ x 1) y (cons (list x y) acc)))
+		(t (get-boxes-in-row (cdr r) (+ x 1) y acc))
   )
+)
+
+;
+; get-boxes-in-rows (s y acc)
+; recursively checks all rows for boxes and the keeper in state s and adds 
+; their positions to the accumulator acc
+;
+(defun get-boxes-in-rows (s y acc)
+  (cond ((null s) acc)
+		(t (get-boxes-in-rows (cdr s) (+ y 1) (append acc (get-boxes-in-row (car s) 0 y nil))))
+  )
+)
+
+;
+; get-boxes (s)
+; returns a list of all positions of the boxes and the keeper in the current
+; state s using get-boxes-in-rows as a helper function
+;
+(defun get-boxes (s)
+  (get-boxes-in-rows s 0 nil)
+)
+
+;
+; get-goals-in-row (r x y acc)
+; recursively adds (x, y) to the accumulator acc if the square at row y column 
+; x is a goal
+;
+(defun get-goals-in-row (r x y acc)
+  (cond ((null r) acc)
+		((isStar (car r)) (get-goals-in-row (cdr r) (+ x 1) y (cons (list x y) acc)))
+		(t (get-goals-in-row (cdr r) (+ x 1) y acc))
+  )
+)
+
+;
+; get-goals-in-rows (s y acc)
+; recursively checks all rows for goals in state s and adds their positions
+; to the accumulator acc
+;
+(defun get-goals-in-rows (s y acc)
+  (cond ((null s) acc)
+		(t (get-goals-in-rows (cdr s) (+ y 1) (append acc (get-goals-in-row (car s) 0 y nil))))
+  )
+)
+
+;
+; get-boxes (s)
+; returns a list of all positions of the goals in the current state s using 
+; get-goals-in-rows as a helper function
+;
+(defun get-goals (s)
+  (get-goals-in-rows s 0 nil)
+)
+
+;
+; get-dist (c1 c2)
+; returns the Manhattan distance between two positions c1 and c2
+;
+(defun get-dist (c1 c2)
+  (+ (abs (- (car c1) (car c2))) (abs (- (cadr c1) (cadr c2))))
+)
+
+;
+; get-min-dist-to-goal (box goals acc)
+; recursively finds the minimum distance between the given box's position and 
+; any one position of the goals (acc is the accumulator of the minimum value)
+;
+(defun get-min-dist-to-goal (box goals acc)
+  (if (null goals)
+    acc
+  	(let ((goal (car goals)))
+      (get-min-dist-to-goal box (cdr goals) (min (get-dist box goal) acc))
+	)
+  )
+)
+
+;
+; sum-box-dists-to-goals (boxes goals acc)
+; recursively calculates the sum of distances between each box and the closest
+; goal square, using get-min-dist-to-goal as a helper function
+;
+(defun sum-box-dists-to-goals (boxes goals acc)
+  (if (null boxes)
+    acc
+	(sum-box-dists-to-goals (cdr boxes) goals (+ acc (get-min-dist-to-goal (car boxes) goals 100)))
+  )
+)
 
 ; EXERCISE: Change the name of this function to h<UID> where
 ; <UID> is your actual student ID number. Then, modify this 
@@ -354,60 +521,10 @@
 ; The Lisp 'time' function can be used to measure the 
 ; running time of a function call.
 ;
-(defun get-boxes-in-row (s x y acc)
-  (cond ((null s) acc)
-		((or (isKeeper (car s)) (isBox (car s))) (get-boxes-in-row (cdr s) (+ x 1) y (cons (list x y) acc)))
-		(t (get-boxes-in-row (cdr s) (+ x 1) y acc))
-  )
-)
-
-(defun get-boxes-in-rows (s y acc)
-  (cond ((null s) acc)
-		(t (get-boxes-in-rows (cdr s) (+ y 1) (append acc (get-boxes-in-row (car s) 0 y nil))))
-  )
-)
-
-(defun get-boxes (s)
-  (get-boxes-in-rows s 0 nil)
-)
-
-(defun get-goals-in-row (s x y acc)
-  (cond ((null s) acc)
-		((isStar (car s)) (get-goals-in-row (cdr s) (+ x 1) y (cons (list x y) acc)))
-		(t (get-goals-in-row (cdr s) (+ x 1) y acc))
-  )
-)
-
-(defun get-goals-in-rows (s y acc)
-  (cond ((null s) acc)
-		(t (get-goals-in-rows (cdr s) (+ y 1) (append acc (get-goals-in-row (car s) 0 y nil))))
-  )
-)
-
-(defun get-goals (s)
-  (get-goals-in-rows s 0 nil)
-)
-
-(defun get-dist (c1 c2)
-  (+ (abs (- (car c1) (car c2))) (abs (- (cadr c1) (cadr c2))))
-)
-
-(defun get-min-dist-to-goal (box goals acc)
-  (if (null goals)
-    acc
-  	(let ((goal (car goals)))
-      (get-min-dist-to-goal box (cdr goals) (min (get-dist box goal) acc))
-	)
-  )
-)
-
-(defun sum-box-dists-to-goals (boxes goals acc)
-  (if (null boxes)
-    acc
-	(sum-box-dists-to-goals (cdr boxes) goals (+ acc (get-min-dist-to-goal (car boxes) goals 10000)))
-  )
-)
-
+; h105295708 (s)
+; returns the sum of the Manhattan distance between each box and the closest 
+; goal, given state s, using sum-box-dists-to-goals as a helper function
+;
 (defun h105295708 (s)
   (let ((boxes (get-boxes s))
 	 (goals (get-goals s))
