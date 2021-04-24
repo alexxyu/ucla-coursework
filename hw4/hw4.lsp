@@ -28,9 +28,7 @@
     model
     (let* ((var (car vars))
           (m1 (cons var model))
-          (m2 (cons (- var) model))
-          (m1-isvalid (validate-to-delta delta m1))
-          (m2-isvalid (validate-to-delta delta m2)))
+          (m2 (cons (- var) model)))
       (if (validate-to-delta delta m1)
         (let ((m1-result (search-var (cdr vars) delta m1)))
           (if (not (null m1-result))
