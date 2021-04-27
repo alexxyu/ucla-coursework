@@ -48,7 +48,9 @@
     )
   )
 
-; validate-to-delta checks whether the model satisfies the given delta
+; validate-to-delta checks whether the model satisfies the given delta by
+; checking that every clause has been satisfied or could possibly be 
+; satisfied
 (defun validate-to-delta (delta model)
   (cond ((null delta) t)
         ((not (validate-to-clause (car delta) model)) nil)
@@ -57,11 +59,27 @@
   )
 
 ; validate-to-clause checks whether the model satisifes the given clause
+; by checking whether one of the variables in the clause has been
+; satisfied, or whether there is still a variable that could possibly
+; satisfy the clause
 (defun validate-to-clause (clause model) 
   (cond ((null clause) nil)
-        ((member (car clause) model) t)
-        ((and (not (member (car clause) model)) (not (member (- (car clause)) model))) t)
+        ((is-member (car clause) model) t)
+        ((and (not (is-member (car clause) model)) (not (is-member (- (car clause)) model))) t)
         (t (validate-to-clause (cdr clause) model))
+    )
+  )
+
+; is-member is my own implementation of the "member" function and works
+; by recursively checking for equality between the given item and the 
+; head of the current list
+(defun is-member (item list)
+  (if (null list)
+    nil
+    (if (equal item (car list))
+      list
+      (is-member item (cdr list))
+      )
     )
   )
 
