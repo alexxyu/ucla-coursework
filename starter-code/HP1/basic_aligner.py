@@ -101,6 +101,8 @@ def find_snps(reference, ref_start_pos, read, reversed_read=False):
 
 def align_reads(reference, reads, k, min_pair_distance, max_pair_distance, snp_thresh):
     """
+    https://online.stat.psu.edu/stat555/node/106/
+
     :param reference: the reference genome sequence string
     :param reads: a list of paired reads
     :param min_pair_distance: the minimum number of bases between paired reads
