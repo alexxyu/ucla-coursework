@@ -1,0 +1,183 @@
+execve("/usr/local/cs/bin/java", ["java", "Pigzj.java"], 0x7ffc51cb7d18 /* 36 vars */) = 0
+brk(NULL)                               = 0x55cd77648000
+arch_prctl(0x3001 /* ARCH_??? */, 0x7ffdae0f3150) = -1 EINVAL (Invalid argument)
+readlink("/proc/self/exe", "/usr/local/cs/jdk-16.0.1/bin/jav"..., 4096) = 33
+access("/etc/ld.so.preload", R_OK)      = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/tls/haswell/avx512_1/x86_64/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+stat("/usr/local/cs/jdk-16.0.1/bin/tls/haswell/avx512_1/x86_64", 0x7ffdae0f2390) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/tls/haswell/avx512_1/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+stat("/usr/local/cs/jdk-16.0.1/bin/tls/haswell/avx512_1", 0x7ffdae0f2390) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/tls/haswell/x86_64/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+stat("/usr/local/cs/jdk-16.0.1/bin/tls/haswell/x86_64", 0x7ffdae0f2390) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/tls/haswell/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+stat("/usr/local/cs/jdk-16.0.1/bin/tls/haswell", 0x7ffdae0f2390) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/tls/avx512_1/x86_64/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+stat("/usr/local/cs/jdk-16.0.1/bin/tls/avx512_1/x86_64", 0x7ffdae0f2390) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/tls/avx512_1/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+stat("/usr/local/cs/jdk-16.0.1/bin/tls/avx512_1", 0x7ffdae0f2390) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/tls/x86_64/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+stat("/usr/local/cs/jdk-16.0.1/bin/tls/x86_64", 0x7ffdae0f2390) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/tls/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+stat("/usr/local/cs/jdk-16.0.1/bin/tls", 0x7ffdae0f2390) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/haswell/avx512_1/x86_64/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+stat("/usr/local/cs/jdk-16.0.1/bin/haswell/avx512_1/x86_64", 0x7ffdae0f2390) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/haswell/avx512_1/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+stat("/usr/local/cs/jdk-16.0.1/bin/haswell/avx512_1", 0x7ffdae0f2390) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/haswell/x86_64/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+stat("/usr/local/cs/jdk-16.0.1/bin/haswell/x86_64", 0x7ffdae0f2390) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/haswell/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+stat("/usr/local/cs/jdk-16.0.1/bin/haswell", 0x7ffdae0f2390) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/avx512_1/x86_64/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+stat("/usr/local/cs/jdk-16.0.1/bin/avx512_1/x86_64", 0x7ffdae0f2390) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/avx512_1/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+stat("/usr/local/cs/jdk-16.0.1/bin/avx512_1", 0x7ffdae0f2390) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/x86_64/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+stat("/usr/local/cs/jdk-16.0.1/bin/x86_64", 0x7ffdae0f2390) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+stat("/usr/local/cs/jdk-16.0.1/bin", {st_mode=S_IFDIR|0755, st_size=4096, ...}) = 0
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/../lib/tls/haswell/avx512_1/x86_64/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+stat("/usr/local/cs/jdk-16.0.1/bin/../lib/tls/haswell/avx512_1/x86_64", 0x7ffdae0f2390) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/../lib/tls/haswell/avx512_1/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+stat("/usr/local/cs/jdk-16.0.1/bin/../lib/tls/haswell/avx512_1", 0x7ffdae0f2390) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/../lib/tls/haswell/x86_64/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+stat("/usr/local/cs/jdk-16.0.1/bin/../lib/tls/haswell/x86_64", 0x7ffdae0f2390) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/../lib/tls/haswell/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+stat("/usr/local/cs/jdk-16.0.1/bin/../lib/tls/haswell", 0x7ffdae0f2390) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/../lib/tls/avx512_1/x86_64/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+stat("/usr/local/cs/jdk-16.0.1/bin/../lib/tls/avx512_1/x86_64", 0x7ffdae0f2390) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/../lib/tls/avx512_1/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+stat("/usr/local/cs/jdk-16.0.1/bin/../lib/tls/avx512_1", 0x7ffdae0f2390) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/../lib/tls/x86_64/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+stat("/usr/local/cs/jdk-16.0.1/bin/../lib/tls/x86_64", 0x7ffdae0f2390) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/../lib/tls/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+stat("/usr/local/cs/jdk-16.0.1/bin/../lib/tls", 0x7ffdae0f2390) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/../lib/haswell/avx512_1/x86_64/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+stat("/usr/local/cs/jdk-16.0.1/bin/../lib/haswell/avx512_1/x86_64", 0x7ffdae0f2390) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/../lib/haswell/avx512_1/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+stat("/usr/local/cs/jdk-16.0.1/bin/../lib/haswell/avx512_1", 0x7ffdae0f2390) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/../lib/haswell/x86_64/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+stat("/usr/local/cs/jdk-16.0.1/bin/../lib/haswell/x86_64", 0x7ffdae0f2390) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/../lib/haswell/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+stat("/usr/local/cs/jdk-16.0.1/bin/../lib/haswell", 0x7ffdae0f2390) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/../lib/avx512_1/x86_64/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+stat("/usr/local/cs/jdk-16.0.1/bin/../lib/avx512_1/x86_64", 0x7ffdae0f2390) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/../lib/avx512_1/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+stat("/usr/local/cs/jdk-16.0.1/bin/../lib/avx512_1", 0x7ffdae0f2390) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/../lib/x86_64/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+stat("/usr/local/cs/jdk-16.0.1/bin/../lib/x86_64", 0x7ffdae0f2390) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/../lib/libz.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+stat("/usr/local/cs/jdk-16.0.1/bin/../lib", {st_mode=S_IFDIR|0755, st_size=4096, ...}) = 0
+openat(AT_FDCWD, "/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 3
+fstat(3, {st_mode=S_IFREG|0644, st_size=110790, ...}) = 0
+mmap(NULL, 110790, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7fcacc048000
+close(3)                                = 0
+mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fcacc046000
+openat(AT_FDCWD, "/lib64/libz.so.1", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0'\0\0\0\0\0\0"..., 832) = 832
+lseek(3, 88600, SEEK_SET)               = 88600
+read(3, "\4\0\0\0\20\0\0\0\5\0\0\0GNU\0\2\0\0\300\4\0\0\0\3\0\0\0\0\0\0\0", 32) = 32
+fstat(3, {st_mode=S_IFREG|0755, st_size=95400, ...}) = 0
+lseek(3, 88600, SEEK_SET)               = 88600
+read(3, "\4\0\0\0\20\0\0\0\5\0\0\0GNU\0\2\0\0\300\4\0\0\0\3\0\0\0\0\0\0\0", 32) = 32
+mmap(NULL, 2187272, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7fcacbc25000
+mprotect(0x7fcacbc3b000, 2093056, PROT_NONE) = 0
+mmap(0x7fcacbe3a000, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x15000) = 0x7fcacbe3a000
+mmap(0x7fcacbe3b000, 8, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7fcacbe3b000
+close(3)                                = 0
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/libjli.so", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/../lib/libjli.so", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 832) = 832
+fstat(3, {st_mode=S_IFREG|0644, st_size=73664, ...}) = 0
+mmap(NULL, 65840, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7fcacc035000
+mmap(0x7fcacc044000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0xe000) = 0x7fcacc044000
+close(3)                                = 0
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/libpthread.so.0", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/../lib/libpthread.so.0", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/lib64/libpthread.so.0", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\200n\0\0\0\0\0\0"..., 832) = 832
+fstat(3, {st_mode=S_IFREG|0755, st_size=320504, ...}) = 0
+mmap(NULL, 2225344, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7fcacba05000
+mprotect(0x7fcacba20000, 2093056, PROT_NONE) = 0
+mmap(0x7fcacbc1f000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1a000) = 0x7fcacbc1f000
+mmap(0x7fcacbc21000, 13504, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7fcacbc21000
+close(3)                                = 0
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/libdl.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/../lib/libdl.so.2", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/lib64/libdl.so.2", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\320\20\0\0\0\0\0\0"..., 832) = 832
+fstat(3, {st_mode=S_IFREG|0755, st_size=28968, ...}) = 0
+mmap(NULL, 2109744, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7fcacb801000
+mprotect(0x7fcacb804000, 2093056, PROT_NONE) = 0
+mmap(0x7fcacba03000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x2000) = 0x7fcacba03000
+close(3)                                = 0
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/libc.so.6", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/bin/../lib/libc.so.6", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/lib64/libc.so.6", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\209\2\0\0\0\0\0"..., 832) = 832
+fstat(3, {st_mode=S_IFREG|0755, st_size=3154704, ...}) = 0
+lseek(3, 808, SEEK_SET)                 = 808
+read(3, "\4\0\0\0 \0\0\0\5\0\0\0GNU\0\1\0\0\300\4\0\0\0\330\1\0\0\0\0\0\0"..., 48) = 48
+mmap(NULL, 3942144, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7fcacb43e000
+mprotect(0x7fcacb5f7000, 2097152, PROT_NONE) = 0
+mmap(0x7fcacb7f7000, 24576, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1b9000) = 0x7fcacb7f7000
+mmap(0x7fcacb7fd000, 14080, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7fcacb7fd000
+close(3)                                = 0
+mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fcacc033000
+arch_prctl(ARCH_SET_FS, 0x7fcacc034000) = 0
+mprotect(0x7fcacb7f7000, 16384, PROT_READ) = 0
+mprotect(0x7fcacba03000, 4096, PROT_READ) = 0
+mprotect(0x7fcacbc1f000, 4096, PROT_READ) = 0
+mprotect(0x7fcacbe3a000, 4096, PROT_READ) = 0
+mprotect(0x7fcacc044000, 4096, PROT_READ) = 0
+mprotect(0x55cd76079000, 4096, PROT_READ) = 0
+mprotect(0x7fcacc064000, 4096, PROT_READ) = 0
+munmap(0x7fcacc048000, 110790)          = 0
+set_tid_address(0x7fcacc0342d0)         = 3320821
+set_robust_list(0x7fcacc0342e0, 24)     = 0
+rt_sigaction(SIGRTMIN, {sa_handler=0x7fcacba0b900, sa_mask=[], sa_flags=SA_RESTORER|SA_SIGINFO, sa_restorer=0x7fcacba17b30}, NULL, 8) = 0
+rt_sigaction(SIGRT_1, {sa_handler=0x7fcacba0b990, sa_mask=[], sa_flags=SA_RESTORER|SA_RESTART|SA_SIGINFO, sa_restorer=0x7fcacba17b30}, NULL, 8) = 0
+rt_sigprocmask(SIG_UNBLOCK, [RTMIN RT_1], NULL, 8) = 0
+prlimit64(0, RLIMIT_STACK, NULL, {rlim_cur=8192*1024, rlim_max=RLIM64_INFINITY}) = 0
+brk(NULL)                               = 0x55cd77648000
+brk(0x55cd77669000)                     = 0x55cd77669000
+brk(NULL)                               = 0x55cd77669000
+readlink("/proc/self/exe", "/usr/local/cs/jdk-16.0.1/bin/jav"..., 4096) = 33
+access("/usr/local/cs/jdk-16.0.1/lib/libjava.so", F_OK) = 0
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/lib/jvm.cfg", O_RDONLY) = 3
+fstat(3, {st_mode=S_IFREG|0644, st_size=29, ...}) = 0
+read(3, "-server KNOWN\n-client IGNORE\n", 8192) = 29
+read(3, "", 8192)                       = 0
+close(3)                                = 0
+stat("/usr/local/cs/jdk-16.0.1/lib/server/libjvm.so", {st_mode=S_IFREG|0644, st_size=22639216, ...}) = 0
+futex(0x7fcacba040e8, FUTEX_WAKE_PRIVATE, 2147483647) = 0
+openat(AT_FDCWD, "/usr/local/cs/jdk-16.0.1/lib/server/libjvm.so", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 832) = 832
+fstat(3, {st_mode=S_IFREG|0644, st_size=22639216, ...}) = 0
+mmap(NULL, 19190240, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7fcaca1f0000
+mprotect(0x7fcacb2fe000, 4096, PROT_NONE) = 0
+mmap(0x7fcacb2ff000, 933888, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x110e000) = 0x7fcacb2ff000
+mmap(0x7fcacb3e3000, 369120, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7fcacb3e3000
+close(3)                                = 0
+openat(AT_FDCWD, "/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 3
+fstat(3, {st_mode=S_IFREG|0644, st_size=110790, ...}) = 0
+mmap(NULL, 110790, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7fcacc048000
+close(3)                                = 0
+openat(AT_FDCWD, "/lib64/libm.so.6", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0000\305\0\0\0\0\0\0"..., 832) = 832
+fstat(3, {st_mode=S_IFREG|0755, st_size=2191808, ...}) = 0
+mmap(NULL, 3674432, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7fcac9e6e000
+mprotect(0x7fcac9fef000, 2093056, PROT_NONE) = 0
+mmap(0x7fcaca1ee000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x180000) = 0x7fcaca1ee000
+close(3)                                = 0
+mprotect(0x7fcaca1ee000, 4096, PROT_READ) = 0
+mprotect(0x7fcacb2ff000, 724992, PROT_READ) = 0
+getpid()                                = 3320821
+munmap(0x7fcacc048000, 110790)          = 0
+stat("Pigzj.java", {st_mode=S_IFREG|0644, st_size=9641, ...}) = 0
+mmap(NULL, 1052672, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS|MAP_STACK, -1, 0) = 0x7fcacbf32000
+clone(child_stack=0x7fcacc031fb0, flags=CLONE_VM|CLONE_FS|CLONE_FILES|CLONE_SIGHAND|CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS|CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, parent_tidptr=0x7fcacc0329d0, tls=0x7fcacc032700, child_tidptr=0x7fcacc0329d0) = 3320822
+futex(0x7fcacc0329d0, FUTEX_WAIT, 3320822, NULL) = 0
+munmap(0x7fcabb51e000, 125942959)       = 0
+close(3)                                = 0
+exit_group(0)                           = ?
++++ exited with 0 +++
