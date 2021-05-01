@@ -30,23 +30,34 @@ public class Pigzj {
             }
         }
         
-        // new Thread(new Pigzj()).start();
-
-        ByteArrayOutputStream out = new ByteArrayOutputStream(BLOCK_SIZE);
-        
         InputStream in = System.in;
+        ByteArrayOutputStream out = new ByteArrayOutputStream(BLOCK_SIZE);
+
         byte[] block = new byte[BLOCK_SIZE];
-        
+        byte[] dictionary = null;
+
         try {
             PigzjOutputStream pigzjOut = new PigzjOutputStream(out);
 
             int len;
             while((len = in.read(block, 0, BLOCK_SIZE)) > 0) {
-                pigzjOut.write(block, 0, len);
+                int total = len;
+                while((len = in.read(block, total, BLOCK_SIZE-total)) > 0) {
+                    total += len;
+                }
+
+                if(dictionary == null) {
+                    pigzjOut.write(block, 0, total);
+                } else {
+                    pigzjOut.write(block, 0, total, dictionary);
+                }
+                dictionary = Arrays.copyOfRange(block, BLOCK_SIZE-DICT_SIZE, BLOCK_SIZE);
             }
             pigzjOut.finish();
-
             out.writeTo(System.out);
+
+            in.close();
+            pigzjOut.close();
             out.close();
         } catch (Exception e) {
             e.printStackTrace();
@@ -71,15 +82,20 @@ public class PigzjOutputStream extends DeflaterOutputStream {
         this(out, 512);
     }
 
-    // public synchronized void write(byte[] b, int off, int len) throws IOException {
-    //     super.write(b, off, len);
-    //     crc.update(b, off, len);
-    // }
-
-    public synchronized void write(byte[] b, int off, int len, byte[] dict, int dictOff, int dictLen) throws IOException {
-        def.setDictionary(dict, dictOff, dictLen);
-        super.write(b, off, len);
+    public synchronized void write(byte[] b, int off, int len) throws IOException {
+        def.setInput(b, off, len);
+        while(!def.needsInput()) {
+            int dlen = def.deflate(buf, 0, buf.length, Deflater.SYNC_FLUSH);
+            if (dlen > 0) {
+                out.write(buf, 0, dlen);
+            }
+        }
         crc.update(b, off, len);
+    }
+
+    public synchronized void write(byte[] b, int off, int len, byte[] dictionary) throws IOException {
+        def.setDictionary(dictionary);
+        write(b, off, len);
     }
 
     /*
