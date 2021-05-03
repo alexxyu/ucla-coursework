@@ -61,15 +61,34 @@ greater overhead maintaining safe thread accesses. Thus, at a certain point, I a
 Pigzj will stop scaling as the drawbacks of synchronization outweigh begin to overtake the benefits 
 of concurrency.
 
-Discrepencies:
+Discrepencies between Pigzj and pigz's compression results:
 My implementation of Pigzj does not produce output that is byte-for-byte identical with that of 
 pigz. From the performance test noted above, there is roughly a 1400 B difference between Pigzj's
-compressed output and pigz's compressed output. I am unsure exactly what has caused this 
-discrepency, but it is likely somewhere in the header. Using 'xxd' to convert the .gz files to 
-hex allowed me to find that the header of Pigzj's output is one byte shorter.
+compressed output and pigz's compressed output. I am not entirely certain what are the sources of 
+this discrepency, but I have a few guesses backed by evidence. For one, I found that the headers 
+are slightly different. Using 'xxd' to dump the .gz files to hex allowed me to find that the 
+header of Pigzj's output is two bytes shorter. 
+
+Furthermore, the pigz manual includes the following information:
+    Each partial raw deflate stream is terminated by an empty stored block (using the
+    Z_SYNC_FLUSH option of zlib), in order to end that partial bit stream at a byte boundary. That
+    allows the partial streams to be concatenated simply as sequences of bytes. This adds a very
+    small four to five byte overhead to the output for each input chunk.
+It is possible that the concatenation of the empty stored block differs between Pigzj and pigz.
+From the hex dump of the .gz files, I found the first difference after the headers was the 
+following sequence of bytes (spaces added for clarity):
+
+    pigz:   f5ff 0820 8000   94bd
+    Pigzj:  f5ff 0000 00ff ff94
+
+Pigzj appears to have a 5 byte chunk in a location where pigz has a 4 byte chunk, and this may
+be due to different overheads provided by the "sync flush" option between Pigzj and pigz. I cannot
+confirm what are the differences past this one, so my best guess is that the header and the 
+"sync flush" option account for the differences between Pigzj's and pigz's compressed outputs.
 
 References:
 Oracle's Java documentation - https://docs.oracle.com/en/java/javase/16/docs/api/index.html
 Tutorial on Java thread pools - http://tutorials.jenkov.com/java-concurrency/thread-pools.html
 OpenJDK implementation of java.zip classes - 
     http://hg.openjdk.java.net/jdk7/jdk7/jdk/file/00cd9dc3c2b5/src/share/classes/java/util/zip/
+pigz manual - https://zlib.net/pigz/pigz.pdf
