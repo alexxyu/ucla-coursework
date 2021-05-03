@@ -1,8 +1,7 @@
 import java.io.*;
 
 // TODO: Exception and error handling
-// TODO: Improve efficiency (e.g. have main thread stitch together compressed blocks in order)
-//                          (e.g. don't copy arrays)
+// TODO: Improve efficiency (e.g. don't copy arrays)
 
 public class Pigzj {
 
@@ -19,7 +18,7 @@ public class Pigzj {
             if(args[0].equals("-p")) {
                 try {
                     numProcessors = Integer.parseInt(args[1]);
-                    if(numProcessors < 0 || numProcessors >= availableProcessors) {
+                    if(numProcessors < 0 || numProcessors > availableProcessors) {
                         System.err.println("Invalid number of processes");
                         return;
                     }
@@ -37,15 +36,10 @@ public class Pigzj {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         PigzjOutputStream pigzjOut = new PigzjOutputStream(in, out, numProcessors);
 
-        pigzjOut.write();
+        pigzjOut.compress();
         pigzjOut.finish();
-        pigzjOut.flush();
-        
-        out.writeTo(System.out);
-        out.flush();
 
         in.close();
-        pigzjOut.close();
         out.close();
     }
 

@@ -3,10 +3,12 @@ import java.util.*;
 import java.util.zip.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
-public class PigzjOutputStream extends DeflaterOutputStream {
+public class PigzjOutputStream {
     
     private CRC32 crc = new CRC32();
 
@@ -16,10 +18,12 @@ public class PigzjOutputStream extends DeflaterOutputStream {
     private final static int TRAILER_SIZE = 8;
 
     private InputStream in; 
+    private ByteArrayOutputStream out;
 
     private AtomicInteger nextBlock;
     private List<PigzjThread> runnables = new ArrayList<>();
     private BlockingQueue<Runnable> taskQueue = null;
+    private ConcurrentHashMap<Integer, byte[]> compressedBlocks;
 
     private int totalBytesIn;
 
@@ -36,48 +40,9 @@ public class PigzjOutputStream extends DeflaterOutputStream {
         private byte[] buf;
         private Deflater def;
 
-        public void run() {
-            if(dictionary != null)
-                def.setDictionary(dictionary);
-
-            def.setInput(b, off, len);
-
-            while(!def.needsInput()) {
-                int dlen = def.deflate(buf, 0, buf.length, Deflater.SYNC_FLUSH);
-                if (dlen > 0) {
-                    // Blocking until previous data block has been written
-                    while(nextBlock.get() != tid) ;
-                    
-                    try {
-                        synchronized(out) {
-                            out.write(this.buf, 0, dlen);
-                        }
-                    } catch(IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-
-            // Ensure that all contents are written out
-            if(isLast) {
-                def.finish();
-                while (!def.finished()) {
-                    int dlen = def.deflate(buf, 0, buf.length);
-                    if (dlen > 0) {
-                        try {
-                            synchronized(out) {
-                                out.write(this.buf, 0, dlen);
-                            }
-                        } catch(IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }
-            }
-
-            nextBlock.incrementAndGet();
-        }
-
+        /*
+         * Constructor for PigzjTask class.
+         */
         public PigzjTask(int tid, byte[] b, int off, int len, byte[] dictionary, boolean isLast) {
             this.tid = tid;
 
@@ -86,11 +51,44 @@ public class PigzjOutputStream extends DeflaterOutputStream {
             this.len = len;
             this.dictionary = dictionary;
 
-            this.buf = new byte[len];
+            this.buf = new byte[BLOCK_SIZE];
             this.def = new Deflater(Deflater.DEFAULT_COMPRESSION, true);
 
             this.isLast = isLast;
         }
+
+        /*
+         * Compresses a single block using given member variables as parameters.
+         */
+        public void run() {
+            if(dictionary != null)
+                def.setDictionary(dictionary);
+
+            def.setInput(b, off, len);
+
+            int totalCompressed = 0;
+            while(!def.needsInput()) {
+                int dlen = def.deflate(buf, totalCompressed, buf.length-totalCompressed, Deflater.SYNC_FLUSH);
+                if (dlen > 0) {
+                    totalCompressed += dlen;
+                }
+            }
+
+            // Ensure that all contents are written out
+            if(isLast) {
+                def.finish();
+                while (!def.finished()) {
+                    int dlen = def.deflate(buf, totalCompressed, buf.length-totalCompressed, Deflater.SYNC_FLUSH);
+                    if (dlen > 0) {
+                        totalCompressed += dlen;
+                    }
+                }
+            }
+
+            compressedBlocks.putIfAbsent(tid, Arrays.copyOf(buf, totalCompressed));
+            nextBlock.incrementAndGet();
+        }
+
     }
 
     private class PigzjThread implements Runnable {
@@ -99,11 +97,17 @@ public class PigzjOutputStream extends DeflaterOutputStream {
         private boolean isStopped;
         private BlockingQueue<Runnable> taskQueue;
 
+        /*
+         * Constructor for PigzjThread class.
+         */
         public PigzjThread(BlockingQueue<Runnable> taskQueue) {
             this.isStopped = false;
             this.taskQueue = taskQueue;
         }
     
+        /*
+         * Continuously waits for available task and runs it.
+         */
         public void run() {
             this.thread = Thread.currentThread();
             while(!isStopped()) {
@@ -115,28 +119,41 @@ public class PigzjOutputStream extends DeflaterOutputStream {
             }
         }
 
+        /*
+         * Stops and interrupts this thread.
+         */
         public synchronized void finish() {
             isStopped = true;
             this.thread.interrupt();
         }
 
+        /*
+         * Returns whether this thread has been stopped.
+         */
         public synchronized boolean isStopped() {
             return isStopped;
         }
     
     }
 
-    public PigzjOutputStream(InputStream in, OutputStream out, int nThreads) throws IOException {
-        super(out);
+    /*
+     * Constructor for PigzjOutputStream class.
+     */
+    public PigzjOutputStream(InputStream in, ByteArrayOutputStream out, int nThreads) throws IOException {
         this.nextBlock = new AtomicInteger(0);
         this.totalBytesIn = 0;
         this.in = in;
+        this.out = out;
+        this.compressedBlocks = new ConcurrentHashMap<>();
 
         initializePoolThread(nThreads);
         writeHeader();
         crc.reset();
     }
 
+    /*
+     * Initializes member variables used for Pigzj's thread pool. 
+     */
     private void initializePoolThread(int nThreads) {
         this.taskQueue = new ArrayBlockingQueue<>(nThreads);
         for(int i=0; i<nThreads; i++) {
@@ -147,8 +164,12 @@ public class PigzjOutputStream extends DeflaterOutputStream {
         }
     }
 
-    public synchronized void write() throws IOException {
-        int currBlock = 0;
+    /*
+     * Manages compression of input through task delegation to other threads
+     * and outputting compressed blocks.
+     */
+    public synchronized void compress() throws IOException {
+        int currBlock = 0, blockToOutput = 0;
         byte[] block = new byte[BLOCK_SIZE];
         byte[] dictionary = null;
 
@@ -161,11 +182,26 @@ public class PigzjOutputStream extends DeflaterOutputStream {
                     total += len;
                 }
 
-                // Create task
+                // Create task and add it to the task queue
                 boolean isLast = (total < BLOCK_SIZE);
                 byte[] copyOfBlock = Arrays.copyOf(block, total);
                 byte[] copyOfDictionary = (dictionary == null) ? null : Arrays.copyOf(dictionary, dictionary.length);
-                taskQueue.put(new PigzjTask(currBlock, copyOfBlock, 0, total, copyOfDictionary, isLast));
+
+                while(!taskQueue.offer(new PigzjTask(currBlock, copyOfBlock, 0, total, copyOfDictionary, isLast))) {
+                    // If all threads are busy, output any newly compressed blocks
+                    if(compressedBlocks.containsKey(blockToOutput)) {
+                        byte[] b = compressedBlocks.get(blockToOutput++);
+                        if(b == null) {
+                            System.err.println("Error while compressing data in order");
+                        }
+
+                        out.write(b);
+                        out.writeTo(System.out);
+                        out.reset();
+                    } else {
+                        Thread.sleep(1);
+                    }
+                }
 
                 currBlock++;
                 totalBytesIn += total;
@@ -181,6 +217,18 @@ public class PigzjOutputStream extends DeflaterOutputStream {
             e.printStackTrace();
         } catch(InterruptedException e) {
 
+        }
+
+        // Output any remaining compressed blocks
+        while(blockToOutput < currBlock) {
+            byte[] b = compressedBlocks.get(blockToOutput++);
+            if(b == null) {
+                System.err.println("Error while compressing data in order");
+            }
+
+            out.write(b);
+            out.writeTo(System.out);
+            out.reset();
         }
 
         // Stop created threads
@@ -205,8 +253,13 @@ public class PigzjOutputStream extends DeflaterOutputStream {
         0                                 // Operating system (OS)
     };
 
+    /*
+     * Writes GZIP member header out.
+     */
     private void writeHeader() throws IOException {
         out.write(header);
+        out.writeTo(System.out);
+        out.reset();
     }
 
     /*
@@ -236,9 +289,15 @@ public class PigzjOutputStream extends DeflaterOutputStream {
         buf[offset + 1] = (byte)((s >> 8) & 0xff);
     }
 
-    public void finish() throws IOException {
+    /*
+     * Finishes compression by writing GZIP member trailer out.
+     */
+    public synchronized void finish() throws IOException {
         byte[] trailer = new byte[TRAILER_SIZE];
         writeTrailer(trailer, 0);
+
         out.write(trailer);
+        out.writeTo(System.out);
+        out.reset();
     }
 }
