@@ -139,7 +139,7 @@ public class PigzjOutputStream {
     /*
      * Constructor for PigzjOutputStream class.
      */
-    public PigzjOutputStream(InputStream in, ByteArrayOutputStream out, int nThreads) throws IOException {
+    public PigzjOutputStream(InputStream in, ByteArrayOutputStream out, int nThreads) {
         this.nextBlock = new AtomicInteger(0);
         this.totalBytesIn = 0;
         this.in = in;
@@ -168,7 +168,7 @@ public class PigzjOutputStream {
      * Manages compression of input through task delegation to other threads
      * and outputting compressed blocks.
      */
-    public synchronized void compress() throws IOException {
+    public synchronized void compress() {
         int currBlock = 0, blockToOutput = 0;
         byte[] block = new byte[BLOCK_SIZE];
         byte[] dictionary = null;
@@ -214,10 +214,9 @@ public class PigzjOutputStream {
                 Thread.sleep(1);
             }
         } catch (IOException e) {
-            e.printStackTrace();
-        } catch(InterruptedException e) {
-
-        }
+            System.err.printf("I/O error: %s\n", e.getMessage());
+            System.exit(1);
+        } catch(InterruptedException e) {}
 
         // Output any remaining compressed blocks
         while(blockToOutput < currBlock) {
@@ -226,9 +225,14 @@ public class PigzjOutputStream {
                 System.err.println("Error while compressing data in order");
             }
 
-            out.write(b);
-            out.writeTo(System.out);
-            out.reset();
+            try {
+                out.write(b);
+                out.writeTo(System.out);
+                out.reset();
+            } catch(IOException e) {
+                System.err.printf("Write error: %s\n", e.getMessage());
+                System.exit(1);
+            }
         }
 
         // Stop created threads
@@ -256,17 +260,22 @@ public class PigzjOutputStream {
     /*
      * Writes GZIP member header out.
      */
-    private void writeHeader() throws IOException {
-        out.write(header);
-        out.writeTo(System.out);
-        out.reset();
+    private void writeHeader() {
+        try {
+            out.write(header);
+            out.writeTo(System.out);
+            out.reset();
+        } catch(IOException e) {
+            System.err.printf("Write error: %s\n", e.getMessage());
+            System.exit(1);
+        }
     }
 
     /*
      * Writes GZIP member trailer to a byte array, starting at a given
      * offset.
      */
-    private void writeTrailer(byte[] buf, int offset) throws IOException {
+    private void writeTrailer(byte[] buf, int offset) {
         writeInt((int)crc.getValue(), buf, offset); // CRC-32 of uncompr. data
         writeInt(totalBytesIn, buf, offset + 4); // Number of uncompr. bytes
     }
@@ -275,7 +284,7 @@ public class PigzjOutputStream {
      * Writes integer in Intel byte order to a byte array, starting at a
      * given offset.
      */
-    private void writeInt(int i, byte[] buf, int offset) throws IOException {
+    private void writeInt(int i, byte[] buf, int offset) {
         writeShort(i & 0xffff, buf, offset);
         writeShort((i >> 16) & 0xffff, buf, offset + 2);
     }
@@ -284,7 +293,7 @@ public class PigzjOutputStream {
      * Writes short integer in Intel byte order to a byte array, starting
      * at a given offset
      */
-    private void writeShort(int s, byte[] buf, int offset) throws IOException {
+    private void writeShort(int s, byte[] buf, int offset) {
         buf[offset] = (byte)(s & 0xff);
         buf[offset + 1] = (byte)((s >> 8) & 0xff);
     }
@@ -292,12 +301,17 @@ public class PigzjOutputStream {
     /*
      * Finishes compression by writing GZIP member trailer out.
      */
-    public synchronized void finish() throws IOException {
+    public synchronized void finish() {
         byte[] trailer = new byte[TRAILER_SIZE];
-        writeTrailer(trailer, 0);
-
-        out.write(trailer);
-        out.writeTo(System.out);
-        out.reset();
+        try {
+            writeTrailer(trailer, 0);
+    
+            out.write(trailer);
+            out.writeTo(System.out);
+            out.reset();
+        } catch(IOException e) {
+            System.err.printf("Write error: %s\n", e.getMessage());
+            System.exit(1);
+        }
     }
 }

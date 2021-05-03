@@ -1,8 +1,5 @@
 import java.io.*;
 
-// TODO: Exception and error handling
-// TODO: Improve efficiency (e.g. don't copy arrays)
-
 public class Pigzj {
 
     private static int availableProcessors = Runtime.getRuntime().availableProcessors();
@@ -10,7 +7,7 @@ public class Pigzj {
     public static void main(String[] args) throws IOException {
         if(args.length != 0 && args.length != 2) {
             System.err.println("Unrecognized arguments");
-            return;
+            System.exit(1);
         }
 
         int numProcessors = availableProcessors;
@@ -20,15 +17,15 @@ public class Pigzj {
                     numProcessors = Integer.parseInt(args[1]);
                     if(numProcessors < 0 || numProcessors > availableProcessors) {
                         System.err.println("Invalid number of processes");
-                        return;
+                        System.exit(1);
                     }
                 } catch(NumberFormatException e) {
                     System.err.println("Invalid number of processes");
-                    return;
+                    System.exit(1);
                 }
             } else {
                 System.err.println("Unrecognized option");
-                return;
+                System.exit(1);
             }
         }
         
@@ -41,6 +38,7 @@ public class Pigzj {
 
         in.close();
         out.close();
+        System.exit(0);
     }
 
 }
