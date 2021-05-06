@@ -15,7 +15,7 @@ public class Pigzj {
             if(args[0].equals("-p")) {
                 try {
                     numProcessors = Integer.parseInt(args[1]);
-                    if(numProcessors < 0 || numProcessors > availableProcessors) {
+                    if(numProcessors <= 0 || numProcessors > availableProcessors) {
                         System.err.println("Invalid number of processes");
                         System.exit(1);
                     }

@@ -153,12 +153,17 @@ public class PigzjOutputStream {
      * Initializes member variables used for Pigzj's thread pool. 
      */
     private void initializePoolThread(int nThreads) {
-        this.taskQueue = new ArrayBlockingQueue<>(nThreads);
-        for(int i=0; i<nThreads; i++) {
-            runnables.add( new PigzjThread(this.taskQueue) );
-        }
-        for(PigzjThread t: runnables) {
-            new Thread(t).start();
+        try {
+            this.taskQueue = new ArrayBlockingQueue<>(nThreads);
+            for(int i=0; i<nThreads; i++) {
+                runnables.add( new PigzjThread(this.taskQueue) );
+            }
+            for(PigzjThread t: runnables) {        
+                new Thread(t).start();
+            }
+        } catch(OutOfMemoryError e) {
+            System.err.println("Too many processes specified");
+            System.exit(1);
         }
     }
 
@@ -193,9 +198,7 @@ public class PigzjOutputStream {
                             System.err.println("Error while compressing data in order");
                         }
 
-                        out.write(b);
-                        out.writeTo(System.out);
-                        out.reset();
+                        write(b);
                     } else {
                         Thread.sleep(1);
                     }
@@ -212,7 +215,7 @@ public class PigzjOutputStream {
                 Thread.sleep(1);
             }
         } catch (IOException e) {
-            System.err.printf("I/O error: %s\n", e.getMessage());
+            System.err.printf("Read error: %s\n", e.getMessage());
             System.exit(1);
         } catch(InterruptedException e) {}
 
@@ -221,16 +224,10 @@ public class PigzjOutputStream {
             byte[] b = compressedBlocks.get(blockToOutput++);
             if(b == null) {
                 System.err.println("Error while compressing data in order");
-            }
-
-            try {
-                out.write(b);
-                out.writeTo(System.out);
-                out.reset();
-            } catch(IOException e) {
-                System.err.printf("Write error: %s\n", e.getMessage());
                 System.exit(1);
             }
+
+            write(b);
         }
 
         // Stop created threads
@@ -256,17 +253,29 @@ public class PigzjOutputStream {
     };
 
     /*
+     * Writes byte buffer to standard output and checks for write errors.
+     */
+    private void write(byte[] b) {
+        try {
+            out.write(b);
+            out.writeTo(System.out);
+        } catch(IOException e) {
+            System.err.println("Write error");
+            System.exit(1);
+        }
+
+        if(System.out.checkError()) {
+            System.err.println("Write error");
+            System.exit(1);
+        }    
+        out.reset();
+    }
+
+    /*
      * Writes GZIP member header out.
      */
     private void writeHeader() {
-        try {
-            out.write(header);
-            out.writeTo(System.out);
-            out.reset();
-        } catch(IOException e) {
-            System.err.printf("Write error: %s\n", e.getMessage());
-            System.exit(1);
-        }
+        write(header);
     }
 
     /*
@@ -301,15 +310,7 @@ public class PigzjOutputStream {
      */
     public synchronized void finish() {
         byte[] trailer = new byte[TRAILER_SIZE];
-        try {
-            writeTrailer(trailer, 0);
-    
-            out.write(trailer);
-            out.writeTo(System.out);
-            out.reset();
-        } catch(IOException e) {
-            System.err.printf("Write error: %s\n", e.getMessage());
-            System.exit(1);
-        }
+        writeTrailer(trailer, 0);
+        write(trailer);
     }
 }
