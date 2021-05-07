@@ -104,6 +104,10 @@ itself. With larger files, my code will have to create more buffers as well as m
 the file. There will be increased overhead in setting aside new memory spaces for each block 
 since my approach is not necessarily the most efficient time-wise.
 
+Overall, with larger files, I still expect pigz to work the best among the three programs in terms
+of wall clock time. However, I do think that Pigzj will still perform better than gzip since 
+parallelizing the compression will save significant time despite the overhead in doing so.
+
 Section IV. Discrepencies between Pigzj and pigz's compression results
 
 My implementation of Pigzj does not produce output that is byte-for-byte identical with that of 
