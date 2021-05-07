@@ -33,15 +33,16 @@ public class PigzjOutputStream {
         private int off;
         private int len;
         private byte[] dictionary;
-        private boolean isLast;
 
         private byte[] buf;
         private Deflater def;
 
+        private int totalCompressed;
+
         /*
          * Constructor for PigzjTask class.
          */
-        public PigzjTask(int tid, byte[] b, int off, int len, byte[] dictionary, boolean isLast) {
+        public PigzjTask(int tid, byte[] b, int off, int len, byte[] dictionary) {
             this.tid = tid;
 
             this.b = b;
@@ -51,8 +52,6 @@ public class PigzjOutputStream {
 
             this.buf = new byte[BLOCK_SIZE];
             this.def = new Deflater(Deflater.DEFAULT_COMPRESSION, true);
-
-            this.isLast = isLast;
         }
 
         /*
@@ -64,7 +63,7 @@ public class PigzjOutputStream {
 
             def.setInput(b, off, len);
 
-            int totalCompressed = 0;
+            totalCompressed = 0;
             while(!def.needsInput()) {
                 int dlen = def.deflate(buf, totalCompressed, buf.length-totalCompressed, Deflater.SYNC_FLUSH);
                 if (dlen > 0) {
@@ -72,19 +71,23 @@ public class PigzjOutputStream {
                 }
             }
 
-            // Ensure that all contents are written out
-            if(isLast) {
-                def.finish();
-                while (!def.finished()) {
-                    int dlen = def.deflate(buf, totalCompressed, buf.length-totalCompressed, Deflater.SYNC_FLUSH);
-                    if (dlen > 0) {
-                        totalCompressed += dlen;
-                    }
+            compressedBlocks.put(tid, Arrays.copyOf(buf, totalCompressed));
+            nextBlock.incrementAndGet();
+        }
+
+        /*
+         * Ensures that all contents of the deflater are written out.
+         */
+        public void finish() {
+            def.finish();
+            while (!def.finished()) {
+                int dlen = def.deflate(buf, totalCompressed, buf.length-totalCompressed, Deflater.SYNC_FLUSH);
+                if (dlen > 0) {
+                    totalCompressed += dlen;
                 }
             }
 
-            compressedBlocks.putIfAbsent(tid, Arrays.copyOf(buf, totalCompressed));
-            nextBlock.incrementAndGet();
+            compressedBlocks.put(tid, Arrays.copyOf(buf, totalCompressed));
         }
 
     }
@@ -122,7 +125,10 @@ public class PigzjOutputStream {
          */
         public synchronized void finish() {
             isStopped = true;
-            this.thread.interrupt();
+
+            if(this.thread != null) {
+                this.thread.interrupt();
+            }
         }
 
         /*
@@ -176,9 +182,10 @@ public class PigzjOutputStream {
         byte[] block = new byte[BLOCK_SIZE];
         byte[] dictionary = null;
 
+        PigzjTask lastTask = null;
         try {
             int len;
-            while((len = in.read(block, 0, BLOCK_SIZE)) > 0) {
+            while((len = in.read(block, 0, BLOCK_SIZE)) != -1) {
                 // Read until block buffer is full
                 int total = len;
                 while((len = in.read(block, total, BLOCK_SIZE-total)) > 0) {
@@ -186,11 +193,11 @@ public class PigzjOutputStream {
                 }
 
                 // Create task and add it to the task queue
-                boolean isLast = (total < BLOCK_SIZE);
                 byte[] copyOfBlock = Arrays.copyOf(block, total);
                 byte[] copyOfDictionary = (dictionary == null) ? null : Arrays.copyOf(dictionary, dictionary.length);
 
-                while(!taskQueue.offer(new PigzjTask(currBlock, copyOfBlock, 0, total, copyOfDictionary, isLast))) {
+                lastTask = new PigzjTask(currBlock, copyOfBlock, 0, total, copyOfDictionary);
+                while(!taskQueue.offer(lastTask)) {
                     // If all threads are busy, output any newly compressed blocks
                     if(compressedBlocks.containsKey(blockToOutput)) {
                         byte[] b = compressedBlocks.get(blockToOutput++);
@@ -218,6 +225,10 @@ public class PigzjOutputStream {
             System.err.printf("Read error: %s\n", e.getMessage());
             System.exit(1);
         } catch(InterruptedException e) {}
+
+        if(lastTask != null) {
+            lastTask.finish();
+        }
 
         // Output any remaining compressed blocks
         while(blockToOutput < currBlock) {
@@ -283,6 +294,11 @@ public class PigzjOutputStream {
      * offset.
      */
     private void writeTrailer(byte[] buf, int offset) {
+        if(totalBytesIn == 0) {
+            // Needed to prevent error when compressing empty files
+            write(new byte[] {3, 0});
+        }
+
         writeInt((int)crc.getValue(), buf, offset); // CRC-32 of uncompr. data
         writeInt(totalBytesIn, buf, offset + 4); // Number of uncompr. bytes
     }
