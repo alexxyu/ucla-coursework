@@ -1,6 +1,6 @@
 # Load scoring matrix
 scoring_matrix = dict()
-with open('PAM250.txt', 'r') as f:
+with open('BLOSUM62.txt', 'r') as f:
     lines = f.read().splitlines()
     alphabet = lines[0].strip().split()
     
@@ -14,21 +14,15 @@ with open('PAM250.txt', 'r') as f:
             scoring_matrix[k][a] = int(s)
 
 """
-Code Challenge: Solve the Global Alignment Problem.
-
-Input: Two protein strings written in the single-letter amino acid alphabet.
-Output: The maximum alignment score of these strings followed by an alignment achieving this 
-    maximum score. Use the BLOSUM62 scoring matrix for matches and mismatches as well as the 
-    indel penalty σ = 5.
+General backtracker that returns the aligned sequences
 """
-def global_alignment(file):
-    INDEL_PENALTY = 5
-
-    def backtracker(backtrack, s1, s2, n, m):
+def backtracker(backtrack, s1, s2, n, m):
         s1_aligned, s2_aligned = "", ""
         i, j = n, m
         while i != 0 or j != 0:
-            if backtrack[i][j] == 'd':
+            if backtrack[i][j] == 's':
+                break
+            elif backtrack[i][j] == 'd':
                 s1_aligned = s1[i-1] + s1_aligned
                 s2_aligned = '-' + s2_aligned
                 i -= 1
@@ -42,6 +36,17 @@ def global_alignment(file):
                 i -= 1
                 j -= 1
         return s1_aligned, s2_aligned
+
+"""
+Code Challenge: Solve the Global Alignment Problem.
+
+Input: Two protein strings written in the single-letter amino acid alphabet.
+Output: The maximum alignment score of these strings followed by an alignment achieving this 
+    maximum score. Use the BLOSUM62 scoring matrix for matches and mismatches as well as the 
+    indel penalty σ = 5.
+"""
+def global_alignment(file):
+    INDEL_PENALTY = 5
 
     with open(file, 'r') as f:
         str1, str2 = f.read().splitlines()
@@ -81,27 +86,6 @@ Output: The maximum score of a local alignment of the strings, followed by a loc
 """
 def local_alignment(file):
     INDEL_PENALTY = 5
-
-    def backtracker(backtrack, s1, s2, n, m):
-        s1_aligned, s2_aligned = "", ""
-        i, j = n, m
-        while i != 0 or j != 0:
-            if backtrack[i][j] == 's':
-                break
-            elif backtrack[i][j] == 'd':
-                s1_aligned = s1[i-1] + s1_aligned
-                s2_aligned = '-' + s2_aligned
-                i -= 1
-            elif backtrack[i][j] == 'r':
-                s1_aligned = '-' + s1_aligned
-                s2_aligned = s2[j-1] + s2_aligned
-                j -= 1
-            else:
-                s1_aligned = s1[i-1] + s1_aligned
-                s2_aligned = s2[j-1] + s2_aligned
-                i -= 1
-                j -= 1
-        return s1_aligned, s2_aligned
 
     with open(file, 'r') as f:
         str1, str2 = f.read().splitlines()
@@ -174,27 +158,6 @@ Output: A highest-scoring fitting alignment between v and w. Use the simple scor
 """
 def fitting_alignment(file):
     INDEL_PENALTY = 1
-
-    def backtracker(backtrack, s1, s2, n, m):
-        s1_aligned, s2_aligned = "", ""
-        i, j = n, m
-        while i != 0 or j != 0:
-            if backtrack[i][j] == 's':
-                break
-            elif backtrack[i][j] == 'd':
-                s1_aligned = s1[i-1] + s1_aligned
-                s2_aligned = '-' + s2_aligned
-                i -= 1
-            elif backtrack[i][j] == 'r':
-                s1_aligned = '-' + s1_aligned
-                s2_aligned = s2[j-1] + s2_aligned
-                j -= 1
-            else:
-                s1_aligned = s1[i-1] + s1_aligned
-                s2_aligned = s2[j-1] + s2_aligned
-                i -= 1
-                j -= 1
-        return s1_aligned, s2_aligned
 
     with open(file, 'r') as f:
         str1, str2 = f.read().splitlines()
@@ -302,7 +265,87 @@ def overlap_alignment(file):
 
     return *backtracker(backtrack, str1, str2, x, y), dp[x][y]
 
-s1, s2, score = overlap_alignment('alignment.txt')
+"""
+Code Challenge: Solve the Alignment with Affine Gap Penalties Problem.
+
+Input: Two amino acid strings v and w (each of length at most 100).
+Output: The maximum alignment score between v and w, followed by an alignment of v and w achieving 
+    this maximum score. Use the BLOSUM62 scoring matrix, a gap opening penalty of 11, and a gap 
+    extension penalty of 1.
+"""
+def alignment_with_affine_gap(file):
+    GAP_EXTENSION_PENALTY = 1
+    GAP_OPENING_PENALTY = 11
+
+    def gaff_backtracker(backtrack, s1, s2, n, m, k):
+        s1_aligned, s2_aligned = "", ""
+        i, j = n, m
+        while i != 0 or j != 0:
+            if backtrack[k][i][j] == 'd':
+                if k == 0:
+                    s1_aligned = s1[i-1] + s1_aligned
+                    s2_aligned = '-' + s2_aligned
+                    i -= 1
+                k = 0
+            elif backtrack[k][i][j] == 'r':
+                if k == 2:
+                    s2_aligned = s2[j-1] + s2_aligned
+                    s1_aligned = '-' + s1_aligned
+                    j -= 1
+                k = 2
+            elif backtrack[k][i][j] == 'b':
+                if k == 0:
+                    s1_aligned = s1[i-1] + s1_aligned
+                    s2_aligned = '-' + s2_aligned
+                    i -= 1
+                elif k == 2:
+                    s2_aligned = s2[j-1] + s2_aligned
+                    s1_aligned = '-' + s1_aligned
+                    j -= 1
+                k = 1
+            else:
+                s1_aligned = s1[i-1] + s1_aligned
+                s2_aligned = s2[j-1] + s2_aligned
+                i -= 1
+                j -= 1
+
+        return s1_aligned, s2_aligned
+
+    with open(file, 'r') as f:
+        str1, str2 = f.read().splitlines()
+        n, m = len(str1), len(str2)
+
+    dp = [[[0 for _ in range(m+1)] for _ in range(n+1)] for _ in range(3)]
+    backtrack = [[['' for _ in range(m+1)] for _ in range(n+1)] for _ in range(3)]
+
+    for i in range(1, n+1):
+        for j in range(1, m+1):
+            match_score = scoring_matrix[str1[i-1]][str2[j-1]]
+            
+            dp[0][i][j] = max(dp[0][i-1][j] - GAP_EXTENSION_PENALTY, dp[1][i-1][j] - GAP_OPENING_PENALTY)
+            if dp[0][i][j] == dp[0][i-1][j] - GAP_EXTENSION_PENALTY:
+                backtrack[0][i][j] = 'd'
+            else:
+                backtrack[0][i][j] = 'b'
+
+            dp[2][i][j] = max(dp[2][i][j-1] - GAP_EXTENSION_PENALTY, dp[1][i][j-1] - GAP_OPENING_PENALTY)
+            if dp[2][i][j] == dp[2][i][j-1] - GAP_EXTENSION_PENALTY:
+                backtrack[2][i][j] = 'r'
+            else:
+                backtrack[2][i][j] = 'b'
+
+            dp[1][i][j] = max(dp[0][i][j], dp[1][i-1][j-1] + match_score, dp[2][i][j])
+            if dp[1][i][j] == dp[0][i][j]:
+                backtrack[1][i][j] = 'd'
+            elif dp[1][i][j] == dp[2][i][j]:
+                backtrack[1][i][j] = 'r'
+            else:
+                backtrack[1][i][j] = 'v'
+
+    k = max(enumerate([dp[0][n][m], dp[1][n][m], dp[2][n][m]]), key=lambda x: x[1])[0]
+    return *gaff_backtracker(backtrack, str1, str2, n, m, k), dp[k][n][m] 
+
+s1, s2, score = alignment_with_affine_gap('alignment.txt')
 print(score)
 print(s1)
 print(s2)
