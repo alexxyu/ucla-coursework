@@ -17,25 +17,25 @@ with open('BLOSUM62.txt', 'r') as f:
 General backtracker that returns the aligned sequences
 """
 def backtracker(backtrack, s1, s2, n, m):
-        s1_aligned, s2_aligned = "", ""
-        i, j = n, m
-        while i != 0 or j != 0:
-            if backtrack[i][j] == 's':
-                break
-            elif backtrack[i][j] == 'd':
-                s1_aligned = s1[i-1] + s1_aligned
-                s2_aligned = '-' + s2_aligned
-                i -= 1
-            elif backtrack[i][j] == 'r':
-                s1_aligned = '-' + s1_aligned
-                s2_aligned = s2[j-1] + s2_aligned
-                j -= 1
-            else:
-                s1_aligned = s1[i-1] + s1_aligned
-                s2_aligned = s2[j-1] + s2_aligned
-                i -= 1
-                j -= 1
-        return s1_aligned, s2_aligned
+    s1_aligned, s2_aligned = "", ""
+    i, j = n, m
+    while i != 0 or j != 0:
+        if backtrack[i][j] == 's':
+            break
+        elif backtrack[i][j] == 'd':
+            s1_aligned = s1[i-1] + s1_aligned
+            s2_aligned = '-' + s2_aligned
+            i -= 1
+        elif backtrack[i][j] == 'r':
+            s1_aligned = '-' + s1_aligned
+            s2_aligned = s2[j-1] + s2_aligned
+            j -= 1
+        else:
+            s1_aligned = s1[i-1] + s1_aligned
+            s2_aligned = s2[j-1] + s2_aligned
+            i -= 1
+            j -= 1
+    return s1_aligned, s2_aligned
 
 """
 Code Challenge: Solve the Global Alignment Problem.
@@ -462,7 +462,106 @@ def space_efficient_alignment(file):
 
     return ''.join(s1_path), ''.join(s2_path), score
 
-s1, s2, score = space_efficient_alignment('alignment.txt')
+"""
+In the Multiple Longest Common Subsequence Problem, the score of a column of the alignment matrix 
+    is equal to 1 if all of the column's symbols are identical, and 0 if even one symbol disagrees.
+
+Code Challenge: Solve the Multiple Longest Common Subsequence Problem.
+
+Input: Three DNA strings of length at most 10.
+Output: The length of a longest common subsequence of these three strings, followed by a multiple 
+    alignment of the three strings corresponding to such an alignment.
+"""
+def longest_common_subseq(file):
+    insert_indel = lambda word, i: word[:i] + '-' + word[i:]
+
+    def backtracker_3d(backtrack, s1, s2, s3, x, y, z):
+        s1_aligned, s2_aligned, s3_aligned = "", "", ""
+        i, j, k = x, y, z
+        while i != 0 and j != 0 and k != 0:
+            if backtrack[i][j][k] == 0:
+                s1_aligned = s1[i-1] + s1_aligned
+                s2_aligned = s2[j-1] + s2_aligned
+                s3_aligned = s3[k-1] + s3_aligned
+                i -= 1
+                j -= 1
+                k -= 1
+            elif backtrack[i][j][k] == 1:
+                s1_aligned = s1[i-1] + s1_aligned
+                s2_aligned = s2[j-1] + s2_aligned
+                s3_aligned = '-' + s3_aligned
+                i -= 1
+                j -= 1
+            elif backtrack[i][j][k] == 2:
+                s1_aligned = s1[i-1] + s1_aligned
+                s2_aligned = '-' + s2_aligned
+                s3_aligned = s3[k-1] + s3_aligned
+                i -= 1
+                k -= 1
+            elif backtrack[i][j][k] == 3:
+                s1_aligned = '-' + s1_aligned
+                s2_aligned = s2[j-1] + s2_aligned
+                s3_aligned = s3[k-1] + s3_aligned
+                j -= 1
+                k -= 1
+            elif backtrack[i][j][k] == 4:
+                s1_aligned = s1[i-1] + s1_aligned
+                s2_aligned = '-' + s2_aligned
+                s3_aligned = '-' + s3_aligned
+                i -= 1
+            elif backtrack[i][j][k] == 5:
+                s1_aligned = '-' + s1_aligned
+                s2_aligned = s2[j-1] + s2_aligned
+                s3_aligned = '-' + s3_aligned
+                j -= 1
+            elif backtrack[i][j][k] == 6:
+                s1_aligned = '-' + s1_aligned
+                s2_aligned = '-' + s2_aligned
+                s3_aligned = s3[k-1] + s3_aligned
+                k -= 1
+
+        while i != 0:
+            s1_aligned = s1[i-1] + s1_aligned
+            i -= 1
+        while j != 0:
+            s2_aligned = s2[j-1] + s2_aligned
+            j -= 1
+        while k != 0:
+            s3_aligned = s3[k-1] + s3_aligned
+            k -= 1
+
+        while len(s1_aligned) != max(len(s1_aligned),len(s2_aligned),len(s3_aligned)):
+            s1_aligned = insert_indel(s1_aligned, 0)
+        while len(s2_aligned) != max(len(s1_aligned),len(s2_aligned),len(s3_aligned)):
+            s2_aligned = insert_indel(s2_aligned, 0)
+        while len(s3_aligned) != max(len(s1_aligned),len(s2_aligned),len(s3_aligned)):
+            s3_aligned = insert_indel(s3_aligned, 0)
+        
+        return s1_aligned, s2_aligned, s3_aligned
+
+    with open(file, 'r') as f:
+        s1, s2, s3 = f.read().splitlines()
+        x, y, z = len(s1), len(s2), len(s3)
+
+    dp = [[[0 for _ in range(z+1)] for _ in range(y+1)] for _ in range(x+1)]
+    backtrack = [[[0 for _ in range(z+1)] for _ in range(y+1)] for _ in range(x+1)]
+
+    for i in range(1, x+1):
+        for j in range(1, y+1):
+            for k in range(1, z+1):
+                match_score = 1 if s1[i-1] == s2[j-1] and s2[j-1] == s3[k-1] else 0
+                scores = [dp[i-1][j-1][k-1]+match_score, dp[i-1][j-1][k], dp[i-1][j][k-1], dp[i][j-1][k-1], dp[i-1][j][k], dp[i][j-1][k], dp[i][j][k-1]]
+                backtrack[i][j][k], dp[i][j][k] = max(enumerate(scores), key=lambda p: p[1])
+
+    return *backtracker_3d(backtrack, s1, s2, s3, x, y, z), dp[x][y][z]
+
+s1, s2, s3, score = longest_common_subseq('alignment.txt')
 print(score)
 print(s1)
 print(s2)
+print(s3)
+
+# s1, s2, score = space_efficient_alignment('alignment.txt')
+# print(score)
+# print(s1)
+# print(s2)
