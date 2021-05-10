@@ -345,7 +345,124 @@ def alignment_with_affine_gap(file):
     k = max(enumerate([dp[0][n][m], dp[1][n][m], dp[2][n][m]]), key=lambda x: x[1])[0]
     return *gaff_backtracker(backtrack, str1, str2, n, m, k), dp[k][n][m] 
 
-s1, s2, score = alignment_with_affine_gap('alignment.txt')
+"""
+Code Challenge: Solve the Middle Edge in Linear Space Problem (for protein strings).
+
+Input: Two amino acid strings.
+Output: A middle edge in the alignment graph in the form "(i, j) (k, l)", where (i, j) connects to
+    (k, l). To compute scores, use the BLOSUM62 scoring matrix and a (linear) indel penalty equal to 5.
+"""
+def middle_edge(str1, str2):
+    INDEL_PENALTY = 5
+
+    n, m = len(str1), len(str2)
+    mid = m//2
+
+    dp_forward = [0 for _ in range(n+1)]
+    for i in range(1, n+1):
+        dp_forward[i] = dp_forward[i-1] - INDEL_PENALTY
+    for j in range(1, mid+1):
+        dp_new = [0 for _ in range(n+1)]
+        dp_new[0] = -(j*INDEL_PENALTY)
+        for i in range(1, n+1):
+            match_score = scoring_matrix[str1[i-1]][str2[j-1]]
+            dp_new[i] = max(dp_forward[i-1] + match_score, dp_new[i-1] - INDEL_PENALTY, dp_forward[i] - INDEL_PENALTY)
+
+        dp_forward = dp_new
+        
+    dp_backward = [0 for _ in range(n+1)]
+    backtrack = [(n, m) for _ in range(n+1)]
+    for i in range(n-1, -1, -1):
+        dp_backward[i] = dp_backward[i+1] - INDEL_PENALTY
+    for j in range(m-1, mid-1, -1):
+        dp_new = [0 for _ in range(n+1)]
+        dp_new[-1] = -(j*INDEL_PENALTY)
+        for i in range(n-1, -1, -1):
+            match_score = scoring_matrix[str1[i]][str2[j]]
+            dp_new[i] = max(dp_backward[i+1] + match_score, dp_new[i+1] - INDEL_PENALTY, dp_backward[i] - INDEL_PENALTY)
+
+            if dp_new[i] == dp_backward[i+1] + match_score:
+                backtrack[i] = (i+1, j+1)
+            elif dp_new[i+1] - INDEL_PENALTY:
+                backtrack[i] = (i+1, j)
+            else:
+                backtrack[i] = (i, j+1)
+
+        dp_backward = dp_new
+
+    middle_node, next_node, max_score = None, None, -10000000
+    for i in range(n+1):
+        length = dp_forward[i] + dp_backward[i]
+        if length > max_score:
+            max_score = length
+            middle_node = (i, mid)
+            next_node = backtrack[i]
+
+    return middle_node, next_node, max_score
+
+"""
+Code Challenge: Implement LinearSpaceAlignment to solve the Global Alignment Problem for a large 
+    dataset.
+
+Input: Two long (10000 amino acid) protein strings written in the single-letter amino acid alphabet.
+Output: The maximum alignment score of these strings, followed by an alignment achieving this 
+    maximum score. Use the BLOSUM62 scoring matrix and indel penalty σ = 5.
+
+Note: This is broken.
+"""
+def linear_space_alignment(v, w, top, bottom, left, right, s1_path, s2_path):
+    if left == right:
+        for i in range(top, bottom):
+            s1_path.append(v[i])
+            s2_path.append('-')
+        return
+    if top == bottom:
+        for i in range(left, right):
+            s1_path.append('-')
+            s2_path.append(w[i])
+        return
+
+    middle = (left + right) // 2
+    mid_node, next_node, score = middle_edge(v[top:bottom], w[left:right])
+
+    mid_node = tuple(map(sum, zip(mid_node, [top, left])))
+    next_node = tuple(map(sum, zip(next_node, [top, left])))
+
+    mid_node_y, mid_node_x = mid_node
+    next_node_y, next_node_x = next_node
+
+    linear_space_alignment(v, w, top, mid_node_y, left, middle, s1_path, s2_path)
+
+    if mid_node_x == next_node_x-1 and mid_node_y == next_node_y-1:
+        # Diagonal edge
+        s1_path.append(v[mid_node_y])
+        s2_path.append(w[mid_node_x])
+        middle += 1
+        mid_node_y += 1
+    elif mid_node_x == next_node_x and mid_node_y == next_node_y-1:
+        # Down edge
+        s1_path.append(v[mid_node_y])
+        s2_path.append('-')
+        mid_node_y += 1
+    elif mid_node_x == next_node_x-1 and mid_node_y == next_node_y:
+        # Right edge
+        s1_path.append('-')
+        s2_path.append(w[mid_node_x])
+        middle += 1
+
+    linear_space_alignment(v, w, mid_node_y, bottom, middle, right, s1_path, s2_path)
+    return score
+
+def space_efficient_alignment(file):
+    with open(file, 'r') as f:
+        str1, str2 = f.read().splitlines()
+
+    s1_path, s2_path = [], []
+    score = linear_space_alignment(str1, str2, 0, len(str1), 0, len(str2), s1_path, s2_path)
+
+    return ''.join(s1_path), ''.join(s2_path), score
+
+s1, s2, score = space_efficient_alignment('alignment.txt')
 print(score)
 print(s1)
 print(s2)
