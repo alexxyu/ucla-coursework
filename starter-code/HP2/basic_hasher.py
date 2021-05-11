@@ -84,21 +84,18 @@ def align_read(kmers, reference, read, k):
 
     return sorted(list(aligned_positions_snps))
 
-def align_reads_with_indels(kmers, reference, read, k):
+def align_read_frag(kmers, reference, read, k):
     """
-    Aligns reads assuming there are only indels (and they are the first mismatch
-    when comparing read against reference)
+    Aligns a fragment of the read to a perfectly matched position in the reference
 
     :param kmers: a map of kmer string to list of positions in the reference
     :param reference: the reference genome sequence string
     :param read: a string containing a read
     :param k: the length of a kmer
-    :return: a list of possible alignment positions with insertions
-    :return: a list of possible alignment positions with deletions
+    :return: a list of possible alignment positions that match perfectly with a fragment of the read
     """
 
-    aligned_positions_ins = set()
-    aligned_positions_dels = set()
+    aligned_positions = set()
     i = 0
     while i+k <= len(read):
         frag = read[i:i+k]
@@ -106,26 +103,10 @@ def align_reads_with_indels(kmers, reference, read, k):
             frag_positions = kmers[frag]
             for pos in frag_positions:
                 j, p = 0, pos-i
-                while j < len(read) and p < len(reference) and read[j] == reference[p]:
-                    j += 1
-                    p += 1
-
-                # Can't tell if it's an indel if it's the first or last base
-                if j == 1 or j == len(read)-1:
-                    continue
-
-                # Try to find the end of the insertion
-                aligned_idx_ins = read[j:].find(reference[p:p+k//2])
-                if aligned_idx_ins != -1:
-                    aligned_positions_ins.add(pos-i)
-
-                # Try to find the end of the deletion
-                aligned_idx_dels = reference[p:p+len(read)].find(read[j:j+k//2])
-                if aligned_idx_dels != -1:
-                    aligned_positions_dels.add(pos-i)
+                aligned_positions.add(p)
         i += k
 
-    return sorted(list(aligned_positions_ins)), sorted(list(aligned_positions_dels))
+    return sorted(list(aligned_positions))
 
 def find_snps(reference, ref_start_pos, read, reversed_read=False):
     """
@@ -148,58 +129,98 @@ def find_snps(reference, ref_start_pos, read, reversed_read=False):
             changed_before = False
     return snps
 
-def find_ins(reference, ref_start_pos, read, k, reversed_read=False):
+def alignment_with_affine_gap(str1, str2, offset):
     """
-    :param reference: the reference genome sequence string
-    :param ref_start_pos: the integer starting position of the alignment to the reference genome
-    :param read: a string containing a read
-    :param k: the length of a kmer
-    :param reversed_read: a boolean that determines whether the read should be reversed when checking alignment
-    :return: a formatted list of possible insertions
+    :param str1: the reference genome sequence substring
+    :param str2: the read string
+    :param offset: the absolute position in the reference at which str1 appears
+    :return: the score of the alignment
+    :return: a list of insertions
+    :return: a list of deletions
     """
-    if reversed_read:
-        read = read[::-1]
 
-    ins = []
-    i, p = 0, ref_start_pos
-    while i < len(read) and reference[p] == read[i]:
-        i += 1
-        p += 1
-    matched_idx = read[i:].find(reference[p:p+k//2])
-    inserted_seq = read[i:i+matched_idx]
+    GAP_EXTENSION_PENALTY = 1
+    GAP_OPENING_PENALTY = 12
+    MATCH_MISS_SCORE = 3
 
-    for j, c in enumerate(inserted_seq):
-        ins.append([c, ref_start_pos+i+j])
-    return ins
+    def gaff_backtracker(backtrack, s1, s2, n, m, k):
+        i, j = n, m
+        a = 0
 
-def find_dels(reference, ref_start_pos, read, k, reversed_read=False):
-    """
-    :param reference: the reference genome sequence string
-    :param ref_start_pos: the integer starting position of the alignment to the reference genome
-    :param read: a string containing a read
-    :param k: the length of a kmer
-    :param reversed_read: a boolean that determines whether the read should be reversed when checking alignment
-    :return: a formatted list of possible deletions
-    """
-    if reversed_read:
-        read = read[::-1]
+        insertions, deletions = [], []
+        while i != 0 and j != 0:
+            if backtrack[k][i][j] == 'd':
+                if k == 0:
+                    deletions.append([s1[i-1], a])
+                    i -= 1
+                k = 0
+            elif backtrack[k][i][j] == 'r':
+                if k == 2:
+                    insertions.append([s2[j-1], a])
+                    j -= 1
+                k = 2
+            elif backtrack[k][i][j] == 'b':
+                if k == 0:
+                    deletions.append([s1[i-1], a])
+                    i -= 1
+                elif k == 2:
+                    insertions.append([s2[j-1], a])
+                    j -= 1
+                k = 1
+            else:
+                i -= 1
+                j -= 1
 
-    dels = []
-    i, p = 0, ref_start_pos
-    while i < len(read) and reference[p] == read[i]:
-        i += 1
-        p += 1
-    matched_idx = reference[p:].find(read[i:i+k//2])
-    deleted_seq = reference[p:p+matched_idx]
+            a += 1
 
-    for j, c in enumerate(deleted_seq):
-        dels.append([c, ref_start_pos+i+j])
-    return dels
+        while i > 0:
+            deletions.append([s1[i-1], a])
+            a += 1
+            i -= 1
+        while j > 0:
+            insertions.append([s2[j-1], a])
+            a += 1
+            j -= 1
+
+        for s in insertions:
+            s[1] = a - s[1] - 1 + offset
+        for s in deletions:
+            s[1] = a - s[1] - 1 + offset
+        return insertions, deletions
+
+    n, m = len(str1), len(str2)
+    dp = [[[0 for _ in range(m+1)] for _ in range(n+1)] for _ in range(3)]
+    backtrack = [[['' for _ in range(m+1)] for _ in range(n+1)] for _ in range(3)]
+
+    for i in range(1, n+1):
+        for j in range(1, m+1):
+            match_score = MATCH_MISS_SCORE if str1[i-1] == str2[j-1] else -MATCH_MISS_SCORE
+            
+            dp[0][i][j] = max(dp[0][i-1][j] - GAP_EXTENSION_PENALTY, dp[1][i-1][j] - GAP_OPENING_PENALTY)
+            if dp[0][i][j] == dp[0][i-1][j] - GAP_EXTENSION_PENALTY:
+                backtrack[0][i][j] = 'd'
+            else:
+                backtrack[0][i][j] = 'b'
+
+            dp[2][i][j] = max(dp[2][i][j-1] - GAP_EXTENSION_PENALTY, dp[1][i][j-1] - GAP_OPENING_PENALTY)
+            if dp[2][i][j] == dp[2][i][j-1] - GAP_EXTENSION_PENALTY:
+                backtrack[2][i][j] = 'r'
+            else:
+                backtrack[2][i][j] = 'b'
+
+            dp[1][i][j] = max(dp[0][i][j], dp[1][i-1][j-1] + match_score, dp[2][i][j])
+            if dp[1][i][j] == dp[0][i][j]:
+                backtrack[1][i][j] = 'd'
+            elif dp[1][i][j] == dp[2][i][j]:
+                backtrack[1][i][j] = 'r'
+            else:
+                backtrack[1][i][j] = 'v'
+
+    k = max(enumerate([dp[0][n][m], dp[1][n][m], dp[2][n][m]]), key=lambda x: x[1])[0]
+    return dp[k][n][m], *gaff_backtracker(backtrack, str1, str2, n, m, k)
 
 def align_reads(reference, reads, k, min_pair_distance, max_pair_distance, mut_thresh):
     """
-    https://online.stat.psu.edu/stat555/node/106/
-
     :param reference: the reference genome sequence string
     :param reads: a list of paired reads
     :param min_pair_distance: the minimum number of bases between paired reads
@@ -211,29 +232,24 @@ def align_reads(reference, reads, k, min_pair_distance, max_pair_distance, mut_t
     snps, ins, dels = [], [], []
 
     min_pair_distance, max_pair_distance = min_pair_distance + len(reads[0][0]), max_pair_distance + len(reads[0][0])
-    for read_pair in reads:
+    for c, read_pair in enumerate(reads):
+        if (c+1) % 500 == 0:
+            print(f"Alignment progress: {c+1} out of {len(reads)}")
+
+        curr_snps = len(snps)
+
         read_start, read_end = read_pair
         snp_pos1, snp_pos2 = align_read(ref_kmers, reference, read_start, k), align_read(ref_kmers, reference, read_end, k)
         reversed_snps1, reversed_snps2 = False, False
-
-        ins_pos1, del_pos1 = align_reads_with_indels(ref_kmers, reference, read_start, k)
-        ins_pos2, del_pos2 = align_reads_with_indels(ref_kmers, reference, read_end, k)
-        reversed_indels1, reversed_indels2 = False, False
 
         # Need to reverse one of the reads since they are paired
         if len(snp_pos1) == 0:
             reversed_snps1 = True
             snp_pos1 = align_read(ref_kmers, reference, read_start[::-1], k)
-        if len(ins_pos1) == 0 and len(del_pos1) == 0:
-            reversed_indels1 = True
-            ins_pos1, del_pos1 = align_reads_with_indels(ref_kmers, reference, read_start[::-1], k)
 
         if len(snp_pos2) == 0:
             reversed_snps2 = True
             snp_pos2 = align_read(ref_kmers, reference, read_end[::-1], k)
-        if len(ins_pos2) == 0 and len(del_pos2) == 0:
-            reversed_indels2 = True
-            ins_pos2, del_pos2 = align_reads_with_indels(ref_kmers, reference, read_end[::-1], k)
 
         # Add possible SNPs from paired reads
         closest_read = 0
@@ -248,16 +264,31 @@ def align_reads(reference, reads, k, min_pair_distance, max_pair_distance, mut_t
                 snps.extend(find_snps(reference, p1, read_start, reversed_read=reversed_snps1))
                 snps.extend(find_snps(reference, p2, read_end, reversed_read=reversed_snps2))
 
-        # Add possible indels from each read
-        for p1 in ins_pos1:
-            ins.extend(find_ins(reference, p1, read_start, k, reversed_read=reversed_indels1))
-        for p2 in ins_pos2:
-            ins.extend(find_ins(reference, p2, read_end, k, reversed_read=reversed_indels2))
-        
-        for p1 in del_pos1:
-            dels.extend(find_dels(reference, p1, read_start, k, reversed_read=reversed_indels1))
-        for p2 in del_pos2:
-            dels.extend(find_dels(reference, p2, read_end, k, reversed_read=reversed_indels2))
+        # Check indels if no SNPs found
+        if len(snps) == curr_snps:
+            positions = align_read_frag(ref_kmers, reference, read_start, k)
+            if len(positions) == 0:
+                read_start = read_start[::-1]
+                positions = align_read_frag(ref_kmers, reference, read_start, k)
+            max_score, best_ins, best_dels = -1000000, [], []
+            for p in positions:
+                curr_score, curr_ins, curr_dels = alignment_with_affine_gap(reference[p:p+len(read_start)], read_start, p)
+                if curr_score > max_score:
+                    max_score, best_ins, best_dels = curr_score, curr_ins, curr_dels
+            ins.extend(best_ins)
+            dels.extend(best_dels)
+
+            positions = align_read_frag(ref_kmers, reference, read_end, k)
+            if len(positions) == 0:
+                read_end = read_end[::-1]
+                positions = align_read_frag(ref_kmers, reference, read_end, k)
+            max_score, best_ins, best_dels = -1000000, [], []
+            for p in positions:
+                curr_score, curr_ins, curr_dels = alignment_with_affine_gap(reference[p:p+len(read_end)], read_end, p)
+                if curr_score > max_score:
+                    max_score, best_ins, best_dels = curr_score, curr_ins, curr_dels
+            ins.extend(best_ins)
+            dels.extend(best_dels)
 
     # Process SNPs for consensus
     snps.sort(key=lambda v: v[2])
