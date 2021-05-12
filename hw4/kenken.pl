@@ -1,5 +1,7 @@
 /* 
-    1. KenKen using finite domain solver  
+    1. KenKen using finite domain solver
+    Performance on the 4x4 kenken_testcase_2: 1 ms
+    | ?- statistics, kenken_testcase_2(N,C), kenken(N,C,T), statistics, fail.
 */
 kenken(N, C, T) :- 
     length(T, N),
@@ -15,7 +17,9 @@ row_domain(N, L) :- fd_domain(L, 1, N).
 row_length(N, L) :- length(L, N).
 
 /* 
-    2. Plain KenKen 
+    2. Plain KenKen
+    Performance on the 4x4 kenken_testcase_2: 2608 ms
+    | ?- statistics, kenken_testcase_2(N,C), plain_kenken(N,C,T), statistics, fail.
 */
 plain_kenken(N, C, T) :-
     plain_grid_sat(N, T),
@@ -77,23 +81,18 @@ square(I, J, L, V) :-
     nth1(I, L, M), 
     nth1(J, M, V).
 
-% https://stackoverflow.com/questions/4280986/how-to-transpose-a-matrix-in-prolog
-transpose([], []).
-transpose([F|Fs], Ts) :-
-    transpose(F, [F|Fs], Ts).
+transpose([[]|_], []).
+transpose(G, [R|Rest]) :-
+    first_col_as_row(G, R, GT),
+    transpose(GT, Rest).
 
-transpose([], _, []).
-transpose([_|Rs], Ms, [Ts|Tss]) :-
-        lists_firsts_rests(Ms, Ts, Ms1),
-        transpose(Rs, Ms1, Tss).
-
-lists_firsts_rests([], [], []).
-lists_firsts_rests([[F|Os]|Rest], [F|Fs], [Os|Oss]) :-
-        lists_firsts_rests(Rest, Fs, Oss).
+first_col_as_row([], [], []).
+first_col_as_row([[H|T]|Rest], [H|HT], [T|TT]) :- 
+    first_col_as_row(Rest, HT, TT).
 
 /*
     Test cases
-    Use query: fd_set_vector_max(255), kenken_testcase_1(N,C), kenken(N,C,T). 
+    Example usage: fd_set_vector_max(255), kenken_testcase_1(N,C), kenken(N,C,T). 
 */
 kenken_testcase_1(
   6,
