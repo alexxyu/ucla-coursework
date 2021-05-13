@@ -1,11 +1,5 @@
-Suppose you want to solve no-op KenKen using GNU Prolog. Design a good application programming 
-interface for your solver, i.e., specify what Prolog terms should be passed to your solver and 
-what the caller should expect should happen to those terms after successful and unsuccessful calls. 
-Also, give an example call, and its behavior, using the style shown below. You do not need to 
-implement the solver, only specify its API and implement a predicate noop_kenken_testcase that 
-performs your example call.
-
 No-op KenKen API:
+
 noop_kenken(N, C, T, O).
 
 The predicate noop_kenken/4 accepts the following four arguments:
@@ -16,11 +10,18 @@ Each element in T represents a square on the grid.
 4. O is a list of operations ('+', '*', '-', or '/'), each one corresponding in order with a cage 
 constraint in C. For example, the ith operation in O corresponds with the ith cage constraint in C.
 
+Similar to the standard KenKen solver, N and C must be ground terms, and N must be a nonnegative
+integer. T may contain logical variables that represent squares, rows, or the entire grid that
+should be filled in by the solver. Similarly, O may contain logical variables that represent 
+constraints whose operations should be filled in by the solver.
+
 Each constraint in C is of the following form:
 c(Target, L), where Target is the target value when the corresponding operation is applied to the 
 integers in the list L of squares. For example, the constraint c(2, ([[1|3],[4|5]])) means that 
 when a correct operation (sum, product, difference, or quotient) is applied to the integers in 
 squares (1, 3) and (4, 5), the resulting value is 2.
+
+Note: The definition of a square is the same as in the spec
 
 After a successful call to noop_kenken/4, the user should expect T to be bound to a filled list of
 list of integers. O should be bound to a list of operations, each corresponding to a cage 
