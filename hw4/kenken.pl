@@ -36,15 +36,15 @@ rows_sat(N, [A|R]) :-
     unordered_range(N, A),
     rows_sat(N, R).
 
-all_unique([]).
-all_unique([A | Rest]) :-
-    \+ member(A, Rest),
-    all_unique(Rest).
-
 unordered_range(N, L) :-
     length(L, N),
     maplist(between(1, N), L),
     all_unique(L).
+
+all_unique([]).
+all_unique([A | Rest]) :-
+    \+ member(A, Rest),
+    all_unique(Rest).
 
 /* Check list of constraints */
 all_constraints([], _).
@@ -81,14 +81,18 @@ square(I, J, L, V) :-
     nth1(I, L, M), 
     nth1(J, M, V).
 
-transpose([[]|_], []).
-transpose(G, [R|Rest]) :-
-    first_col_as_row(G, R, GT),
-    transpose(GT, Rest).
-
-first_col_as_row([], [], []).
-first_col_as_row([[H|T]|Rest], [H|HT], [T|TT]) :- 
-    first_col_as_row(Rest, HT, TT).
+% Transposing a matrix:
+% https://stackoverflow.com/questions/4280986/how-to-transpose-a-matrix-in-prolog
+transpose([], []).
+transpose([F|Fs], Ts) :-
+    transpose(F, [F|Fs], Ts).
+transpose([], _, []).
+transpose([_|Rs], Ms, [Ts|Tss]) :-
+        lists_firsts_rests(Ms, Ts, Ms1),
+        transpose(Rs, Ms1, Tss).
+lists_firsts_rests([], [], []).
+lists_firsts_rests([[F|Os]|Rest], [F|Fs], [Os|Oss]) :-
+        lists_firsts_rests(Rest, Fs, Oss).
 
 /*
     Test cases
