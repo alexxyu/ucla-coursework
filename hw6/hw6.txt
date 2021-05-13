@@ -24,63 +24,63 @@ Problem 2.
 * Sue eats everything Bill eats. 
 
 a) In first-order logic:
-∀x [Food(x) => Likes(John, x)].
+Ax [Food(x) => Likes(John, x)].
 Food(Apple).
 Food(Chicken).
-∀x [[Ey Eats(y, x) ^ ~Kills(x, y)] => Food(x)].
-∀x [[Ey Kills(y, x)] => ~Alive(x)].
-Eats(Bill, Peanuts) ^ Alive(Bill).
-∀x [Eats(Bill, x) => Eats(Sue, x)].
+Ax [[Ey Eats(y, x) & ~Kills(x, y)] => Food(x)].
+Ax [[Ey Kills(y, x)] => ~Alive(x)].
+Eats(Bill, Peanuts) & Alive(Bill).
+Ax [Eats(Bill, x) => Eats(Sue, x)].
 
 b) Converting to CNF:
-∀x [Food(x) => Likes(John, x)]:
-∀x [~Food(x) v Likes(John, x)]
-~Food(x) v Likes(John, x)
+Ax [Food(x) => Likes(John, x)]:
+Ax [~Food(x) | Likes(John, x)]
+~Food(x) | Likes(John, x)
 
 Food(Apple)
 Food(Chicken)
 
-∀x [[Ey Eats(y, x) ^ ~Kills(x, y)] => Food(x)]:
-∀x [~(Ey Eats(y, x) ^ ~Kills(x, y)) v Food(x)]
-∀x [(∀y ~Eats(y, x) v Kills(x, y)) v Food(x)]
-~Eats(y, x) v Kills(x, y) v Food(x)
+Ax [[Ey Eats(y, x) & ~Kills(x, y)] => Food(x)]:
+Ax [~(Ey Eats(y, x) & ~Kills(x, y)) | Food(x)]
+Ax [(Ay ~Eats(y, x) | Kills(x, y)) | Food(x)]
+~Eats(y, x) | Kills(x, y) | Food(x)
 
-∀x [[Ey Kills(y, x)] => ~Alive(x)]:
-∀x [~(Ey Kills(y, x)) v ~Alive(x)]
-∀x [∀y ~Kills(y, x)) v ~Alive(x)]
-~Kills(y, x) v ~Alive(x)
+Ax [[Ey Kills(y, x)] => ~Alive(x)]:
+Ax [~(Ey Kills(y, x)) | ~Alive(x)]
+Ax [Ay ~Kills(y, x)) | ~Alive(x)]
+~Kills(y, x) | ~Alive(x)
 
-Eats(Bill, Peanuts) ^ Alive(Bill)
+Eats(Bill, Peanuts) & Alive(Bill)
 
-∀x [Eats(Bill, x) => Eats(Sue, x)]:
-∀x [~Eats(Bill, x) v Eats(Sue, x)]
-~Eats(Bill, x) v Eats(Sue, x)
+Ax [Eats(Bill, x) => Eats(Sue, x)]:
+Ax [~Eats(Bill, x) | Eats(Sue, x)]
+~Eats(Bill, x) | Eats(Sue, x)
 
 In summary:
-    1. ~Food(x) v Likes(John, x)
+    1. ~Food(x) | Likes(John, x)
     2. Food(Apple)
     3. Food(Chicken)
-    4. ~Eats(y, x) v Kills(x, y) v Food(x)
-    5. ~Kills(y, x) v ~Alive(x)
+    4. ~Eats(y, x) | Kills(x, y) | Food(x)
+    5. ~Kills(y, x) | ~Alive(x)
     6. Eats(Bill, Peanuts) 
     7. Alive(Bill)
-    8. ~Eats(Bill, x) v Eats(Sue, x)
+    8. ~Eats(Bill, x) | Eats(Sue, x)
 
 c) Proving that John likes peanuts via resolution:
-    1. ~Food(x) v Likes(John, x)
+    1. ~Food(x) | Likes(John, x)
     2. Food(Apple)
     3. Food(Chicken)
-    4. ~Eats(y, x) v Kills(x, y) v Food(x)
-    5. ~Kills(y, x) v ~Alive(x)
+    4. ~Eats(y, x) | Kills(x, y) | Food(x)
+    5. ~Kills(y, x) | ~Alive(x)
     6. Eats(Bill, Peanuts) 
     7. Alive(Bill)
-    8. ~Eats(Bill, x) v Eats(Sue, x)
+    8. ~Eats(Bill, x) | Eats(Sue, x)
     9. ~Likes(John, Peanuts)
 
     (1 through 8 are the knowledge base, 9 is ~alpha)
 
     10. ~Food(Peanuts)                          (1 and 9)   {x|Peanuts}
-    11. Kills(Peanuts, Bill) v Food(Peanuts)    (6 and 4)   {x|Peanuts, y|Bill}
+    11. Kills(Peanuts, Bill) | Food(Peanuts)    (6 and 4)   {x|Peanuts, y|Bill}
     12. ~Alive(Peanuts)                         (11 and 5)  {x|Bill, y|Peanuts}
     13. ~Kills(x, Bill)                         (5, 7)      {x|Bill}
     14. Food(Peanuts)                           (11, 14)
@@ -90,46 +90,46 @@ Since we've reached a contradiction, by refutation, we can conclude that John
 likes peanuts.
 
 d) Answering what Sue eats via resolution:
-    1. ~Food(x) v Likes(John, x)
+    1. ~Food(x) | Likes(John, x)
     2. Food(Apple)
     3. Food(Chicken)
-    4. ~Eats(y, x) v Kills(x, y) v Food(x)
-    5. ~Kills(y, x) v ~Alive(x)
+    4. ~Eats(y, x) | Kills(x, y) | Food(x)
+    5. ~Kills(y, x) | ~Alive(x)
     6. Eats(Bill, Peanuts) 
     7. Alive(Bill)
-    8. ~Eats(Bill, x) v Eats(Sue, x)
+    8. ~Eats(Bill, x) | Eats(Sue, x)
 
 Unifying 6 and 8 using {x|Peanuts}, we find that Sue eats peanuts.
 
 e) Three new clauses (and clauses 6 and 7 removed):
 * If you don’t eat, you die.
-∀x [∀y ~Eats(x, y) => Dies(x)]
-∀x [∀y Eats(x, y) v Dies(x)]
-Eats(x, y) v Dies(x)
+Ax [Ay ~Eats(x, y) => Dies(x)]
+Ax [Ay Eats(x, y) | Dies(x)]
+Eats(x, y) | Dies(x)
 
 * If you die, you are not alive.
-∀x Dies(x) => ~Alive(x)
-∀x ~Dies(x) v ~Alive(x)
-~Dies(x) v ~Alive(x)
+Ax Dies(x) => ~Alive(x)
+Ax ~Dies(x) | ~Alive(x)
+~Dies(x) | ~Alive(x)
 
 * Bill is alive.
 Alive(Bill)
 
 New set of clauses:
-    1. ~Food(x) v Likes(John, x)
+    1. ~Food(x) | Likes(John, x)
     2. Food(Apple)
     3. Food(Chicken)
-    4. ~Eats(y, x) v Kills(x, y) v Food(x)
-    5. ~Kills(y, x) v ~Alive(x)
-    6. ~Eats(Bill, x) v Eats(Sue, x) 
-    7. Eats(x, y) v Dies(x)
-    8. ~Dies(x) v ~Alive(x)
+    4. ~Eats(y, x) | Kills(x, y) | Food(x)
+    5. ~Kills(y, x) | ~Alive(x)
+    6. ~Eats(Bill, x) | Eats(Sue, x) 
+    7. Eats(x, y) | Dies(x)
+    8. ~Dies(x) | ~Alive(x)
     9. Alive(Bill)
 
     10. ~Dies(Bill)                 (9 and 8)   {x|Bill}
     11. Eats(Bill, y)               (8 and 7)   {x|Bill}
     12. ~Kills(y, Bill)             (9 and 5)   {x|Bill}
-    13. ~Eats(Bill, x) v Food(x)    (12 and 4)  {y|Bill}
+    13. ~Eats(Bill, x) | Food(x)    (12 and 4)  {y|Bill}
     14. Food(x)                     (11 and 13) {y|x}
     15. Eats(Sue, x)                (11 and 6)  {y|x}
 
