@@ -34,19 +34,25 @@
 (define (list-compare x y)
   (cond [(and (null? x) (null? y))
          '()]
+        [(and (boolean? (car x)) (boolean? (car y)))
+         (cons (if (car x) '% '(not %))
+               (list-compare (cdr x) (cdr y)))]
         [(and (list? (car x)) (list? (car y)))
-         (cons (list-compare-start (car x) (car y)) (list-compare (cdr x) (cdr y)))]
+         (cons (list-compare-start (car x) (car y))
+               (list-compare (cdr x) (cdr y)))]
         [(not (equal? (car x) (car y)))
-         (cons (list 'if '% (car x) (car y)) (list-compare (cdr x) (cdr y)))]
-        [(equal? (car x) (car y))
-         (append (list (car x)) (list-compare (cdr x) (cdr y)))]
+         (cons (list 'if '% (car x) (car y))
+               (list-compare (cdr x) (cdr y)))]
+        [#t (append (list (car x)) (list-compare (cdr x) (cdr y)))]
   )
 )
 
 (define (lambda-compare x y)
   (list (get-lambda-symbol (car x) (car y))
         (lambda-formals-compare (cadr x) (cadr y))
-        (expr-compare (caddr x) (caddr y)))         ; TODO: handle variable bindings
+        (lambda-body-compare-start (caddr x) (caddr y)
+                                   (get-lambda-bindings (cadr x) (cadr y) '()))
+  )
 )
 
 (define (get-lambda-symbol a b)
@@ -59,8 +65,76 @@
 (define (lambda-formals-compare x y)
   (cond [(or (null? x) (null? y)) '()]
         [(not (equal? (car x) (car y)))
-         (cons (string->symbol (string-append (symbol->string (car x)) "!" (symbol->string (car y)))) 
+         (cons (format-binding (car x) (car y)) 
                (lambda-formals-compare (cdr x) (cdr y)))]
         [#t (cons (car x) (lambda-formals-compare (cdr x) (cdr y)))]
+  )
+)
+
+(define (lambda-body-compare-start x y bindings)
+  (cond [(equal? x y) x]
+        [(and (boolean? x) (boolean? y))
+         (if x '% '(not %))]
+        [(or (not (list? x)) (not (list? y)))
+         (lambda-binding-compare x y bindings)]
+        [(not (= (length x) (length y)))
+         (list 'if '% x y)]
+        [(or (equal? (car x) 'quote) (equal? (car y) 'quote))
+         (list 'if '% x y)]
+        [(and (equal? (car x) (car y)) (equal? (car x) 'if))
+         (lambda-body-compare x y bindings)]
+        [(or (equal? (car x) 'if) (equal? (car y) 'if))
+         (list 'if '% x y)]
+        [(and (is-lambda (car x)) (is-lambda (car y)))
+         (lambda-compare x y)]
+        [#t (lambda-body-compare x y bindings)]
+  )
+)
+
+(define (lambda-body-compare x y bindings)
+  (cond [(and (null? x) (null? y))
+         '()]
+        [(and (list? (car x)) (list? (car y)))
+         (cons (lambda-body-compare-start (car x) (car y) bindings)
+               (lambda-body-compare (cdr x) (cdr y) bindings))]
+        [#t (cons (lambda-binding-compare (car x) (car y) bindings)
+                  (lambda-body-compare (cdr x) (cdr y) bindings))]
+  ) 
+)
+
+(define (lambda-binding-compare a b bindings)
+  (let ([a-bind (get-binding a #t bindings)]
+        [b-bind (get-binding b #f bindings)])
+    (cond [(and (not a-bind) (not b-bind))
+           (list 'if '% a b)]
+          [(not a-bind)
+           (list 'if '% a (format-binding b-bind b))]
+          [(not b-bind)
+           (list 'if '% (format-binding a a-bind) b)]
+          [(equal? a-bind b-bind) a-bind]
+          [(and (equal? a-bind b) (equal? a b-bind))
+           (format-binding a a-bind)]
+          [#t (list 'if '% (format-binding a a-bind) (format-binding b-bind b))]
+    )
+  )
+)
+
+(define (format-binding a b)
+  (string->symbol (string-append (symbol->string a) "!" (symbol->string b)))
+)
+
+(define (get-lambda-bindings x y bindings)
+  (cond [(or (null? x) (null? y)) bindings]
+        [#t (get-lambda-bindings (cdr x) (cdr y)
+                                 (cons (list (car x) (car y)) bindings))]
+  )
+)
+
+(define (get-binding id use-first bindings)
+  (cond [(null? bindings) #f]
+        [(and use-first (equal? (caar bindings) id)) (cadar bindings)]
+        [use-first (get-binding id use-first (cdr bindings))]
+        [(equal? (cadar bindings) id) (caar bindings)]
+        [#t (get-binding id use-first (cdr bindings))]
   )
 )
