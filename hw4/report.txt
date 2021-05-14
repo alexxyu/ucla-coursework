@@ -1,0 +1,63 @@
+No-op KenKen API:
+
+noop_kenken(N, C, T, O).
+
+The predicate noop_kenken/4 accepts the following four arguments:
+1. N is a non-negative integer that specifies the dimensions of the KenKen grid.
+2. C is a list of numeric cage constraints without their corresponding operations.
+3. T is a list of list of integers, with all lists having length N. This represents the NxN grid.
+Each element in T represents a square on the grid.
+4. O is a list of operations ('+', '*', '-', or '/'), each one corresponding in order with a cage 
+constraint in C. For example, the ith operation in O corresponds with the ith cage constraint in C.
+
+Similar to the standard KenKen solver, N and C must be ground terms, and N must be a nonnegative
+integer. T may contain logical variables that represent squares, rows, or the entire grid that
+should be filled in by the solver. Similarly, O may contain logical variables that represent 
+constraints whose operations should be filled in by the solver.
+
+Each constraint in C is of the following form:
+c(Target, L), where Target is the target value when the corresponding operation is applied to the 
+integers in the list L of squares. For example, the constraint c(2, ([[1|3],[4|5]])) means that 
+when a correct operation (sum, product, difference, or quotient) is applied to the integers in 
+squares (1, 3) and (4, 5), the resulting value is 2.
+
+Note: The definition of a square is the same as in the spec
+
+After a successful call to noop_kenken/4, the user should expect T to be bound to a filled list of
+list of integers. O should be bound to a list of operations, each corresponding to a cage 
+constraint. Together, T and O make up the solution to the given KenKen problem.
+
+After an unsuccessful call to noop_kenken/4, the user shoudl expect a "no" answer, meaning that 
+there is no valid solution to the given KenKen problem.
+
+Example call:
+
+Suppose you have the following fact:
+noop_kenken_testcase(
+  5,
+  [
+    c(12, [[1|1],[2|1],[2|2]]),
+    c(1, [[1|2],[1|3]]),
+    c(3, [[1|4],[2|4]]),
+    c(1, [[1|5],[2|5]]),
+    c(5, [[2|3],[3|3]]),
+    c(1, [[3|1],[3|2]]),
+    c(4, [[3|4],[3|5]]),
+    c(3, [[4|1],[4|2]]),
+    c(3, [[4|3],[4|4]]),
+    c(1, [[4|5],[5|5]]),
+    c(2, [[5|1],[5|2]]),
+    c(2, [[5|3],[5|4]])
+  ]
+).
+
+Then, the query
+
+    ?- fd_set_vector_max(255), noop_kenken_testcase(N, C), noop_kenken(N, C, T, O)
+
+yields the following output (N and C omitted for brevity):
+
+    T = [[3,4,5,2,1],[1,4,3,5,2],[4,3,2,1,5],[5,2,1,4,3],[2,1,5,3,4]]
+    O = ['*', '-', '-', '-', '+', '-', '-', '-', '-', '-', '/', '-'] ?
+
+and if you respond with a ";" the next result should be "no".
