@@ -120,9 +120,9 @@ if __name__ == "__main__":
         sys.exit(1)
 
 
-    # Observed optimals: k = 25, thresh = 3
-    k = 15
-    thresh = 6
+    # Observed optimals: k = 33, thresh = 3
+    k = 33
+    thresh = 3
 
     kmer_counts = dict()
     for paired_reads in input_reads:
