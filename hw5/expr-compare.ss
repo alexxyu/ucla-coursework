@@ -1,5 +1,5 @@
 #lang racket
-(provide expr-compare)
+(provide (all-defined-out))
 
 (define (expr-compare x y)
   (cond [(equal? x y) x]
@@ -71,6 +71,8 @@
          (list 'if '% x y)]
         [(not (= (length x) (length y)))
          (list 'if '% x y)]
+        [(and (equal? (car x) 'quote) (equal? (car y) 'quote))
+         (list-compare-start x y)]
         [(or (equal? (car x) 'quote) (equal? (car y) 'quote))
          (list 'if '% x y)]
         [(and (equal? (car x) (car y)) (equal? (car x) 'if))
@@ -129,3 +131,6 @@
 (define (test-expr-compare x y)
   (and (equal? (eval x) (eval (list 'let '([% #t]) (expr-compare x y))))
        (equal? (eval y) (eval (list 'let '([% #f]) (expr-compare x y))))))
+
+(define test-expr-x '(lambda (a b) ((if (> a b) (f a (quote (a b))) (lambda (c) (f c))))))
+(define test-expr-y '(λ (b a) ((if (> a b) (g (a b) (quote (b a))) (lambda (c d) (f c d))))))
