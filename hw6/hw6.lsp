@@ -40,6 +40,12 @@
     nil
     (append (at-most-one-color-helper n c (+ c 1) k) (at-most-one-color n (+ c 1) k))))
 
+; Helper function to create a list of clauses for the 
+; "at most one color" constraint
+;
+; Logically, "at most one color" is equivalent to "all (x ^ y) are false."
+; Thus, by De Morgan's law, "all (-x v -y) are false."
+;
 (defun at-most-one-color-helper (n b c k)
   (if (> c k)
     nil
@@ -61,6 +67,9 @@
   (generate-edge-clauses-helper (first e) (second e) 1 k)
   )
 
+; Helper function that creates a list of clauses that ensures
+; that nodes x and y cannot have the same color
+;
 (defun generate-edge-clauses-helper (x y c k)
   (if (> c k)
     nil
