@@ -20,7 +20,9 @@
         [(or (equal? (car x) 'if) (equal? (car y) 'if))
          (list 'if '% x y)]
         [(and (is-lambda (car x)) (is-lambda (car y)))
-         (lambda-compare x y)]
+         (lambda-compare x y (list (hash) (hash)))]
+        [(or (is-lambda (car x)) (is-lambda (car y)))
+         (list 'if '% x y)]
         [#t (list-compare x y)]))
 
 (define (is-lambda s)
@@ -40,12 +42,13 @@
                (list-compare (cdr x) (cdr y)))]
         [#t (append (list (car x)) (list-compare (cdr x) (cdr y)))]))
 
-(define (lambda-compare x y)
-  (list (get-lambda-symbol (car x) (car y))
-        (lambda-formals-compare (cadr x) (cadr y))
-        (lambda-body-compare-start (caddr x) (caddr y)
-                                   (get-lambda-bindings (cadr x) (cadr y)
-                                                        (list (hash) (hash))))))
+(define (lambda-compare x y bindings)
+  (if (= (length (cadr x)) (length (cadr y)))
+      (list (get-lambda-symbol (car x) (car y))
+            (lambda-formals-compare (cadr x) (cadr y))
+            (lambda-body-compare-start (caddr x) (caddr y)
+                                       (get-lambda-bindings (cadr x) (cadr y) bindings)))
+      (list 'if '% x y)))
 
 (define (get-lambda-symbol a b)
   (if (equal? a b)
@@ -62,8 +65,10 @@
 (define (lambda-body-compare-start x y bindings)
   (cond [(and (boolean? x) (boolean? y))
          (if x '% '(not %))]
-        [(or (not (list? x)) (not (list? y)))
+        [(and (not (list? x)) (not (list? y)))
          (lambda-binding-compare x y bindings)]
+        [(or (not (list? x)) (not (list? y)))
+         (list 'if '% x y)]
         [(not (= (length x) (length y)))
          (list 'if '% x y)]
         [(or (equal? (car x) 'quote) (equal? (car y) 'quote))
@@ -73,7 +78,9 @@
         [(or (equal? (car x) 'if) (equal? (car y) 'if))
          (list 'if '% x y)]
         [(and (is-lambda (car x)) (is-lambda (car y)))
-         (lambda-compare x y)]
+         (lambda-compare x y bindings)]
+        [(or (is-lambda (car x)) (is-lambda (car y)))
+         (list 'if '% x y)]
         [#t (lambda-body-compare x y bindings)]))
 
 (define (lambda-body-compare x y bindings)
@@ -97,7 +104,7 @@
           [(not b-bind)
            (list 'if '% (format-binding a a-bind) b)]
           [(equal? a-bind b-bind)
-           (if (equal? a-bind a)
+           (if (and (equal? a-bind a) (equal? b-bind b))
                a-bind
                (list 'if '% (format-binding a a-bind) (format-binding b-bind b)))]
           [(and (equal? a b-bind) (equal? b a-bind))
