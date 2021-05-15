@@ -9,6 +9,9 @@ import argparse
 sys.path.insert(0, os.path.abspath(".."))
 sys.path.insert(0, os.path.abspath("../.."))
 
+"""
+Example usage: python3 basic_assembly.py -r reads_hw3all_A_3/reads_hw3all_A_3_chr_1.txt -o hw3.txt -t hw3all_A_3_chr_1
+"""
 
 def parse_reads_file(reads_fn):
     """
@@ -35,12 +38,65 @@ def parse_reads_file(reads_fn):
         print("Could not read file: ", reads_fn)
         return None
 
+def db_graph_from_kmers(kmers):
+    bases = ["A", "C", "G", "T"]
+    adj_list = dict()
+    for p in kmers:
+        prefix = p[:-1]
+        suffix = p[1:]
+        if prefix not in adj_list.keys():
+            adj_list[prefix] = []
+        adj_list[prefix].append(suffix)
+    return adj_list
 
-"""
-    TODO: Use this space to implement any additional functions you might need
+def generate_contigs(kmers):
+    adj_list = db_graph_from_kmers(kmers)
+    reverse_adj_list = {k:[] for k in adj_list.keys()}
+    for k, v in adj_list.items():
+        for n in v:
+            if n not in reverse_adj_list.keys():
+                reverse_adj_list[n] = []
+            reverse_adj_list[n].append(k)
 
-"""
+    def path_to_string(path):
+        string = path[0]
+        for s in path[1:]:
+            string += s[-1]
+        return string
 
+    def get_inout_degrees(node, graph, rev_graph):
+        if node not in graph.keys():
+            out_degree = 0
+        else:
+            out_degree = len(graph[node])
+        in_degree = len(rev_graph[node])
+        return in_degree, out_degree
+
+    """
+    Generates all non-branching paths in a graph. It iterates through all nodes of the graph that 
+    are not 1-in-1-out nodes and generates all non-branching paths starting at each such node.
+    """
+    def maximal_nonbranching_paths(graph, rev_graph):
+        paths = []
+        for v in adj_list.keys():
+            in_degree, out_degree = get_inout_degrees(v, graph, rev_graph)
+
+            # expand non-branching path from current node
+            if in_degree != 1 or out_degree != 1:
+                if out_degree > 0:
+                    for w in adj_list[v]:
+                        path = [v, w]
+                        in_degree, out_degree = get_inout_degrees(w, graph, rev_graph)
+                        while in_degree == 1 and out_degree == 1:
+                            w = adj_list[w][0]
+                            path.append(w)
+                            in_degree, out_degree = get_inout_degrees(w, graph, rev_graph)
+                        paths.append(path)
+        
+        paths = [path_to_string(s) for s in paths]
+        return paths
+
+    return maximal_nonbranching_paths(adj_list, reverse_adj_list)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='basic_assembly.py takes in data for homework assignment 3 consisting '
@@ -63,12 +119,22 @@ if __name__ == "__main__":
     if input_reads is None:
         sys.exit(1)
 
-    """
-            TODO: Call functions to do the actual assembly here
 
-    """
+    # Observed optimals: k = 25, thresh = 3
+    k = 15
+    thresh = 6
 
-    contigs = ['GCTGACTAGCTAGCTACGATCGATCGATCGATCGATCGATGACTAGCTAGCTAGCGCTGACT']
+    kmer_counts = dict()
+    for paired_reads in input_reads:
+        for read in paired_reads:
+            i = 0
+            while i+k <= len(read):
+                kmer = read[i:i+k]
+                kmer_counts[kmer] = kmer_counts.get(kmer, 0) + 1
+                i += 1
+
+    kmers = [k for k,v in kmer_counts.items() if v >= thresh]
+    contigs = generate_contigs(kmers)
 
     output_fn = args.output_file
     zip_fn = output_fn + '.zip'
