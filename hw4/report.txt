@@ -1,5 +1,5 @@
 See kenken.pl for a brief performance comparison between kenken/3 and plain_kenken/3 using an 
-example 4x4 KenKen grid.
+example 4x4 KenKen grid (they were performed on SEASnet server 12).
 
 No-op KenKen API specification:
 
