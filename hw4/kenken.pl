@@ -10,7 +10,7 @@ kenken(N, C, T) :-
     maplist(fd_all_different, T),
     transpose(T, TT),
     maplist(fd_all_different, TT),
-    all_constraints(C, T),
+    all_constraints(C, T, true),
     maplist(fd_labeling, T).
 
 row_domain(N, L) :- fd_domain(L, 1, N).
@@ -18,12 +18,12 @@ row_length(N, L) :- length(L, N).
 
 /* 
     2. Plain KenKen
-    Performance on the 4x4 kenken_testcase_2: 2608 ms
+    Performance on the 4x4 kenken_testcase_2: 4627 ms
     | ?- statistics, kenken_testcase_2(N,C), plain_kenken(N,C,T), statistics, fail.
 */
 plain_kenken(N, C, T) :-
     plain_grid_sat(N, T),
-    all_constraints(C, T).
+    all_constraints(C, T, false).
 
 plain_grid_sat(N, G) :-
     length(G, N),
@@ -47,34 +47,36 @@ all_unique([A | Rest]) :-
     all_unique(Rest).
 
 /* Check list of constraints */
-all_constraints([], _).
-all_constraints([C|RestOfConstraints], T) :-
-    constraint(C, T),
-    all_constraints(RestOfConstraints, T).
+all_constraints([], _, _).
+all_constraints([C|RestOfConstraints], T, USEFD) :-
+    constraint(C, T, USEFD),
+    all_constraints(RestOfConstraints, T, USEFD).
 
-constraint(+(0, []), _).
-constraint(+(S, [[I|J]|RestOfSquares]), L) :- 
+constraint(+(0, []), _, _).
+constraint(+(S, [[I|J]|RestOfSquares]), L, USEFD) :-
     square(I, J, L, V),
-    constraint(+(T, RestOfSquares), L),
-    S #= V+T,
+    constraint(+(T, RestOfSquares), L, USEFD),
+    ( (USEFD, S #= V+T) ; (\+USEFD, S is V+T) ),
     !.
 
-constraint(*(1, []), _).
-constraint(*(P, [[I|J]|RestOfSquares]), L) :- 
+constraint(*(1, []), _, _).
+constraint(*(P, [[I|J]|RestOfSquares]), L, USEFD) :- 
     square(I, J, L, V),
-    constraint(*(T, RestOfSquares), L),
-    P #= V*T,
+    constraint(*(T, RestOfSquares), L, USEFD),
+    ( (USEFD, P #= V*T) ; (\+USEFD, P is V*T) ),
     !.
 
-constraint(-(D, [I1|J1], [I2|J2]), L) :- 
+constraint(-(D, [I1|J1], [I2|J2]), L, USEFD) :- 
     square(I1, J1, L, V1),
     square(I2, J2, L, V2),
-    (D #= V1 - V2 ; D #= V2 - V1).
+    ( (USEFD, (D #= V1 - V2 ; D #= V2 - V1)) ;
+      (\+USEFD, (D is V1 - V2; D is V2 - V1)) ).
 
-constraint(/(Q, [I1|J1], [I2|J2]), L) :- 
+constraint(/(Q, [I1|J1], [I2|J2]), L, USEFD) :- 
     square(I1, J1, L, V1),
     square(I2, J2, L, V2),
-    (Q #= V1 / V2 ; Q #= V2 / V1).
+    ( (USEFD, (Q #= V1 / V2 ; Q #= V2 / V1)) ;
+      (\+USEFD, (Q is V1 / V2 ; Q is V2 / V1))).
 
 /* Utility predicates */
 square(I, J, L, V) :- 
@@ -82,7 +84,7 @@ square(I, J, L, V) :-
     nth1(J, M, V).
 
 % Transposing a matrix:
-% https://stackoverflow.com/questions/4280986/how-to-transpose-a-matrix-in-prolog
+% Taken from TA Github hint code
 transpose([], []).
 transpose([F|Fs], Ts) :-
     transpose(F, [F|Fs], Ts).
