@@ -76,7 +76,7 @@ constraint(/(Q, [I1|J1], [I2|J2]), L, USEFD) :-
     square(I1, J1, L, V1),
     square(I2, J2, L, V2),
     ( (USEFD, (Q #= V1 / V2 ; Q #= V2 / V1)) ;
-      (\+USEFD, (Q is V1 / V2 ; Q is V2 / V1))).
+      (\+USEFD, ((Q is V1 // V2, 0 is V1 mod V2) ; (Q is V2 // V1, 0 is V2 mod V1))) ).
 
 /* Utility predicates */
 square(I, J, L, V) :- 
@@ -139,4 +139,16 @@ kenken_testcase_3(
    +(4, [[1|1], [1|2]]),
    *(2, [[1|2], [2|1], [3|1]])
   ]
+).
+
+kenken_testcase_4(
+    4,
+    [
+    /(2, [1|1], [1|2]),
+    *(96, [[1|3], [1|4], [2|4], [3|4]]),
+    -(2, [2|1], [2|2]),
+    +(7, [[2|3], [3|3], [4|3], [4|4]]),
+    -(2, [3|1], [4|1]),
+    -(1, [3|2], [4|2])
+    ]
 ).
