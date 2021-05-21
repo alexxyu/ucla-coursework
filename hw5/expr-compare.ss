@@ -1,15 +1,16 @@
 #lang racket
 (provide (all-defined-out))
 
+;; Compares two expressions
 (define (expr-compare x y)
   (cond [(equal? x y) x]
         [(and (boolean? x) (boolean? y))
          (if x '% '(not %))]
         [(or (not (list? x)) (not (list? y)))
          (list 'if '% x y)]
-        [(and (list? x) (list? y)
-         (list-compare-start x y))]))
+        [#t (list-compare-start x y)]))
 
+;; Compares the heads of lists within the expressions
 (define (list-compare-start x y)
   (cond [(not (= (length x) (length y)))
          (list 'if '% x y)]
@@ -25,9 +26,11 @@
          (list 'if '% x y)]
         [#t (list-compare x y)]))
 
+;; Checks whether the symbol represents lambda
 (define (is-lambda s)
   (or (equal? s 'lambda) (equal? s 'λ)))
 
+;; Compares two general lists within the expressions
 (define (list-compare x y)
   (cond [(and (null? x) (null? y))
          '()]
@@ -42,6 +45,7 @@
                (list-compare (cdr x) (cdr y)))]
         [#t (append (list (car x)) (list-compare (cdr x) (cdr y)))]))
 
+;; Compares lambda functions within the expressions
 (define (lambda-compare x y bindings)
   (if (= (length (cadr x)) (length (cadr y)))
       (list (get-lambda-symbol (car x) (car y))
@@ -50,11 +54,13 @@
                                        (get-lambda-bindings (cadr x) (cadr y) bindings)))
       (list 'if '% x y)))
 
+;; Returns the appropriate lambda representation to use
 (define (get-lambda-symbol a b)
   (if (equal? a b)
     a
     'λ))
 
+;; Compares the formals of the lambda functions
 (define (lambda-formals-compare x y)
   (cond [(or (null? x) (null? y)) '()]
         [(not (equal? (car x) (car y)))
@@ -62,6 +68,7 @@
                (lambda-formals-compare (cdr x) (cdr y)))]
         [#t (cons (car x) (lambda-formals-compare (cdr x) (cdr y)))]))
 
+;; Compares the beginnings of the lambda bodies
 (define (lambda-body-compare-start x y bindings)
   (cond [(and (boolean? x) (boolean? y))
          (if x '% '(not %))]
@@ -85,6 +92,7 @@
          (list 'if '% x y)]
         [#t (lambda-body-compare x y bindings)]))
 
+;; Compares the bodies of the lambda sub-expressions
 (define (lambda-body-compare x y bindings)
   (cond [(and (null? x) (null? y))
          '()]
@@ -94,6 +102,7 @@
         [#t (cons (lambda-binding-compare (car x) (car y) bindings)
                   (lambda-body-compare (cdr x) (cdr y) bindings))]))
 
+;; Compares two variables within a lambda body based on their bindings
 (define (lambda-binding-compare a b bindings)
   (let ([a-bind (get-binding a #t bindings)]
         [b-bind (get-binding b #f bindings)])
@@ -113,24 +122,32 @@
            (format-binding a a-bind)]
           [#t (list 'if '% (format-binding a a-bind) (format-binding b-bind b))])))
 
+;; Returns a formatted string representing the binding equivalency of a and b
 (define (format-binding a b)
   (if (equal? a b)
       a
       (string->symbol (string-append (symbol->string a) "!" (symbol->string b)))))
 
+;; Returns two symmetric hashmaps representing the arguments that correspond to each
+;; other position-wise in the two sub-expressions
 (define (get-lambda-bindings x y bindings)
   (cond [(or (null? x) (null? y)) bindings]
         [#t (get-lambda-bindings (cdr x) (cdr y)
                                  (list (hash-set (car bindings) (car x) (car y))
                                        (hash-set (cadr bindings) (car y) (car x))))]))
 
+;; Gets the equivalent binding of id in the other expression
 (define (get-binding id use-first bindings)
   (cond [use-first (hash-ref (car bindings) id #f)]
         [#t (hash-ref (cadr bindings) id #f)]))
 
+;; Tests expr-compare by checking that x and expr-compare's output evaluate to the same value
+;; with % bound to #t, and then does the same with y and expr-compare's output with % bound
+;; to #f
 (define (test-expr-compare x y)
   (and (equal? (eval x) (eval (list 'let '([% #t]) (expr-compare x y))))
        (equal? (eval y) (eval (list 'let '([% #f]) (expr-compare x y))))))
 
+;; Two Scheme expressions to be used in testing expr-compare's correctness
 (define test-expr-x '(lambda (a b) ((if (> a b) (f a (quote (a b))) (lambda (c) (f c))))))
 (define test-expr-y '(λ (b a) ((if (> a b) (g (a b) (quote (b a))) (lambda (c d) (f c d))))))
