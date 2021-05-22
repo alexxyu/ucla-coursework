@@ -9,19 +9,18 @@ API_KEY='AIzaSyDIDfU2F1b1vEwQdhv1KFwdgUKft2KqCM8'
 SERVER_LINKS={
     'Riley': ['Jaquez', 'Juzang'],
     'Bernard': ['Jaquez', 'Juzang', 'Campbell'],
-    'Juzang': ['Campbell'],
+    'Juzang': ['Campbell', 'Riley'],
     'Jaquez': ['Riley', 'Bernard'],
-    'Campbell': ['Juzang']
+    'Campbell': ['Bernard', 'Juzang']
 }
 PORT_MAPPING={
-    'Riley': 1234,
-    'Bernard': 1235,
-    'Juzang': 1236,
-    'Jaquez': 1237,
-    'Campbell': 1238
+    'Riley': 12115,
+    'Bernard': 12116,
+    'Juzang': 12117,
+    'Jaquez': 12118,
+    'Campbell': 12119
 }
 
-# TODO: Logging
 # TODO: Whitespace handling (from client and from API)
 
 class Server:
@@ -67,7 +66,7 @@ class Server:
             time_diff_str = self.get_formatted_time_diff(msg_time, curr_time)
 
             logging.info(f'Received IAMAT command from client {client}')
-            msg = f"AT {self.name} {time_diff_str} {client} {coords} {msg_time}\n"
+            msg = f"AT {self.name} {time_diff_str} {client} {coords} {msg_time}"
             writer.write(msg.encode())
 
             self.client_at_log[client] = msg
@@ -91,7 +90,7 @@ class Server:
                 response = await self.nearby_search_request(client, rad, limit)
 
                 writer.write(f"{self.client_at_log[client]}\n".encode())
-                writer.write(f"{json.dumps(response, indent=2)}\n".encode())
+                writer.write(f"{json.dumps(response, indent=2)}".encode())
                 logging.info(f'Sent WHATSAT response to client {client}')
         elif fields[0] == "AT" and len(fields) == 6:
             # Handle propogated messages from other servers
@@ -99,7 +98,8 @@ class Server:
             msg_time = float(msg_time)
             if client not in self.client_last_msg_time.keys() or msg_time > self.client_last_msg_time[client]:
                 logging.info('Received new propogated message')
-                msg = f"AT {self.name} {time_diff_str} {client} {coords} {msg_time}\n"
+                # msg = f"AT {self.name} {time_diff_str} {client} {coords} {msg_time}"
+                msg = data
                 self.client_at_log[client] = msg
                 self.client_last_msg_time[client] = msg_time
 
