@@ -109,6 +109,7 @@ class Server:
         writer.close()
 
     async def nearby_search_request(self, client, rad, limit):
+        rad *= 1000
         latitude, longitude = self.client_locations[client]
         location = f'{latitude},{longitude}'
 
