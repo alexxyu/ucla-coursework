@@ -12,7 +12,7 @@ PORT_MAPPING={
 
 async def main():
     if len(sys.argv) != 3:
-        print(f"Usage: python3 {sys.argv[1]} client_name server_name", file=sys.stderr)
+        print(f"Usage: python3 {sys.argv[0]} client_name server_name", file=sys.stderr)
         exit(1)
 
     client, server = sys.argv[1:]
@@ -33,7 +33,7 @@ async def main():
 
     # Test WHATSAT command
     reader, writer = await asyncio.open_connection('127.0.0.1', port)
-    writer.write(f'WHATSAT {client} 10 1\n'.encode())
+    writer.write(f'WHATSAT {client} 5 3\n'.encode())
     await writer.drain()
     writer.write_eof()
 
