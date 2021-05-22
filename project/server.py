@@ -1,3 +1,4 @@
+import re
 import sys
 import time
 import json
@@ -21,8 +22,6 @@ PORT_MAPPING={
     'Campbell': 12119
 }
 
-# TODO: Whitespace handling (from client and from API)
-
 class Server:
     def __init__(self, name, host='127.0.0.1', port=1234):
         self.name = name
@@ -32,8 +31,7 @@ class Server:
         self.client_last_msg_time = dict()
         self.client_locations = dict()
         self.client_at_log = dict()
-
-        logging.basicConfig(filename=f'server_{name}.log', format='%(levelname)s:%(message)s', filemode='w+', level=logging.INFO)
+        self.connection_is_down = {s:False for s in SERVER_LINKS[name]}
         logging.info(f'Initialized server named {name}')
 
     def get_formatted_time_diff(self, start, end):
@@ -42,15 +40,8 @@ class Server:
         time_diff = '{:.9f}'.format(round(time_diff, 9))
         return f"{time_diff_sign}{time_diff}"
 
-    """
-    Sample client message:
-    IAMAT kiwi.cs.ucla.edu +34.068930-118.445127 1621464827.959498503
-
-    Sample server message:
-    AT Riley +0.263873386 kiwi.cs.ucla.edu +34.068930-118.445127 1621464827.959498503
-    """
     async def handle_connection(self, reader, writer):
-        data = await reader.readline()
+        data = await reader.read()
         data = data.decode()
 
         curr_time = time.time_ns() / 1e9
@@ -90,7 +81,9 @@ class Server:
                 response = await self.nearby_search_request(client, rad, limit)
 
                 writer.write(f"{self.client_at_log[client]}\n".encode())
-                writer.write(f"{json.dumps(response, indent=2)}".encode())
+
+                response_data = re.sub(r'\n+', '\n', json.dumps(response, indent=2).rstrip())
+                writer.write(response_data.encode())
                 logging.info(f'Sent WHATSAT response to client {client}')
         elif fields[0] == "AT" and len(fields) == 6:
             # Handle propogated messages from other servers
@@ -134,9 +127,17 @@ class Server:
     async def propogate_message(self, msg):
         for other_server in SERVER_LINKS[self.name]:
             logging.info(f'Propogating message to server {other_server}')
-            _, writer = await asyncio.open_connection(self.host, PORT_MAPPING[other_server])
-            writer.write(msg.encode())
-            writer.close()
+            try:
+                _, writer = await asyncio.open_connection(self.host, PORT_MAPPING[other_server])
+                writer.write(msg.encode())
+                writer.close()
+
+                if self.connection_is_down[other_server]:
+                    logging.warning(f"Reopened connection to server {other_server}")
+                    self.connection_is_down[other_server] = False
+            except ConnectionRefusedError:
+                logging.warning(f"Cannot connect to server {other_server}")
+                self.connection_is_down[other_server] = True
 
     async def run(self):
         server = await asyncio.start_server(self.handle_connection, host=self.host, port=self.port)
@@ -145,7 +146,7 @@ class Server:
 def main():
     args = sys.argv
     if len(args) != 2:
-        print(f"Usage: python {args[0]} [SERVER-NAME]", file=sys.stderr)
+        print(f"Usage: python3 {args[0]} server_name", file=sys.stderr)
         exit(1)
 
     server_name = args[1]
@@ -153,8 +154,14 @@ def main():
         print(f"Invalid server name provided", file=sys.stderr)
         exit(1)
 
+    logging.basicConfig(filename=f'server_{server_name}.log', format='%(levelname)s:%(message)s', filemode='w+', level=logging.INFO)
     server = Server(server_name, port=PORT_MAPPING[server_name])
-    asyncio.run(server.run())
+
+    try:
+        asyncio.run(server.run())
+    except KeyboardInterrupt:
+        logging.info(f'Shutting down server {server_name}')
+        pass
 
 if __name__ == '__main__':
     main()
