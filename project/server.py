@@ -3,17 +3,26 @@ import time
 import json
 import aiohttp
 import asyncio
-import argparse
+import logging
 
-PORT=1234
-API_KEY='<key_here>'
+API_KEY='AIzaSyDIDfU2F1b1vEwQdhv1KFwdgUKft2KqCM8'
 SERVER_LINKS={
     'Riley': ['Jaquez', 'Juzang'],
     'Bernard': ['Jaquez', 'Juzang', 'Campbell'],
     'Juzang': ['Campbell'],
     'Jaquez': ['Riley', 'Bernard'],
-    'Campbell': ['Bernard', 'Juzang']
+    'Campbell': ['Juzang']
 }
+PORT_MAPPING={
+    'Riley': 1234,
+    'Bernard': 1235,
+    'Juzang': 1236,
+    'Jaquez': 1237,
+    'Campbell': 1238
+}
+
+# TODO: Logging
+# TODO: Whitespace handling (from client and from API)
 
 class Server:
     def __init__(self, name, host='127.0.0.1', port=1234):
@@ -21,8 +30,9 @@ class Server:
         self.host = host
         self.port = port
 
-        self.msg_log = set()
+        self.client_last_msg_time = dict()
         self.client_locations = dict()
+        self.client_at_log = dict()
 
     def get_formatted_time_diff(self, start, end):
         time_diff = end - start
@@ -44,19 +54,24 @@ class Server:
         curr_time = time.time_ns() / 1e9
         fields = data.strip().split()
         
-        if fields[0] == 'IAMAT' and len(fields) == 4:
+        if len(fields) == 0:
+            writer.write(f'? {data}'.encode())
+        elif fields[0] == 'IAMAT' and len(fields) == 4:
+            # Handle IAMAT command from client
             client, coords, msg_time = fields[1:]
             time_diff_str = self.get_formatted_time_diff(float(msg_time), curr_time)
 
-            writer.write(f"AT {self.name} {time_diff_str} {client} {coords} {msg_time}".encode())
+            msg = f"AT {self.name} {time_diff_str} {client} {coords} {msg_time}\n"
+            writer.write(msg.encode())
+            self.client_at_log[client] = msg
+            self.client_last_msg_time[client] = msg_time
 
-            if data not in self.msg_log:
-                await self.propogate_message(data)
+            await self.propogate_message(msg)
 
-            self.msg_log.add(data)
             split_idx = max(coords.rfind('+'), coords.rfind('-'))
             self.client_locations[client] = (coords[:split_idx], coords[split_idx:])
         elif fields[0] == "WHATSAT" and len(fields) == 4:
+            # Handle WHATSAT command from client
             client, rad, limit = fields[1:]
             rad, limit = int(rad), int(limit)
             
@@ -64,10 +79,21 @@ class Server:
                 writer.write(f'? {data}'.encode())
             else:
                 response = await self.nearby_search_request(client, rad, limit)
-                writer.write(f"AT {self.name} [more info here]".encode())
-                writer.write(f"{json.dumps(response)}".encode())
-        elif fields[0] == "AT":
-            pass
+                writer.write(f"{self.client_at_log[client]}\n".encode())
+                writer.write(f"{json.dumps(response, indent=2)}\n".encode())
+        elif fields[0] == "AT" and len(fields) == 6:
+            # Handle propogated messages from other servers
+            server, time_diff_str, client, coords, msg_time = fields[1:]
+            if msg_time not in self.client_last_msg_time.keys():
+                msg = f"AT {self.name} {time_diff_str} {client} {coords} {msg_time}\n"
+                writer.write(msg.encode())
+                self.client_at_log[client] = msg
+                self.client_last_msg_time[client] = msg_time
+
+                await self.propogate_message(msg)
+
+                split_idx = max(coords.rfind('+'), coords.rfind('-'))
+                self.client_locations[client] = (coords[:split_idx], coords[split_idx:])
         else:
             writer.write(f'? {data}'.encode())
 
@@ -83,22 +109,19 @@ class Server:
                 ssl=False,
             ),
         ) as session:
-            async with session.get(url) as resp:
+            async with session.get(url_req) as resp:
                 response = await resp.json()
-                print(response)
-                response = json.loads(response)
-                response[results] = response[results][:limit]
+                response["results"] = response["results"][:limit]
                 return response
 
-    async def propogate_message(self, data):
-        pass
-        # _, writer = await asyncio.open_connection('127.0.0.1', port)
-        # for s in SERVER_LINKS[self.name]:
-        #     writer.write(data)
-        # writer.close()
+    async def propogate_message(self, msg):
+        for other_server in SERVER_LINKS[self.name]:
+            _, writer = await asyncio.open_connection(self.host, PORT_MAPPING[other_server])
+            writer.write(msg.encode())
+            writer.close()
 
     async def run(self):
-        server = await asyncio.start_server(self.handle_connection, host='127.0.0.1', port=1234)
+        server = await asyncio.start_server(self.handle_connection, host=self.host, port=self.port)
         await server.serve_forever()
 
 def main():
@@ -107,7 +130,12 @@ def main():
         print(f"Usage: python {args[0]} [SERVER-NAME]", file=sys.stderr)
         exit(1)
 
-    server = Server(args[1], port=PORT)
+    server_name = args[1]
+    if server_name not in PORT_MAPPING.keys():
+        print(f"Invalid server name provided", file=sys.stderr)
+        exit(1)
+
+    server = Server(server_name, port=PORT_MAPPING[server_name])
     asyncio.run(server.run())
 
 if __name__ == '__main__':
