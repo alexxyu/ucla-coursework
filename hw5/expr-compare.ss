@@ -144,9 +144,12 @@
 ;; Tests expr-compare by checking that x and expr-compare's output evaluate to the same value
 ;; with % bound to #t, and then does the same with y and expr-compare's output with % bound
 ;; to #f
-(define (test-expr-compare x y)
-  (and (equal? (eval x) (eval (list 'let '([% #t]) (expr-compare x y))))
-       (equal? (eval y) (eval (list 'let '([% #f]) (expr-compare x y))))))
+;;
+;; Credit to the TA hint code Github repo
+(define (test-expr-compare x y) 
+  (and 
+    (equal? (eval x) (eval `(let ((% #t)) ,(expr-compare x y))))
+    (equal? (eval y) (eval `(let ((% #f)) ,(expr-compare x y))))))
 
 ;; Two Scheme expressions to be used in testing expr-compare's correctness
 (define test-expr-x '(lambda (a b) ((if (> a b) (f a (quote (a b))) (lambda (c) (f c))))))
