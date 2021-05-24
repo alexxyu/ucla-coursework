@@ -27,7 +27,7 @@ async def main():
     await writer.drain()
     writer.write_eof()
     
-    data = await reader.readline()
+    data = await reader.read()
     print(f'Received: {data.decode()}')
     writer.close()
 
