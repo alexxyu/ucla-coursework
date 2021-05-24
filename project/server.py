@@ -22,6 +22,9 @@ PORT_MAPPING={
     'Campbell': 12119
 }
 
+RADIUS_LIMIT = 50
+RESULT_LIMIT = 20
+
 class Server:
     def __init__(self, name, host='127.0.0.1', port=1234):
         self.name = name
@@ -40,23 +43,41 @@ class Server:
         time_diff = '{:.9f}'.format(round(time_diff, 9))
         return f"{time_diff_sign}{time_diff}"
 
+    async def write_error(self, writer, command, error):
+        logging.error(f'{error}: {command}')
+        writer.write(f'? {command}'.encode())
+        writer.close()
+
     async def handle_connection(self, reader, writer):
         data = await reader.read()
-        data = data.decode()
+        data = data.decode().strip()
 
         curr_time = time.time_ns() / 1e9
-        fields = data.strip().split()
+        fields = data.split()
         
         if len(fields) == 0:
-            logging.error('No fields found in client command')
-            writer.write(f'? {data}'.encode())
+            await self.write_error(writer, data, 'No fields in command found')
+            return
         elif fields[0] == 'IAMAT' and len(fields) == 4:
             # Handle IAMAT command from client
             client, coords, msg_time = fields[1:]
-            msg_time = float(msg_time)
+            logging.info(f'Received IAMAT command from client {client}: {data}')
+
+            # Validate command's parameters
+            try:
+                msg_time = float(msg_time)
+            except ValueError:
+                await self.write_error(writer, data, 'Invalid timestamp')
+                return
             time_diff_str = self.get_formatted_time_diff(msg_time, curr_time)
 
-            logging.info(f'Received IAMAT command from client {client}')
+            split_idx = max(coords.rfind('+'), coords.rfind('-'))
+            if split_idx == -1 or (coords[0] != '-' and coords[0] != '+'):
+                await self.write_error(writer, data, 'Malformed coordinates')
+                return
+            self.client_locations[client] = (coords[:split_idx], coords[split_idx:])
+
+            # Send response back and update server's information about client
             msg = f"AT {self.name} {time_diff_str} {client} {coords} {msg_time}"
             writer.write(msg.encode())
 
@@ -65,18 +86,15 @@ class Server:
             logging.info(f'Sent IAMAT response to client {client}')
 
             await self.propogate_message(msg)
-
-            split_idx = max(coords.rfind('+'), coords.rfind('-'))
-            self.client_locations[client] = (coords[:split_idx], coords[split_idx:])
         elif fields[0] == "WHATSAT" and len(fields) == 4:
             # Handle WHATSAT command from client
             client, rad, limit = fields[1:]
             rad, limit = int(rad), int(limit)
             
-            logging.info(f'Received WHATSAT command from client {client}')
-            if client not in self.client_locations.keys() or rad > 50 or limit > 20:
-                logging.error('Invalid parameter in WHATSAT command')
-                writer.write(f'? {data}'.encode())
+            logging.info(f'Received WHATSAT command from client {client}: {data}')
+            if client not in self.client_locations.keys() or rad > RADIUS_LIMIT or limit > RESULT_LIMIT:
+                await self.write_error(writer, data, 'Invalid WHATSAT parameters')
+                return
             else:
                 response = await self.nearby_search_request(client, rad, limit)
 
@@ -90,8 +108,7 @@ class Server:
             server, time_diff_str, client, coords, msg_time = fields[1:]
             msg_time = float(msg_time)
             if client not in self.client_last_msg_time.keys() or msg_time > self.client_last_msg_time[client]:
-                logging.info('Received new propogated message')
-                # msg = f"AT {self.name} {time_diff_str} {client} {coords} {msg_time}"
+                logging.info(f'Received new propogated message about client {client}')
                 msg = data
                 self.client_at_log[client] = msg
                 self.client_last_msg_time[client] = msg_time
@@ -101,14 +118,15 @@ class Server:
                 split_idx = max(coords.rfind('+'), coords.rfind('-'))
                 self.client_locations[client] = (coords[:split_idx], coords[split_idx:])
             else:
-                logging.info('Received old propogated message')
+                logging.info(f'Received old propogated message about client {client}')
         else:
-            logging.error('Unknown command received')
-            writer.write(f'? {data}'.encode())
+            await self.write_error(writer, data, 'Invalid command')
+            return
 
         writer.close()
 
     async def nearby_search_request(self, client, rad, limit):
+        return {}
         rad *= 1000
         latitude, longitude = self.client_locations[client]
         location = f'{latitude},{longitude}'
