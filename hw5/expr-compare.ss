@@ -152,5 +152,5 @@
     (equal? (eval y) (eval `(let ((% #f)) ,(expr-compare x y))))))
 
 ;; Two Scheme expressions to be used in testing expr-compare's correctness
-(define test-expr-x '(lambda (a b) ((if (> a b) (f a (quote (a b))) (lambda (c) (f c))))))
-(define test-expr-y '(λ (b a) ((if (> a b) (g (a b) (quote (b a))) (lambda (c d) (f c d))))))
+(define test-expr-x '(lambda (a b) ((if (> a b) (list a (quote (a b))) (lambda (c) (+ c d))))))
+(define test-expr-y '(λ (b a) ((if (> a b) (list b (quote (b a))) (lambda (c d) (+ c d))))))
