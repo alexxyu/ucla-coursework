@@ -46,6 +46,8 @@ class Server:
     async def write_error(self, writer, command, error):
         logging.error(f'{error}: {command}')
         writer.write(f'? {command}'.encode())
+        await writer.drain()
+        writer.write_eof()
         writer.close()
 
     async def handle_IAMAT(self, writer, command, client, coords, msg_time):
@@ -66,6 +68,7 @@ class Server:
         # Send response back and update server's information about client
         msg = f"AT {self.name} {time_diff_str} {client} {coords} {msg_time}"
         writer.write(msg.encode())
+        await writer.drain()
         logging.info(f'Sent IAMAT response to client {client}')
 
         self.client_locations[client] = (coords[:split_idx], coords[split_idx:])
@@ -81,9 +84,11 @@ class Server:
             response = await self.nearby_search_request(client, rad, limit)
 
             writer.write(f"{self.client_at_log[client]}\n".encode())
+            await writer.drain()
 
             response_data = re.sub(r'\n+', '\n', json.dumps(response, indent=2).rstrip())
             writer.write(response_data.encode())
+            await writer.drain()
             logging.info(f'Sent WHATSAT response to client {client}')
 
     async def handle_connection(self, reader, writer):
@@ -115,17 +120,17 @@ class Server:
                 msg = data
                 self.client_at_log[client] = msg
                 self.client_last_msg_time[client] = msg_time
-
-                await self.propogate_message(msg)
-
                 split_idx = max(coords.rfind('+'), coords.rfind('-'))
                 self.client_locations[client] = (coords[:split_idx], coords[split_idx:])
+
+                await self.propogate_message(msg)
             else:
                 logging.info(f'Received old propogated message about client {client}')
         else:
             await self.write_error(writer, data, 'Invalid command')
             return
 
+        writer.write_eof()
         writer.close()
 
     async def nearby_search_request(self, client, rad, limit):
@@ -151,6 +156,8 @@ class Server:
             try:
                 _, writer = await asyncio.open_connection(self.host, PORT_MAPPING[other_server])
                 writer.write(msg.encode())
+                await writer.drain()
+                writer.write_eof()
                 writer.close()
 
                 if self.connection_is_down[other_server]:
