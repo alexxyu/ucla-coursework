@@ -48,11 +48,48 @@ class Server:
         writer.write(f'? {command}'.encode())
         writer.close()
 
+    async def handle_IAMAT(self, writer, command, client, coords, msg_time):
+        # Validate command's parameters
+        curr_time = time.time_ns() / 1e9
+        try:
+            msg_time = float(msg_time)
+        except ValueError:
+            await self.write_error(writer, command, 'Invalid timestamp')
+            return
+        time_diff_str = self.get_formatted_time_diff(msg_time, curr_time)
+
+        split_idx = max(coords.rfind('+'), coords.rfind('-'))
+        if split_idx == -1 or (coords[0] != '-' and coords[0] != '+'):
+            await self.write_error(writer, command, 'Malformed coordinates')
+            return
+
+        # Send response back and update server's information about client
+        msg = f"AT {self.name} {time_diff_str} {client} {coords} {msg_time}"
+        writer.write(msg.encode())
+        logging.info(f'Sent IAMAT response to client {client}')
+
+        self.client_locations[client] = (coords[:split_idx], coords[split_idx:])
+        self.client_at_log[client] = msg
+        self.client_last_msg_time[client] = msg_time
+
+        await self.propogate_message(msg)
+
+    async def handle_WHATSAT(self, writer, command, client, rad, limit):
+        if client not in self.client_locations.keys() or rad > RADIUS_LIMIT or limit > RESULT_LIMIT:
+            await self.write_error(writer, command, 'Invalid WHATSAT parameters')
+        else:
+            response = await self.nearby_search_request(client, rad, limit)
+
+            writer.write(f"{self.client_at_log[client]}\n".encode())
+
+            response_data = re.sub(r'\n+', '\n', json.dumps(response, indent=2).rstrip())
+            writer.write(response_data.encode())
+            logging.info(f'Sent WHATSAT response to client {client}')
+
     async def handle_connection(self, reader, writer):
         data = await reader.read()
         data = data.decode().strip()
 
-        curr_time = time.time_ns() / 1e9
         fields = data.split()
         
         if len(fields) == 0:
@@ -62,47 +99,13 @@ class Server:
             # Handle IAMAT command from client
             client, coords, msg_time = fields[1:]
             logging.info(f'Received IAMAT command from client {client}: {data}')
-
-            # Validate command's parameters
-            try:
-                msg_time = float(msg_time)
-            except ValueError:
-                await self.write_error(writer, data, 'Invalid timestamp')
-                return
-            time_diff_str = self.get_formatted_time_diff(msg_time, curr_time)
-
-            split_idx = max(coords.rfind('+'), coords.rfind('-'))
-            if split_idx == -1 or (coords[0] != '-' and coords[0] != '+'):
-                await self.write_error(writer, data, 'Malformed coordinates')
-                return
-            self.client_locations[client] = (coords[:split_idx], coords[split_idx:])
-
-            # Send response back and update server's information about client
-            msg = f"AT {self.name} {time_diff_str} {client} {coords} {msg_time}"
-            writer.write(msg.encode())
-
-            self.client_at_log[client] = msg
-            self.client_last_msg_time[client] = msg_time
-            logging.info(f'Sent IAMAT response to client {client}')
-
-            await self.propogate_message(msg)
+            await self.handle_IAMAT(writer, data, client, coords, msg_time)
         elif fields[0] == "WHATSAT" and len(fields) == 4:
             # Handle WHATSAT command from client
             client, rad, limit = fields[1:]
             rad, limit = int(rad), int(limit)
-            
             logging.info(f'Received WHATSAT command from client {client}: {data}')
-            if client not in self.client_locations.keys() or rad > RADIUS_LIMIT or limit > RESULT_LIMIT:
-                await self.write_error(writer, data, 'Invalid WHATSAT parameters')
-                return
-            else:
-                response = await self.nearby_search_request(client, rad, limit)
-
-                writer.write(f"{self.client_at_log[client]}\n".encode())
-
-                response_data = re.sub(r'\n+', '\n', json.dumps(response, indent=2).rstrip())
-                writer.write(response_data.encode())
-                logging.info(f'Sent WHATSAT response to client {client}')
+            await self.handle_WHATSAT(writer, data, client, rad, limit)
         elif fields[0] == "AT" and len(fields) == 6:
             # Handle propogated messages from other servers
             server, time_diff_str, client, coords, msg_time = fields[1:]
@@ -180,7 +183,6 @@ def main():
         asyncio.run(server.run())
     except KeyboardInterrupt:
         logging.info(f'Shutting down server {server_name}')
-        pass
 
 if __name__ == '__main__':
     main()
