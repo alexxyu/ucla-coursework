@@ -69,6 +69,8 @@ class Server:
         msg = f"AT {self.name} {time_diff_str} {client} {coords} {msg_time}"
         writer.write(msg.encode())
         await writer.drain()
+        writer.write_eof()
+        writer.close()
         logging.info(f'Sent IAMAT response to client {client}')
 
         self.client_locations[client] = (coords[:split_idx], coords[split_idx:])
@@ -82,13 +84,12 @@ class Server:
             await self.write_error(writer, command, 'Invalid WHATSAT parameters')
         else:
             response = await self.nearby_search_request(client, rad, limit)
-
-            writer.write(f"{self.client_at_log[client]}\n".encode())
-            await writer.drain()
-
             response_data = re.sub(r'\n+', '\n', json.dumps(response, indent=2).rstrip())
-            writer.write(response_data.encode())
+
+            writer.write(f"{self.client_at_log[client]}\n{response_data}".encode())
             await writer.drain()
+            writer.write_eof()
+            writer.close()
             logging.info(f'Sent WHATSAT response to client {client}')
 
     async def handle_connection(self, reader, writer):
@@ -99,7 +100,6 @@ class Server:
         
         if len(fields) == 0:
             await self.write_error(writer, data, 'No fields in command found')
-            return
         elif fields[0] == 'IAMAT' and len(fields) == 4:
             # Handle IAMAT command from client
             client, coords, msg_time = fields[1:]
@@ -126,12 +126,9 @@ class Server:
                 await self.propogate_message(msg)
             else:
                 logging.info(f'Received old propogated message about client {client}')
+            writer.close()
         else:
             await self.write_error(writer, data, 'Invalid command')
-            return
-
-        writer.write_eof()
-        writer.close()
 
     async def nearby_search_request(self, client, rad, limit):
         rad *= 1000
