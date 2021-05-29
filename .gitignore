@@ -18,6 +18,7 @@
 *.tar
 *.zip
 *.jar
+*.tgz
 
 # Logs and databases #
 ######################
@@ -33,6 +34,8 @@ log/
 ehthumbs.db
 Icon?
 Thumbs.db
+.python-version
+.vscode
 
 # VCS #
 #######
