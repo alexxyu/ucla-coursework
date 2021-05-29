@@ -43,6 +43,19 @@ class Server:
         time_diff_sign = '+' if time_diff > 0 else ''
         time_diff = '{:.9f}'.format(round(time_diff, 9))
         return f"{time_diff_sign}{time_diff}"
+    
+    def validate_coordinates(self, coords):
+        split_idx = max(coords.rfind('+'), coords.rfind('-'))
+        num_signs = coords.count('+') + coords.count('-')
+        if split_idx == -1 or (coords[0] != '-' and coords[0] != '+') or num_signs != 2:
+            raise ValueError
+
+        lat = float(coords[:split_idx])
+        lon = float(coords[split_idx:])
+        if lat < -90 or lat > 90 or lon < -180 or lon > 180:
+            raise ValueError
+
+        return coords[:split_idx], coords[split_idx:]
 
     async def write_error(self, writer, command, error):
         logging.error(f'{error}: {command}')
@@ -61,26 +74,34 @@ class Server:
             return
         time_diff_str = self.get_formatted_time_diff(msg_time, curr_time)
 
-        split_idx = max(coords.rfind('+'), coords.rfind('-'))
-        if split_idx == -1 or (coords[0] != '-' and coords[0] != '+'):
+        try:
+            lat, lon = self.validate_coordinates(coords)
+        except:
             await self.write_error(writer, command, 'Malformed coordinates')
             return
 
         # Send response back and update server's information about client
-        msg = f"AT {self.name} {time_diff_str} {client} {coords} {msg_time}"
+        msg_time_formatted = '{:.9f}'.format(round(msg_time, 9))
+        msg = f"AT {self.name} {time_diff_str} {client} {coords} {msg_time_formatted}"
         writer.write(msg.encode())
         await writer.drain()
         writer.write_eof()
         writer.close()
         logging.info(f'Sent IAMAT response to client {client}')
 
-        self.client_locations[client] = (coords[:split_idx], coords[split_idx:])
+        self.client_locations[client] = (lat, lon)
         self.client_at_log[client] = msg
         self.client_last_msg_time[client] = msg_time
 
         await self.propogate_message(msg)
 
     async def handle_WHATSAT(self, writer, command, client, rad, limit):
+        try:
+            rad, limit = float(rad), int(limit)
+        except ValueError:
+            await self.write_error(writer, command, 'Invalid WHATSAT parameters')
+            return
+
         if client not in self.client_locations.keys() or rad > RADIUS_LIMIT or limit > RESULT_LIMIT:
             await self.write_error(writer, command, 'Invalid WHATSAT parameters')
         else:
@@ -100,7 +121,7 @@ class Server:
         fields = data.split()
         
         if len(fields) == 0:
-            await self.write_error(writer, data, 'No fields in command found')
+            await self.write_error(writer, data, 'Invalid command')
         elif fields[0] == 'IAMAT' and len(fields) == 4:
             # Handle IAMAT command from client
             client, coords, msg_time = fields[1:]
@@ -109,7 +130,6 @@ class Server:
         elif fields[0] == "WHATSAT" and len(fields) == 4:
             # Handle WHATSAT command from client
             client, rad, limit = fields[1:]
-            rad, limit = int(rad), int(limit)
             logging.info(f'Received WHATSAT command from client {client}: {data}')
             await self.handle_WHATSAT(writer, data, client, rad, limit)
         elif fields[0] == "AT" and len(fields) == 6:
@@ -132,7 +152,7 @@ class Server:
             await self.write_error(writer, data, 'Invalid command')
 
     async def nearby_search_request(self, client, rad, limit):
-        rad *= 1000
+        rad = int(round(rad*1000))
         latitude, longitude = self.client_locations[client]
         location = f'{latitude},{longitude}'
 
