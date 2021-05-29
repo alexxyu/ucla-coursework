@@ -2,6 +2,7 @@ import re
 import sys
 import time
 import json
+from signal import signal, SIGINT
 import aiohttp
 import asyncio
 import logging
@@ -156,6 +157,7 @@ class Server:
                 await writer.drain()
                 writer.write_eof()
                 writer.close()
+                logging.info(f'Successfully established connection and sent message to server {other_server}')
 
                 if self.connection_is_down[other_server]:
                     logging.warning(f"Reopened connection to server {other_server}")
@@ -168,6 +170,10 @@ class Server:
         server = await asyncio.start_server(self.handle_connection, host=self.host, port=self.port)
         await server.serve_forever()
 
+def shutdown(signal_received, frame):
+    logging.info(f'Shutting down server')
+    exit(0)
+
 def main():
     args = sys.argv
     if len(args) != 2:
@@ -179,13 +185,11 @@ def main():
         print(f"Invalid server name provided", file=sys.stderr)
         exit(1)
 
-    logging.basicConfig(filename=f'server_{server_name}.log', format='%(levelname)s:%(message)s', filemode='w+', level=logging.INFO)
+    logging.basicConfig(filename=f'server_{server_name}.log', format='%(levelname)s:%(message)s', filemode='a+', level=logging.INFO)
     server = Server(server_name, port=PORT_MAPPING[server_name])
 
-    try:
-        asyncio.run(server.run())
-    except KeyboardInterrupt:
-        logging.info(f'Shutting down server {server_name}')
+    signal(SIGINT, shutdown)
+    asyncio.run(server.run())
 
 if __name__ == '__main__':
     main()
