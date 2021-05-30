@@ -106,9 +106,9 @@ class Server:
             await self.write_error(writer, command, 'Invalid WHATSAT parameters')
         else:
             response = await self.nearby_search_request(client, rad, limit)
-            response_data = re.sub(r'\n+', '\n', json.dumps(response, indent=2).rstrip())
+            response_data = re.sub(r'\n+', '\n', json.dumps(response, indent=4).rstrip())
 
-            writer.write(f"{self.client_at_log[client]}\n{response_data}".encode())
+            writer.write(f"{self.client_at_log[client]}\n{response_data}\n\n".encode())
             await writer.drain()
             writer.write_eof()
             writer.close()
