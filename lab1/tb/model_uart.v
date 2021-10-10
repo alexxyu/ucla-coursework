@@ -20,6 +20,7 @@ module model_uart(/*AUTOARG*/
    event     evTxBit;
    event     evTxByte;
    reg       TX;
+	reg[47:0] bytes = "";
 
    initial
      begin
@@ -37,7 +38,16 @@ module model_uart(/*AUTOARG*/
              rxData[7:0] = {RX,rxData[7:1]};
           end
         ->evByte;
-        $display ("%d %s Received byte %02x (%s)", $stime, name, rxData, rxData);
+        // $display ("%d %s Received byte %02x (%s)", $stime, name, rxData, rxData);
+		  
+		  bytes = {bytes,rxData};
+		  
+		  if (rxData == 8'h0D)
+		    begin
+			   // Carriage return prompts printout
+			   $display ("%d %s Received bytes %x (%s)", $stime, name, bytes, bytes);
+				bytes = "";
+			 end
      end
 
    task tskRxData;
