@@ -5,11 +5,11 @@ WITH StudentCreds AS (
     ON T.class_id = C.id
     GROUP BY stud_id
 )
-SELECT stud_id, tot_cred -
+SELECT id, tot_cred -
 CASE
     WHEN class_creds IS NULL THEN 0
     ELSE class_creds
 END credit_discrepency
-FROM Student S
-INNER JOIN StudentCreds SC
-ON S.id = SC.stud_id;
+FROM Student
+LEFT OUTER JOIN StudentCreds
+ON id = stud_id;

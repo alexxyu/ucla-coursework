@@ -1,17 +1,17 @@
-WITH Count19 AS (
+WITH Count2009 AS (
     SELECT stud_id id, COUNT(*) class_count
     FROM Takes
     WHERE year = 2009
     GROUP BY stud_id
-), Count20 AS (
+), Count2010 AS (
     SELECT stud_id id, COUNT(*) class_count
     FROM Takes
     WHERE year = 2010
     GROUP BY stud_id
 )
-SELECT Count19.id id
-FROM Count19
-LEFT OUTER JOIN Count20
-ON Count19.id = Count20.id
-WHERE Count19.class_count >= Count20.class_count 
-   OR Count20.class_count IS NULL;
+SELECT Count2009.id id
+FROM Count2009
+LEFT OUTER JOIN Count2010
+ON Count2009.id = Count2010.id
+WHERE Count2009.class_count > Count2010.class_count 
+   OR Count2010.class_count IS NULL;
