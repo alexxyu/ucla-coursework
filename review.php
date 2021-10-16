@@ -1,4 +1,8 @@
 <?php
+  if(!isset($_POST['id']) && (!isset($_GET['id']) || empty($_GET['id']))) {
+    die('Error: invalid request');
+  }
+
   $mid = (int) $_POST['id'];
   $name = $_POST['name'];
   $rating = (int) $_POST['rating'];
@@ -17,28 +21,31 @@
     $statement->execute();
     $statement->close();
     $db->close();
+
+    header("Location: movie.php?id=" . $mid);
+    die();
   }
 ?>
 
 <html>
   <body>
     <form action="review.php" method="post">
-      <input type="hidden" name="id" value="<?php if (isset($_GET['id'])) { echo $_GET['id']; } else { echo $_POST['id']; } ?>">
-      Name: <input type="text" name="name"><br>
+      <input type="hidden" name="id" value="<?php echo $_GET['id']; ?>">
+      Name: <input type="text" name="name" required><br>
       Rating: 
       <div>
-        <input type="radio" name="rating" value="1">
+        <input type="radio" name="rating" value="1" required>
         <label for="1">1 &nbsp;
-        <input type="radio" name="rating" value="2">
+        <input type="radio" name="rating" value="2" required>
         <label for="2">2 &nbsp;
-        <input type="radio" name="rating" value="3">
+        <input type="radio" name="rating" value="3" required>
         <label for="3">3 &nbsp;
-        <input type="radio" name="rating" value="4">
+        <input type="radio" name="rating" value="4" required>
         <label for="4">4 &nbsp;
-        <input type="radio" name="rating" value="5">
+        <input type="radio" name="rating" value="5" required>
         <label for="5">5 &nbsp;
       <div>
-      Comment: <input type="text" name="comment"><br>
+      Comment: <input type="text" name="comment" required><br>
       <input type="submit">
     </form>
   </body>

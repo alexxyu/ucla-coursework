@@ -2,12 +2,16 @@
 <html>
   <body>
     <?php
+      if(!isset($_GET['id'])) {
+        die('Error: invalid request');
+      }
+      
+      $id = $_GET['id'];
+
       $db = new mysqli('localhost', 'cs143', '', 'class_db');
       if ($db->connect_errno > 0) {
         die('Unable to connect to database [' . $db->connect_error . ']');
       }
-      
-      $id = $_GET['id'];
       
       // Get and display the actor's name
       $statement = $db->prepare("SELECT first, last FROM Actor WHERE id=?");
