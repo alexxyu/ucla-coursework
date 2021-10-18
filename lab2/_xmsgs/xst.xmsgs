@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- IMPORTANT: This is an internal file that has been generated
+     by the Xilinx ISE software.  Any direct editing or
+     changes made to this file may result in unpredictable
+     behavior or data corruption.  It is strongly advised that
+     users do not edit the contents of this file. -->
+<messages>
+<msg type="warning" file="HDLCompiler" num="413" delta="new" >"E:\CS152A\lab2\sign_magnitude.v" Line 32: Result of <arg fmt="%d" index="1">32</arg>-bit expression is truncated to fit in <arg fmt="%d" index="2">12</arg>-bit target.
+</msg>
+
+<msg type="warning" file="HDLCompiler" num="413" delta="new" >"E:\CS152A\lab2\count_zeroes.v" Line 39: Result of <arg fmt="%d" index="1">4</arg>-bit expression is truncated to fit in <arg fmt="%d" index="2">3</arg>-bit target.
+</msg>
+
+<msg type="warning" file="HDLCompiler" num="413" delta="new" >"E:\CS152A\lab2\count_zeroes.v" Line 41: Result of <arg fmt="%d" index="1">12</arg>-bit expression is truncated to fit in <arg fmt="%d" index="2">1</arg>-bit target.
+</msg>
+
+<msg type="warning" file="HDLCompiler" num="413" delta="new" >"E:\CS152A\lab2\count_zeroes.v" Line 40: Result of <arg fmt="%d" index="1">12</arg>-bit expression is truncated to fit in <arg fmt="%d" index="2">4</arg>-bit target.
+</msg>
+
+<msg type="error" file="HDLCompiler" num="1440" delta="new" >"E:\CS152A\lab2\count_zeroes.v" Line 34: Non-constant loop condition not supported for <arg fmt="%s" index="1">while</arg>
+</msg>
+
+<msg type="warning" file="HDLCompiler" num="1499" delta="new" >"E:\CS152A\lab2\count_zeroes.v" Line 21: Empty module &lt;<arg fmt="%s" index="1">count_zeroes</arg>&gt; remains a black box.
+</msg>
+
+<msg type="warning" file="HDLCompiler" num="1127" delta="new" >"E:\CS152A\lab2\top.v" Line 38: Assignment to <arg fmt="%s" index="1">fifth_bit</arg> ignored, since the identifier is never used
+</msg>
+
+</messages>
+

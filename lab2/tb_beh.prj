@@ -1,0 +1,6 @@
+verilog work "sign_magnitude.v"
+verilog work "rounding.v"
+verilog work "count_zeroes.v"
+verilog work "top.v"
+verilog work "tb.v"
+verilog work "C:/Xilinx/14.6/ISE_DS/ISE//verilog/src/glbl.v"

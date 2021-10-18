@@ -1,0 +1,25 @@
+Running: C:\Xilinx\14.6\ISE_DS\ISE\bin\nt64\unwrapped\fuse.exe -intstyle ise -incremental -lib unisims_ver -lib unimacro_ver -lib xilinxcorelib_ver -lib secureip -o E:/CS152A/lab2/tb_isim_beh.exe -prj E:/CS152A/lab2/tb_beh.prj work.tb work.glbl 
+ISim P.68d (signature 0x7708f090)
+Number of CPUs detected in this system: 2
+Turning on mult-threading, number of parallel sub-compilation jobs: 4 
+Determining compilation order of HDL files
+Analyzing Verilog file "E:/CS152A/lab2/sign_magnitude.v" into library work
+Analyzing Verilog file "E:/CS152A/lab2/rounding.v" into library work
+Analyzing Verilog file "E:/CS152A/lab2/count_zeroes.v" into library work
+Analyzing Verilog file "E:/CS152A/lab2/top.v" into library work
+Analyzing Verilog file "E:/CS152A/lab2/tb.v" into library work
+Analyzing Verilog file "C:/Xilinx/14.6/ISE_DS/ISE//verilog/src/glbl.v" into library work
+Starting static elaboration
+Completed static elaboration
+Compiling module sign_magnitude
+Compiling module count_zeroes
+Compiling module rounding
+Compiling module top
+Compiling module tb
+Compiling module glbl
+Time Resolution for simulation is 1ps.
+Waiting for 1 sub-compilation(s) to finish...
+Compiled 6 Verilog Units
+Built simulation executable E:/CS152A/lab2/tb_isim_beh.exe
+Fuse Memory Usage: 27108 KB
+Fuse CPU Usage: 639 ms
