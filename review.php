@@ -1,9 +1,9 @@
 <?php
-  if(!isset($_POST['id']) && (!isset($_GET['id']) || empty($_GET['id']))) {
+  if(!isset($_POST['mid']) && (!isset($_GET['id']) || empty($_GET['id']))) {
     die('Error: invalid request');
   }
 
-  $mid = (int) $_POST['id'];
+  $mid = (int) $_POST['mid'];
   $name = $_POST['name'];
   $rating = (int) $_POST['rating'];
   $comment = $_POST['comment'];
@@ -30,7 +30,7 @@
 <html>
   <body>
     <form action="review.php" method="post">
-      <input type="hidden" name="id" value="<?php echo $_GET['id']; ?>">
+      <input type="hidden" name="mid" value="<?php echo $_GET['id']; ?>">
       Name: <input type="text" name="name" required><br>
       Rating: 
       <div>
