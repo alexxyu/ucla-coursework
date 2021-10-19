@@ -30,8 +30,8 @@ Compiling module nexys3_default
 Compiling module tb
 Compiling module glbl
 Time Resolution for simulation is 1ps.
-Waiting for 2 sub-compilation(s) to finish...
+Waiting for 1 sub-compilation(s) to finish...
 Compiled 12 Verilog Units
 Built simulation executable E:/CS152A/lab1/tb_isim_beh.exe
-Fuse Memory Usage: 28128 KB
-Fuse CPU Usage: 623 ms
+Fuse Memory Usage: 28096 KB
+Fuse CPU Usage: 670 ms
