@@ -40,10 +40,9 @@
       $statement->bind_param('i', $id);
       $statement->execute();
       $statement->bind_result($aid, $first, $last);
-      $statement->fetch();
-
+      
       while($statement->fetch()) {
-        echo '<tr><td><a href=actor.php?id=' . $aid .'>' . $first . ' ' . $last . '</a></td></tr>';
+        echo '<tr><td><a href=/actor.php?id=' . $aid .'>' . $first . ' ' . $last . '</a></td></tr>';
       }
       $statement->close();
 
