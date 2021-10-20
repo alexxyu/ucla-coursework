@@ -18,13 +18,13 @@
 // Additional Comments: 
 //
 //////////////////////////////////////////////////////////////////////////////////
-module count_zeroes(M, E, F, fifth_bit
+module count_zeroes(magnitude, exponent, significand, fifth_bit
     );
 	
-	input [11:0] M;
+	input [11:0] magnitude;
 	
-	output reg [2:0] E;
-	output reg [3:0] F;
+	output reg [2:0] exponent;
+	output reg [3:0] significand;
 	output reg fifth_bit;
 	
 	integer test;
@@ -33,27 +33,26 @@ module count_zeroes(M, E, F, fifth_bit
 	always @* begin
 		test = 11;
 		found = 0;
-		while (test > 3 && !found) begin
-			if (M[test] == 1) begin
+		while (test > 3) begin
+			if (!found && magnitude[test] == 1) begin
 				if (test == 11) begin
 					// Special case for -2048, which would have an exponent of 8, which is too big.
-					E <= 7;
-					F <= 15;
+					exponent <= 7;
+					significand <= 15;
 					fifth_bit <= 1;
 				end else begin
-					E <= test - 3;
-					F <= M >> (test - 3);
-					fifth_bit <= M >> (test - 4);
+					exponent <= test - 3;
+					significand <= magnitude >> (test - 3);
+					fifth_bit <= magnitude >> (test - 4);
 				end
 				found = 1;
-			end else begin
-				test = test - 1;
 			end
+			test = test - 1;
 		end
 		
 		if (!found) begin
-			E <= 0;
-			F <= M;
+			exponent <= 0;
+			significand <= magnitude;
 			fifth_bit <= 0;
 		end
 	end

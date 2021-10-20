@@ -13,3 +13,4 @@ Time resolution is 1 ps
 # run 1000 ns
 Simulator is doing circuit initialization process.
 Finished circuit initialization process.
+Stopped at time : 105 ns : File "E:/CS152A/lab2/tb.v" Line 177

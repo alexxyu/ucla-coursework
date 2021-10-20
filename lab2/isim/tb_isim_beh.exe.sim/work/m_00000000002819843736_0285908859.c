@@ -183,9 +183,9 @@ LAB15:    t16 = *((unsigned int *)t6);
 }
 
 
-extern void work_m_00000000003497243463_0285908859_init()
+extern void work_m_00000000002819843736_0285908859_init()
 {
 	static char *pe[] = {(void *)Always_29_0};
-	xsi_register_didat("work_m_00000000003497243463_0285908859", "isim/tb_isim_beh.exe.sim/work/m_00000000003497243463_0285908859.didat");
+	xsi_register_didat("work_m_00000000002819843736_0285908859", "isim/tb_isim_beh.exe.sim/work/m_00000000002819843736_0285908859.didat");
 	xsi_register_executes(pe);
 }

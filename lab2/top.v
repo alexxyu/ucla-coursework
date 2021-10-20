@@ -29,7 +29,7 @@ module top(D, S, E, F
 	wire [11:0] magnitude;
 	
 	sign_magnitude sm(
-		.D(D), .S(S), .M(magnitude)
+		.D(D), .S(S), .magnitude(magnitude)
 	);
 	
 	wire [2:0] exponent;
@@ -37,7 +37,7 @@ module top(D, S, E, F
 	wire fifth_bit;
 	
 	count_zeroes cz(
-		.M(magnitude), .E(exponent), .F(significand), .fifth_bit(fifth_bit)
+		.magnitude(magnitude), .exponent(exponent), .significand(significand), .fifth_bit(fifth_bit)
 	);
 	
 	rounding r(
