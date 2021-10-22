@@ -1,1 +1,0 @@
-xst -intstyle ise -ifn "E:/CS 152A/lab0/counter.xst" -ofn "E:/CS 152A/lab0/counter.syr" 
