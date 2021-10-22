@@ -1,4 +1,0 @@
-verilog work "sign_magnitude.v"
-verilog work "rounding.v"
-verilog work "count_zeroes.v"
-verilog work "top.v"

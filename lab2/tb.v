@@ -39,7 +39,7 @@ module tb;
 	assign correct = S == answer_S && E == answer_E && F == answer_F;
 
 	// Instantiate the Unit Under Test (UUT)
-	top uut (
+	FPCVT uut (
 		.D(D),
 		.S(S),
 		.E(E),
