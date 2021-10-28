@@ -18,10 +18,13 @@
 // Additional Comments: 
 //
 //////////////////////////////////////////////////////////////////////////////////
-module top(clk, seg, an
+module top(clk, sw, btnl, btnr, seg, an
     );
 	
 	input clk;
+	input [1:0] sw;
+	input btnl, btnr;
+	
 	output [6:0] seg;
 	output [3:0] an;
 	
@@ -36,9 +39,25 @@ module top(clk, seg, an
 	clock clock_module(
 		.main_clk(clk), .hz1_clk(hz1_clk), .hz2_clk(hz2_clk), .faster_clk(faster_clk), .blink_clk(blink_clk)
 	);
+	
+	wire PAUSE;
+	wire RESET;
+	wire ADJ;
+	wire SEL;
+	
+	debouncer debouncer(
+		.clk(clk), .pause_btn(btnr), .rst_btn(btnl), .adj_sw(sw[0]), .sel_sw(sw[1]),
+		.PAUSE(PAUSE), .RESET(RESET), .ADJ(ADJ), .SEL(SEL)
+	);
+	
+	wire paused;
+
+	state_machine fsm(
+		.clk(hz1_clk), .PAUSE(PAUSE), .RESET(RESET), .ADJ(ADJ), .SEL(SEL), .paused(paused)
+	);
 
 	counter c(
-		.clk(hz1_clk), .rst(rst), .minutes(minutes), .seconds(seconds)
+		.clk(hz1_clk), .rst(rst), .paused(paused), .minutes(minutes), .seconds(seconds)
 	);
 	
 	display display_module(

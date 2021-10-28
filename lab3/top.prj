@@ -1,0 +1,8 @@
+verilog work "seven_segment_decoder.v"
+verilog work "debounce.v"
+verilog work "state_machine.v"
+verilog work "display.v"
+verilog work "debouncer.v"
+verilog work "counter.v"
+verilog work "clock.v"
+verilog work "top.v"

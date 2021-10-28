@@ -25,7 +25,10 @@
 module tb;
 
 	// Inputs
-	reg clk;
+	reg clk = 0;
+	
+	reg [1:0] sw = 0;
+	reg btns = 0, btnr = 0;
 
 	// Outputs
 	wire [6:0] seg;
@@ -33,7 +36,10 @@ module tb;
 
 	// Instantiate the Unit Under Test (UUT)
 	top uut (
-		.clk(clk), 
+		.clk(clk),
+		.sw(sw),
+		.btns(btns),
+		.btnr(btnr),
 		.seg(seg), 
 		.an(an)
 	);
@@ -46,7 +52,11 @@ module tb;
 		#100;
         
 		// Add stimulus here
-
+		btns = 1;
+		
+		#10000000;
+		
+		$finish;
 	end
 	
 	always begin

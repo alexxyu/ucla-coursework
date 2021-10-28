@@ -18,10 +18,10 @@
 // Additional Comments: 
 //
 //////////////////////////////////////////////////////////////////////////////////
-module counter(clk, rst, minutes, seconds
+module counter(clk, rst, paused, minutes, seconds
     );
 	
-	input clk, rst;
+	input clk, rst, paused;
 	
 	output reg [5:0] minutes = 0;
 	output reg [5:0] seconds = 0;
@@ -30,7 +30,7 @@ module counter(clk, rst, minutes, seconds
 		if (rst) begin
 			minutes <= 0;
 			seconds <= 0;
-		end else begin
+		end else if (!paused) begin
 			if (seconds < 59) begin
 				seconds <= seconds + 1;
 			end else begin
