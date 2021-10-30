@@ -18,15 +18,17 @@
 // Additional Comments: 
 //
 //////////////////////////////////////////////////////////////////////////////////
-module display(clk, minutes, seconds, segments, selects
+module display(clk, blink_clk, adj_minutes, adj_seconds, minutes, seconds, segments, selects
     );
 	
-	input clk;
+	input clk, blink_clk, adj_minutes, adj_seconds;
 	input [5:0] minutes;
 	input [5:0] seconds;
 	
 	output reg [6:0] segments;
 	output reg [3:0] selects;
+
+   reg blink_state = 0;
 
 	integer display_number = 0;
 	
@@ -42,26 +44,40 @@ module display(clk, minutes, seconds, segments, selects
 	assign seconds_tens = seconds / 10;
 	assign seconds_ones = seconds % 10;
 	
+   wire clear_minutes;
+   wire clear_seconds;
+    
+   assign clear_minutes = (adj_minutes && blink_state);
+   assign clear_seconds = (adj_seconds && blink_state);
+    
 	wire [6:0] minutes_tens_segments;
 	wire [6:0] minutes_ones_segments;
 	wire [6:0] seconds_tens_segments;
 	wire [6:0] seconds_ones_segments;
 
 	seven_segment_decoder mt(
-		.digit(minutes_tens), .segments(minutes_tens_segments)
+		.digit(minutes_tens), .force_clear(clear_minutes), .segments(minutes_tens_segments)
 	);
 	
 	seven_segment_decoder mo(
-		.digit(minutes_ones), .segments(minutes_ones_segments)
+		.digit(minutes_ones), .force_clear(clear_minutes), .segments(minutes_ones_segments)
 	);
 	
 	seven_segment_decoder st(
-		.digit(seconds_tens), .segments(seconds_tens_segments)
+		.digit(seconds_tens), .force_clear(clear_seconds), .segments(seconds_tens_segments)
 	);
 	
 	seven_segment_decoder so(
-		.digit(seconds_ones), .segments(seconds_ones_segments)
+		.digit(seconds_ones), .force_clear(clear_seconds), .segments(seconds_ones_segments)
 	);
+
+   always @(posedge blink_clk) begin
+		if (adj_minutes || adj_seconds) begin
+			blink_state <= !blink_state;
+		end else begin
+			blink_state <= 0;
+		end
+   end
 
 	always @(posedge clk) begin
 		case (display_number)
@@ -71,18 +87,18 @@ module display(clk, minutes, seconds, segments, selects
 			   end
 			1: begin
 				segments <= minutes_ones_segments;
-			    selects <= 'b1011;
+			   selects <= 'b1011;
 			   end
 			2: begin
 				segments <= seconds_tens_segments;
-			    selects <= 'b1101;
+			   selects <= 'b1101;
 			   end
 			3: begin
 				segments <= seconds_ones_segments;
-			    selects <= 'b1110;
+			   selects <= 'b1110;
 			   end
 		endcase
-		display_number <= (display_number + 1) % 4;
+		display_number <= (display_number + 1'b1) % 4;
 	end
 
 endmodule

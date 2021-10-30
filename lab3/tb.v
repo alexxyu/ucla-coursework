@@ -1,4 +1,4 @@
-`timescale 1ns / 1ns
+`timescale 1us / 1us
 
 ////////////////////////////////////////////////////////////////////////////////
 // Company: 
@@ -28,7 +28,7 @@ module tb;
 	reg clk = 0;
 	
 	reg [1:0] sw = 0;
-	reg btns = 0, btnr = 0;
+	reg btnl = 0, btnr = 0;
 
 	// Outputs
 	wire [6:0] seg;
@@ -36,12 +36,12 @@ module tb;
 
 	// Instantiate the Unit Under Test (UUT)
 	top uut (
-		.clk(clk),
-		.sw(sw),
-		.btns(btns),
-		.btnr(btnr),
-		.seg(seg), 
-		.an(an)
+		.clk	(clk),
+		.sw	(sw),
+		.btnl	(btnl),
+		.btnr	(btnr),
+		.seg	(seg), 
+		.an	(an)
 	);
 
 	initial begin
@@ -51,11 +51,52 @@ module tb;
 		// Wait 100 ns for global reset to finish
 		#100;
         
-		// Add stimulus here
-		btns = 1;
+		// Pause and unpause
+		btnl = 1;
+		#10;
+		btnl = 0;
+		#20;
+		btnl = 1;
+		#20;
+		btnl = 0;
+		#100;
+		btnl = 1;
+		#1000000;
+		btnl = 0;
+		#1000000;
+		btnl = 1;
+		#1000000;
+		btnl = 0;
+		#1000000;
+		
+		// Reset
+		btnr = 1;
+		#10;
+		btnr = 0;
+		#20;
+		btnr = 1;
+		#20;
+		btnr = 0;
+		#100;
+		btnr = 1;
+		#1000000;
+		btnr = 0;
+		#1000000;
+		
+		// Adjust seconds
+		sw[0] = 1;
+		sw[1] = 1;
+		#1000000;
+		
+		// Adjust minutes
+		sw[1] = 0;
+		#1000000;
+		
+		// Back to counting
+		sw[0] = 0;
+		#1000000;
 		
 		#10000000;
-		
 		$finish;
 	end
 	

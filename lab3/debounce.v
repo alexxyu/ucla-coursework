@@ -27,8 +27,8 @@ module debounce(clk, signal, output_signal
 	reg [16:0] clk_dv = 0;
 	reg [2:0] step_d = 0;
 	
-	reg clk_en = 0;
-	reg clk_en_d = 0;
+	reg clk_en = 1'b0;
+	reg clk_en_d = 1'b0;
 	
 	wire [17:0] clk_dv_inc;
 	assign clk_dv_inc = clk_dv + 1;

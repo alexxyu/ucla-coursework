@@ -49,7 +49,7 @@ module clock(main_clk, hz1_clk, hz2_clk, faster_clk, blink_clk
 		end else
 			faster_counter <= faster_counter + 1;
 			
-		if (blink_counter == 17500000) begin
+		if (blink_counter == 12500000) begin
 			blink_clk <= ~blink_clk;
 			blink_counter <= 0;
 		end else

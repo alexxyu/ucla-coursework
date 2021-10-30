@@ -18,25 +18,29 @@
 // Additional Comments: 
 //
 //////////////////////////////////////////////////////////////////////////////////
-module counter(clk, rst, paused, minutes, seconds
+module counter(clk, rst, paused, adj_minutes, adj_seconds, minutes, seconds
     );
 	
-	input clk, rst, paused;
+	input clk, rst, paused, adj_minutes, adj_seconds;
 	
 	output reg [5:0] minutes = 0;
 	output reg [5:0] seconds = 0;
 
-	always @(posedge clk) begin
-		if (rst) begin
-			minutes <= 0;
-			seconds <= 0;
-		end else if (!paused) begin
+	always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            minutes <= 0;
+            seconds <= 0;
+        end else if (adj_minutes) begin
+            minutes <= (minutes + 1'b1) % 60;
+        end else if (adj_seconds) begin
+            seconds <= (seconds + 1'b1) % 60;
+        end else if (!paused) begin
 			if (seconds < 59) begin
-				seconds <= seconds + 1;
+				seconds <= seconds + 1'b1;
 			end else begin
 				seconds <= 0;
 				if (minutes < 59) begin
-					minutes <= minutes + 1;
+					minutes <= minutes + 1'b1;
 				end else begin
 					minutes <= 0;
 				end

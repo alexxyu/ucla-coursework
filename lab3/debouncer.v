@@ -33,12 +33,16 @@ module debouncer(clk, pause_btn, rst_btn, adj_sw, sel_sw, PAUSE, RESET, ADJ, SEL
 		.clk(clk), .signal(rst_btn), .output_signal(RESET)
 	);
 	
-	debounce adj(
+   assign ADJ = adj_sw;
+   assign SEL = sel_sw;
+    
+	/*debounce adj(
 		.clk(clk), .signal(adj_sw), .output_signal(ADJ)
 	);
 	
 	debounce sel(
 		.clk(clk), .signal(sel_sw), .output_signal(SEL)
 	);
+    */
 
 endmodule

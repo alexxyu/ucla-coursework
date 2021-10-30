@@ -18,26 +18,31 @@
 // Additional Comments: 
 //
 //////////////////////////////////////////////////////////////////////////////////
-module seven_segment_decoder(digit, segments
+module seven_segment_decoder(digit, force_clear, segments
     );
 	
 	input [3:0] digit;
+   input force_clear;
 	output reg [6:0] segments;
 	
 	always @* begin
-		case (digit)
-			0: segments = ~'b0111111;
-			1: segments = ~'b0000110;
-			2: segments = ~'b1011011;
-			3: segments = ~'b1001111;
-			4: segments = ~'b1100110;
-			5: segments = ~'b1101101;
-			6: segments = ~'b1111101;
-			7: segments = ~'b0000111;
-			8: segments = ~'b1111111;
-			9: segments = ~'b1101111;
-		endcase
+        if (force_clear) begin
+            segments = 7'b1111111;
+        end else begin
+            case (digit)
+                0: segments = ~7'b0111111;
+                1: segments = ~7'b0000110;
+                2: segments = ~7'b1011011;
+                3: segments = ~7'b1001111;
+                4: segments = ~7'b1100110;
+                5: segments = ~7'b1101101;
+                6: segments = ~7'b1111101;
+                7: segments = ~7'b0000111;
+                8: segments = ~7'b1111111;
+                9: segments = ~7'b1101111;
+					 default: segments = 7'b1111111;
+            endcase
+        end
 	end
-
 
 endmodule

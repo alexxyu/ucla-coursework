@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
+// Company:        UCLA CS M152A
+// Engineer:       Alex Yu and Nicolas Trammer
 // 
 // Create Date:    12:03:56 10/26/2021 
 // Design Name: 
@@ -18,7 +18,7 @@
 // Additional Comments: 
 //
 //////////////////////////////////////////////////////////////////////////////////
-module top(clk, sw, btnl, btnr, seg, an
+module top(clk, sw, btnl, btnr, seg, an, Led
     );
 	
 	input clk;
@@ -27,41 +27,77 @@ module top(clk, sw, btnl, btnr, seg, an
 	
 	output [6:0] seg;
 	output [3:0] an;
-	
-	wire rst;
+   output [1:0] Led;
+
 	wire [5:0] minutes;
 	wire [5:0] seconds;
-	
-	assign rst = 0;
 
 	wire hz1_clk, hz2_clk, faster_clk, blink_clk;
 	
 	clock clock_module(
-		.main_clk(clk), .hz1_clk(hz1_clk), .hz2_clk(hz2_clk), .faster_clk(faster_clk), .blink_clk(blink_clk)
+		.main_clk	(clk), 
+		.hz1_clk		(hz1_clk), 
+		.hz2_clk		(hz2_clk), 
+		.faster_clk	(faster_clk), 
+		.blink_clk	(blink_clk)
 	);
 	
 	wire PAUSE;
 	wire RESET;
 	wire ADJ;
 	wire SEL;
+    
+   wire [1:0] state;
+   assign Led = state;
 	
 	debouncer debouncer(
-		.clk(clk), .pause_btn(btnr), .rst_btn(btnl), .adj_sw(sw[0]), .sel_sw(sw[1]),
-		.PAUSE(PAUSE), .RESET(RESET), .ADJ(ADJ), .SEL(SEL)
+		.clk			(clk), 
+		.pause_btn	(btnl), 
+		.rst_btn		(btnr), 
+		.adj_sw		(sw[0]), 
+		.sel_sw		(sw[1]),
+		.PAUSE		(PAUSE), 
+		.RESET		(RESET), 
+		.ADJ			(ADJ), 
+		.SEL			(SEL)
 	);
 	
-	wire paused;
+	wire paused, adj_minutes, adj_seconds;
 
 	state_machine fsm(
-		.clk(hz1_clk), .PAUSE(PAUSE), .RESET(RESET), .ADJ(ADJ), .SEL(SEL), .paused(paused)
+		.clk				(clk), 
+		.PAUSE			(PAUSE), 
+		.RESET			(RESET), 
+		.ADJ				(ADJ), 
+		.SEL				(SEL), 
+		.paused			(paused), 
+		.adj_minutes	(adj_minutes), 
+		.adj_seconds	(adj_seconds), 
+		.state			(state)
 	);
 
+   wire counter_clk;
+   assign counter_clk = (adj_minutes || adj_seconds) ? hz2_clk: hz1_clk;
+
 	counter c(
-		.clk(hz1_clk), .rst(rst), .paused(paused), .minutes(minutes), .seconds(seconds)
+		.clk			(counter_clk), 
+		.rst			(RESET), 
+		.paused		(paused), 
+		.adj_minutes(adj_minutes), 
+		.adj_seconds(adj_seconds), 
+		.minutes		(minutes), 
+		.seconds		(seconds)
 	);
-	
+
 	display display_module(
-		.clk(faster_clk), .minutes(minutes), .seconds(seconds), .segments(seg), .selects(an)
+		.clk			(faster_clk), 
+		.blink_clk	(blink_clk), 
+		.adj_minutes(adj_minutes), 
+		.adj_seconds(adj_seconds), 
+		.minutes		(minutes), 
+		.seconds		(seconds), 
+		.segments	(seg), 
+		.selects		(an)
 	);
 
 endmodule
