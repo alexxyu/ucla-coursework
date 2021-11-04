@@ -30,11 +30,13 @@ module counter(clk, rst, paused, adj_minutes, adj_seconds, minutes, seconds
         if (rst) begin
             minutes <= 0;
             seconds <= 0;
-        end else if (adj_minutes) begin
+        end else if (paused) begin
+			/* Do nothing */
+		end else if (adj_minutes) begin
             minutes <= (minutes + 1'b1) % 60;
         end else if (adj_seconds) begin
             seconds <= (seconds + 1'b1) % 60;
-        end else if (!paused) begin
+        end else begin
 			if (seconds < 59) begin
 				seconds <= seconds + 1'b1;
 			end else begin

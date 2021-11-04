@@ -65,18 +65,18 @@ module tb;
 		btnl = 0;
 		#1000000;
 
-		// Seconds display should blink
+		// Adjust seconds shouldn't do anything while in pause
 		sw[0] = 1;
 		sw[1] = 1;
 		#1000000;
 
-		// Unpause should increment seconds
+		// Unpause
 		btnl = 1;
 		#1000000;
 		btnl = 0;
 		#1000000;
 		
-		// Reset back to counting state
+		// Reset
 		btnr = 1;
 		#10;
 		btnr = 0;
@@ -93,10 +93,6 @@ module tb;
 		// Adjust seconds
 		sw[0] = 1;
 		sw[1] = 1;
-		#1000000;
-		btnl = 1;
-		#1000000;
-		btnl = 0;
 		#1000000;
 		
 		// Adjust minutes

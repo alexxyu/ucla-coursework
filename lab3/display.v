@@ -87,15 +87,15 @@ module display(clk, blink_clk, adj_minutes, adj_seconds, minutes, seconds, segme
 			   end
 			1: begin
 				segments <= minutes_ones_segments;
-			   selects <= 'b1011;
+			    selects <= 'b1011;
 			   end
 			2: begin
 				segments <= seconds_tens_segments;
-			   selects <= 'b1101;
+			    selects <= 'b1101;
 			   end
 			3: begin
 				segments <= seconds_ones_segments;
-			   selects <= 'b1110;
+			    selects <= 'b1110;
 			   end
 		endcase
 		display_number <= (display_number + 1'b1) % 4;

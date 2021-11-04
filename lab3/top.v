@@ -27,7 +27,7 @@ module top(clk, sw, btnl, btnr, seg, an, Led
 	
 	output [6:0] seg;
 	output [3:0] an;
-   output [1:0] Led;
+    output [2:0] Led;
 
 	wire [5:0] minutes;
 	wire [5:0] seconds;
@@ -47,8 +47,8 @@ module top(clk, sw, btnl, btnr, seg, an, Led
 	wire ADJ;
 	wire SEL;
     
-   wire [1:0] state;
-   assign Led = state;
+    wire [2:0] state;
+    assign Led = state;
 	
 	debouncer debouncer(
 		.clk			(clk), 
@@ -62,22 +62,25 @@ module top(clk, sw, btnl, btnr, seg, an, Led
 		.SEL			(SEL)
 	);
 	
-	wire paused, adj_minutes, adj_seconds;
+	wire adj_minutes, adj_seconds, paused_counting, paused_adj_seconds, paused_adj_minutes;
 
 	state_machine fsm(
 		.clk				(clk), 
-		.PAUSE			(PAUSE), 
-		.RESET			(RESET), 
+		.PAUSE				(PAUSE), 
+		.RESET				(RESET), 
 		.ADJ				(ADJ), 
 		.SEL				(SEL), 
-		.paused			(paused), 
-		.adj_minutes	(adj_minutes), 
-		.adj_seconds	(adj_seconds), 
-		.state			(state)
+		.adj_minutes		(adj_minutes), 
+		.adj_seconds 		(adj_seconds),
+		.paused_counting    (paused_counting), 
+		.paused_adj_seconds (paused_adj_seconds), 
+		.paused_adj_minutes (paused_adj_minutes),
+		.state				(state)
 	);
 
    wire counter_clk;
    assign counter_clk = (adj_minutes || adj_seconds) ? hz2_clk: hz1_clk;
+   assign paused = paused_counting || paused_adj_seconds || paused_adj_minutes;
 
 	counter c(
 		.clk			(counter_clk), 
@@ -88,12 +91,15 @@ module top(clk, sw, btnl, btnr, seg, an, Led
 		.minutes		(minutes), 
 		.seconds		(seconds)
 	);
+	
+	assign display_adj_minutes = (adj_minutes || paused_adj_minutes);
+	assign display_adj_seconds = (adj_seconds || paused_adj_seconds);
 
 	display display_module(
 		.clk			(faster_clk), 
 		.blink_clk	(blink_clk), 
-		.adj_minutes(adj_minutes), 
-		.adj_seconds(adj_seconds), 
+		.adj_minutes(display_adj_minutes), 
+		.adj_seconds(display_adj_seconds), 
 		.minutes		(minutes), 
 		.seconds		(seconds), 
 		.segments	(seg), 

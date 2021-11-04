@@ -51,7 +51,7 @@ module tb;
 		// Wait 100 ns for global reset to finish
 		#100;
         
-		// Pause
+		// Pause and unpause
 		btnl = 1;
 		#10;
 		btnl = 0;
@@ -64,19 +64,12 @@ module tb;
 		#1000000;
 		btnl = 0;
 		#1000000;
-
-		// Seconds display should blink
-		sw[0] = 1;
-		sw[1] = 1;
-		#1000000;
-
-		// Unpause should increment seconds
 		btnl = 1;
 		#1000000;
 		btnl = 0;
 		#1000000;
 		
-		// Reset back to counting state
+		// Reset
 		btnr = 1;
 		#10;
 		btnr = 0;
@@ -94,21 +87,8 @@ module tb;
 		sw[0] = 1;
 		sw[1] = 1;
 		#1000000;
-		btnl = 1;
-		#1000000;
-		btnl = 0;
-		#1000000;
 		
 		// Adjust minutes
-		// Test deboncing
-		sw[1] = 0;
-		#10;
-		sw[1] = 1;
-		#40;
-		sw[1] = 0;
-		#30;
-		sw[1] = 1;
-		#100;
 		sw[1] = 0;
 		#1000000;
 		

@@ -18,75 +18,103 @@
 // Additional Comments: 
 //
 //////////////////////////////////////////////////////////////////////////////////
-module state_machine(clk, PAUSE, RESET, ADJ, SEL, paused, adj_minutes, adj_seconds, state
+module state_machine(clk, PAUSE, RESET, ADJ, SEL, adj_minutes, adj_seconds, paused_counting, paused_adj_seconds, paused_adj_minutes, state
     );
 
 	input clk;
 	
 	input PAUSE, RESET, ADJ, SEL;
 
-	output paused, adj_minutes, adj_seconds;
-   output [1:0] state;
+	output adj_minutes, adj_seconds, paused_counting, paused_adj_seconds, paused_adj_minutes;
+    output [2:0] state;
 
 	parameter STATE_COUNTING = 0;
-	parameter STATE_PAUSED = 1;
-	parameter STATE_ADJ_SECONDS = 2;
-	parameter STATE_ADJ_MINUTES = 3;
+	parameter STATE_ADJ_SECONDS = 1;
+	parameter STATE_ADJ_MINUTES = 2;
+	parameter STATE_PAUSED_COUNTING = 3;
+	parameter STATE_PAUSED_ADJ_SECONDS = 4;
+	parameter STATE_PAUSED_ADJ_MINUTES = 5;
 
-	reg [1:0] current_state = STATE_COUNTING;
-	reg [1:0] next_state = STATE_COUNTING;
+	reg [2:0] current_state = STATE_COUNTING;
+	reg [2:0] next_state = STATE_COUNTING;
 	
-	assign paused = current_state == STATE_PAUSED;
-   assign adj_minutes = current_state == STATE_ADJ_MINUTES;
-   assign adj_seconds = current_state == STATE_ADJ_SECONDS;
+    assign adj_minutes = current_state == STATE_ADJ_MINUTES;
+    assign adj_seconds = current_state == STATE_ADJ_SECONDS;
+	assign paused_counting = current_state == STATE_PAUSED_COUNTING;
+	assign paused_adj_seconds = current_state == STATE_PAUSED_ADJ_SECONDS;
+	assign paused_adj_minutes = current_state == STATE_PAUSED_ADJ_MINUTES;
 	
-   assign state = current_state;
+    assign state = current_state;
   
-   always @(posedge clk) begin
+    always @(posedge clk) begin
 		current_state <= next_state;
 	end
   
 	always @* begin
         next_state = current_state;
-        if (RESET) begin
-            next_state = STATE_COUNTING;
-        end else begin
-            case (current_state)
-                STATE_COUNTING: begin
-                    if (PAUSE == 1) begin
-                        next_state = STATE_PAUSED;
-                    end else if (ADJ == 1) begin
-                        if (SEL == 1) begin
-                            next_state = STATE_ADJ_SECONDS;
-                        end else begin
-                            next_state = STATE_ADJ_MINUTES;
-                        end
-                    end
-                end
-                STATE_PAUSED: begin
-                    if (PAUSE == 1) begin
-                        next_state = STATE_COUNTING;
-                    end
-                end
-                STATE_ADJ_SECONDS: begin
-                    if (ADJ == 0) begin
-                        next_state = STATE_COUNTING;
-                    end else if (SEL == 0) begin
-                        next_state = STATE_ADJ_MINUTES;
-                    end
-                end
-                STATE_ADJ_MINUTES: begin
-                    if (ADJ == 0) begin
-                        next_state = STATE_COUNTING;
-                    end else if (SEL == 1) begin
-                        next_state = STATE_ADJ_SECONDS;
-                    end
-                end
-                default: begin
-                    next_state = current_state;
-                end
-            endcase
-        end
+		case (current_state)
+			STATE_COUNTING: begin
+				if (PAUSE == 1) begin
+					next_state = STATE_PAUSED_COUNTING;
+				end else if (ADJ == 1) begin
+					if (SEL == 1) begin
+						next_state = STATE_ADJ_SECONDS;
+					end else begin
+						next_state = STATE_ADJ_MINUTES;
+					end
+				end
+			end
+			STATE_ADJ_SECONDS: begin
+				if (PAUSE == 1) begin
+					next_state = STATE_PAUSED_ADJ_SECONDS;
+				end else if (ADJ == 0) begin
+					next_state = STATE_COUNTING;
+				end else if (SEL == 0) begin
+					next_state = STATE_ADJ_MINUTES;
+				end
+			end
+			STATE_ADJ_MINUTES: begin
+				if (PAUSE == 1) begin
+					next_state = STATE_PAUSED_ADJ_MINUTES;
+				end else if (ADJ == 0) begin
+					next_state = STATE_COUNTING;
+				end else if (SEL == 1) begin
+					next_state = STATE_ADJ_SECONDS;
+				end
+			end
+			STATE_PAUSED_COUNTING: begin
+				if (PAUSE == 1) begin
+					next_state = STATE_COUNTING;
+				end else if (ADJ == 1) begin
+					if (SEL == 1) begin
+						next_state = STATE_PAUSED_ADJ_SECONDS;
+					end else begin
+						next_state = STATE_PAUSED_ADJ_MINUTES;
+					end
+				end
+			end
+			STATE_PAUSED_ADJ_SECONDS: begin
+				if (PAUSE == 1) begin
+					next_state = STATE_ADJ_SECONDS;
+				end else if (ADJ == 0) begin
+					next_state = STATE_PAUSED_COUNTING;
+				end else if (SEL == 0) begin
+					next_state = STATE_PAUSED_ADJ_MINUTES;
+				end
+			end
+			STATE_PAUSED_ADJ_MINUTES: begin
+				if (PAUSE == 1) begin
+					next_state = STATE_ADJ_MINUTES;
+				end else if (ADJ == 0) begin
+					next_state = STATE_PAUSED_COUNTING;
+				end else if (SEL == 1) begin
+					next_state = STATE_ADJ_SECONDS;
+				end
+			end
+			default: begin
+				next_state = current_state;
+			end
+		endcase
 	end
 
 endmodule
