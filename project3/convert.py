@@ -1,7 +1,7 @@
 import json
 
 # Load data
-data = json.load(open("nobel-laureates.json", "r"))
+data = json.load(open("/home/cs143/data/nobel-laureates.json", "r"))
 
 # We use sets to ensure there are no duplicates
 Person = set()
