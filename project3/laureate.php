@@ -12,36 +12,68 @@ $statement = $db->prepare("SELECT given_name, family_name, gender, birth_date, b
 $statement->bind_param('i', $id);
 $statement->execute();
 $statement->bind_result($given_name, $family_name, $gender, $birth_date, $birth_country, $birth_city);
-$statement->fetch();
+$is_person = $statement->fetch();
 $statement->close();
 
 $output = (object) [
-    "id" => strval($id),
-    "gender" => $gender,
+    "id" => strval($id)
 ];
 
-if ($given_name) {
-    $output->givenName = (object) ["en" => $given_name];
-}
-if ($family_name) {
-    $output->familyName = (object) ["en" => $family_name];
-}
-if ($birth_date || $birth_country || $birth_city) {
-    $birth_object = (object) [];
-    if ($birth_date) {
-        $birth_object->birth = $birth_date;
+if ($is_person) {
+    if ($gender) {
+        $output->gender = $gender;
     }
-    if ($birth_country || $birth_city) {
-        $birth_place_object = (object) [];
-        if ($birth_country) {
-            $birth_place_object->country = (object) ["en" => $birth_country];
-        }
-        if ($birth_city) {
-            $birth_place_object->city = (object) ["en" => $birth_city];
-        }
-        $birth_object->place = $birth_place_object;
+    if ($given_name) {
+        $output->givenName = (object) ["en" => $given_name];
     }
-    $output->birth = $birth_object;
+    if ($family_name) {
+        $output->familyName = (object) ["en" => $family_name];
+    }
+    if ($birth_date || $birth_country || $birth_city) {
+        $birth_object = (object) [];
+        if ($birth_date) {
+            $birth_object->birth = $birth_date;
+        }
+        if ($birth_country || $birth_city) {
+            $birth_place_object = (object) [];
+            if ($birth_country) {
+                $birth_place_object->country = (object) ["en" => $birth_country];
+            }
+            if ($birth_city) {
+                $birth_place_object->city = (object) ["en" => $birth_city];
+            }
+            $birth_object->place = $birth_place_object;
+        }
+        $output->birth = $birth_object;
+    }
+} else {
+    $statement = $db->prepare("SELECT org_name, founded_date, founded_city, founded_country FROM Organization WHERE id = ?");
+    $statement->bind_param('i', $id);
+    $statement->execute();
+    $statement->bind_result($org_name, $founded_date, $founded_city, $founded_country);
+    $statement->fetch();
+    $statement->close();
+
+    if ($org_name) {
+        $output->orgName = (object) ["en" => $org_name];
+    }
+    if ($founded_date || $founded_city || $founded_country) {
+        $founded_object = (object) [];
+        if ($founded_date) {
+            $founded_object->date = $founded_date;
+        }
+        if ($founded_city ||  $founded_country) {
+            $founded_place_object = (object) [];
+            if ($founded_city) {
+                $founded_place_object->city = $founded_city;
+            }
+            if ($founded_country) {
+                $founded_place_object->country = $founded_country;
+            }
+            $founded_object->place = $founded_place_object;
+        }
+        $output->founded = $founded_object;
+    }
 }
 
 $prizes = array();
@@ -60,7 +92,7 @@ while ($statement->fetch()) {
         $prize_object->category = (object) ["en" => $category];
     }
     if ($sort_order) {
-        $prize_object->sort_order = strval($sort_order);
+        $prize_object->sortOrder = strval($sort_order);
     }
 
     array_push($prize_ids, $prize_id);
