@@ -11,7 +11,7 @@ $db = new mysqli('localhost', 'cs143', '', 'class_db');
 $statement = $db->prepare("SELECT given_name, family_name, gender, birth_date, birth_city, birth_country FROM Person WHERE id = ?");
 $statement->bind_param('i', $id);
 $statement->execute();
-$statement->bind_result($given_name, $family_name, $gender, $birth_date, $birth_country, $birth_city);
+$statement->bind_result($given_name, $family_name, $gender, $birth_date, $birth_city, $birth_country);
 $is_person = $statement->fetch();
 $statement->close();
 
@@ -20,27 +20,27 @@ $output = (object) [
 ];
 
 if ($is_person) {
-    if ($gender) {
-        $output->gender = $gender;
-    }
     if ($given_name) {
         $output->givenName = (object) ["en" => $given_name];
     }
     if ($family_name) {
         $output->familyName = (object) ["en" => $family_name];
     }
+    if ($gender) {
+        $output->gender = $gender;
+    }
     if ($birth_date || $birth_country || $birth_city) {
         $birth_object = (object) [];
         if ($birth_date) {
-            $birth_object->birth = $birth_date;
+            $birth_object->date = $birth_date;
         }
         if ($birth_country || $birth_city) {
             $birth_place_object = (object) [];
-            if ($birth_country) {
-                $birth_place_object->country = (object) ["en" => $birth_country];
-            }
             if ($birth_city) {
                 $birth_place_object->city = (object) ["en" => $birth_city];
+            }
+            if ($birth_country) {
+                $birth_place_object->country = (object) ["en" => $birth_country];
             }
             $birth_object->place = $birth_place_object;
         }
@@ -86,7 +86,7 @@ $statement->bind_result($prize_id, $year, $category, $sort_order);
 while ($statement->fetch()) {
     $prize_object = (object) [];
     if ($year) {
-        $prize_object->year = $year;
+        $prize_object->awardYear = $year;
     }
     if ($category) {
         $prize_object->category = (object) ["en" => $category];
@@ -127,6 +127,6 @@ foreach ($prizes as $prize) {
     $i++;
 }
 
-$output->prizes = $prizes;
+$output->nobelPrizes = $prizes;
 
 echo json_encode($output);
