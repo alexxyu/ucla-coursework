@@ -65,10 +65,10 @@ if ($is_person) {
         if ($founded_city ||  $founded_country) {
             $founded_place_object = (object) [];
             if ($founded_city) {
-                $founded_place_object->city = $founded_city;
+                $founded_place_object->city = (object) ["en" => $founded_city];
             }
             if ($founded_country) {
-                $founded_place_object->country = $founded_country;
+                $founded_place_object->country = (object) ["en" => $founded_country];
             }
             $founded_object->place = $founded_place_object;
         }
@@ -86,7 +86,7 @@ $statement->bind_result($prize_id, $year, $category, $sort_order);
 while ($statement->fetch()) {
     $prize_object = (object) [];
     if ($year) {
-        $prize_object->awardYear = $year;
+        $prize_object->awardYear = strval($year);
     }
     if ($category) {
         $prize_object->category = (object) ["en" => $category];
@@ -123,7 +123,9 @@ foreach ($prizes as $prize) {
     }
     $statement->close();
 
-    $prizes[$i]->affiliations = $affiliations;
+    if (count($affiliations) != 0) {
+        $prizes[$i]->affiliations = $affiliations;
+    }
     $i++;
 }
 
