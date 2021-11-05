@@ -68,7 +68,7 @@ for laureate in data["laureates"]:
             country = "\\N"
         
         # Organization(id, name, founded_date, founded_city, founded_country);
-        Organization.add(id + "\t" + name + "\t" + date + "\t" + city + "\t" + country)
+        Organization.add(id + "\t" + org_name + "\t" + date + "\t" + city + "\t" + country)
 
     # Iterate through prizes that were won
     prizes = laureate["nobelPrizes"]
