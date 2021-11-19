@@ -18,8 +18,8 @@
 // Additional Comments: 
 //
 //////////////////////////////////////////////////////////////////////////////////
-module pmod_i2s_controller(mclk, lrclk, sclk, word, pmod_out);
-	input mclk, lrclk, sclk;
+module pmod_i2s_controller(mclk, lrclk, sclk, word, play, pmod_out);
+	input mclk, lrclk, sclk, play;
 	input [15:0] word;
 	
 	output wire [3:0] pmod_out;
@@ -37,7 +37,7 @@ module pmod_i2s_controller(mclk, lrclk, sclk, word, pmod_out);
 	end
 	
 	always @(negedge sclk) begin
-		serial_out = current_word[bit_index];
+		serial_out = current_word[bit_index] & play;
 
 		if (bit_index == 0) begin
 			current_word <= next_word;

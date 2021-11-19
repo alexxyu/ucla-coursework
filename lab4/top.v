@@ -22,29 +22,19 @@ module top(
 	input clk,
 	input [7:0] sw,
 	input [4:0] btn,
-	output [3:0] i2s
+	output [3:0] i2s,
+	output [2:0] led
 );
 	
-	wire mclk, lrclk, sclk;
+	wire [7:0] sw_d;
+	wire [4:0] btn_d;
 	
-	clock clock_module(
-		.main_clk(clk), .mclk(mclk), .lrclk(lrclk), .sclk(sclk)
+	debouncer debouncer_module(
+		.clk(clk), .sw_in(sw), .btn_in(btn), .sw_out(sw_d), .btn_out(btn_d)
 	);
 	
-	reg [15:0] word = 0;
-	integer counter = 0;
-	
-	pmod_i2s_controller i2s_controller(
-		.mclk(mclk), .lrclk(lrclk), .sclk(sclk), .word(word), .pmod_out(i2s)
+	state_machine sm(
+		.clk(clk), .sw(sw_d), .btn(btn_d), .pmod_out(i2s), .led(led)
 	);
-	
-	always @(posedge clk) begin
-		if (counter == 113636) begin
-			counter <= 0;
-			word <= ~word;
-		end else begin
-			counter <= counter + 1;
-		end
-	end
 
 endmodule

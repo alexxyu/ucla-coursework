@@ -47,6 +47,15 @@ module tb;
 		btn = 0;
 
 		// Wait 100 ns for global reset to finish
+		#100000;
+		btn[0] = 1;
+		#1000000;
+		btn[0] = 0;
+		
+		btn[4] = 1;
+		#1000000;
+		btn[4] = 0;
+		
 		#1000000000;
         
 		// Add stimulus here
