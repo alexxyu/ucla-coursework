@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
+// Company:        UCLA CS M152A
+// Engineer:       Alex Yu, Cole Trammer
 // 
 // Create Date:    13:36:55 11/09/2021 
 // Design Name: 

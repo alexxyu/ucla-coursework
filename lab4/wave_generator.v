@@ -26,8 +26,9 @@ module wave_generator(clk, note_index, word
 	
 	output reg [15:0] word = 0;
 	
-	reg [15:0] note_table [6:0];
+	reg [15:0] note_table [7:0];
 	
+    // Value is set to 43.4 KHz / (frequency of note) / 2
 	initial begin
 		note_table[0] = 166 - 1; // C3
 		note_table[1] = 148 - 1; // D3
@@ -36,6 +37,7 @@ module wave_generator(clk, note_index, word
 		note_table[4] = 111 - 1; // G3
 		note_table[5] = 99 - 1;  // A3
 		note_table[6] = 88 - 1;  // B3
+        note_table[7] = 83 - 1;  // C4
 	end
 	
 	integer counter = 0;

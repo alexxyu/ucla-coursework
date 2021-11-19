@@ -23,6 +23,9 @@ module clock(main_clk, mclk, lrclk, sclk
 	
 	input main_clk;
 	
+    // lrclk: 43.4 KHz
+    // mclk: 2.78 MHz
+    // sclk: 1.39 MHz
 	output reg mclk = 1, lrclk = 1, sclk = 0;
 
 	integer mclk_counter = 0;

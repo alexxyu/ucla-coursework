@@ -37,7 +37,7 @@ module state_machine(
 	reg [2:0] next_state = STATE_GROUND;
 	assign led = current_state;
 
-	reg [5:0] note_index = 5;	
+	reg [5:0] note_index = 0;	
 	reg [5:0] next_note_index;
 	
 	wire play;
@@ -61,8 +61,8 @@ module state_machine(
 						next_note_index = note_index - 6'b1;
 					end
 				end else if (btn[2]) begin
-					if (note_index == 6) begin
-						next_note_index = 6;
+					if (note_index == 7) begin
+						next_note_index = 7;
 					end else begin
 						next_note_index = note_index + 6'b1;
 					end
@@ -74,9 +74,17 @@ module state_machine(
 			end
 			STATE_PLAY_PITCH: begin
 				if (btn[1]) begin
-					next_note_index = note_index - 6'b1;
+					if (note_index == 0) begin
+						next_note_index = 0;
+					end else begin
+						next_note_index = note_index - 6'b1;
+					end
 				end else if (btn[2]) begin
-					next_note_index = note_index + 6'b1;
+					if (note_index == 7) begin
+						next_note_index = 7;
+					end else begin
+						next_note_index = note_index + 6'b1;
+					end
 				end else if (btn[0]) begin
 					next_state = STATE_GROUND;
 				end else if (btn[4]) begin
