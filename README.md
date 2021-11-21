@@ -10,3 +10,4 @@ To set up one of the Docker containers, run a command of the following form:
 | mysql-apache   | `junghoo/mysql-apache` | `docker start -i mysql-apache` | 1, 2, 3 |
 | mongo-apache   | `junghoo/mongo-apache` | `docker start -i mongo-apache` | 4       |
 | spark          | `junghoo/spark`        | `docker start -i spark`        | 5       |
+| unix           | `junghoo/unix`         | `docker start -i unix`         | 6       |
