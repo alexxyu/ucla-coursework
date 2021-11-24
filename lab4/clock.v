@@ -18,7 +18,7 @@
 // Additional Comments: 
 //
 //////////////////////////////////////////////////////////////////////////////////
-module clock(main_clk, mclk, lrclk, sclk
+module clock(main_clk, mclk, lrclk, sclk, rclk
     );
 	
 	input main_clk;
@@ -26,11 +26,12 @@ module clock(main_clk, mclk, lrclk, sclk
     // lrclk: 43.4 KHz
     // mclk: 2.78 MHz
     // sclk: 1.39 MHz
-	output reg mclk = 1, lrclk = 1, sclk = 0;
+	output reg mclk = 1, lrclk = 1, sclk = 0, rclk = 0;
 
 	integer mclk_counter = 0;
 	integer lrclk_counter = 0;
 	integer sclk_counter = 0;
+	integer rclk_counter = 0;
 
 	always @(posedge main_clk) begin
 		if (mclk_counter == 18 - 1) begin
@@ -50,6 +51,12 @@ module clock(main_clk, mclk, lrclk, sclk
 			sclk_counter = 0;
 		end else
 			sclk_counter = sclk_counter + 1;
+		
+		if (rclk_counter == 18750000 - 1) begin
+			rclk = ~rclk;
+			rclk_counter = 0;
+		end else
+			rclk_counter = rclk_counter + 1;
 	end
 
 endmodule
