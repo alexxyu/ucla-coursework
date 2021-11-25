@@ -39,21 +39,21 @@ module state_machine(
 	reg [2:0] next_state = STATE_GROUND;
 	assign led = current_state;
 
-	reg [5:0] note_index = 0;	
-	reg [5:0] next_note_index;
+	reg [3:0] note_index = 0;	
+	reg [3:0] next_note_index;
 	
 	wire[2:0] sw_index;
 	wire sw_valid;
 	
 	switch_demux sw_demux(.sw(sw), .select(sw_index), .valid(sw_valid));
 	
-	reg [5:0] pitches [7:0];
-	reg [5:0] next_pitches [7:0];
+	reg [3:0] pitches [7:0];
+	reg [3:0] next_pitches [7:0];
 	reg [2:0] pitch_select;
 	reg [2:0] next_pitch_select;
 	
-	reg [5:0] rhythm [7:0];
-	reg [5:0] next_rhythm [7:0];
+	reg [3:0] rhythm [7:0];
+	reg [3:0] next_rhythm [7:0];
 	reg [2:0] rhythm_select;
 	reg [2:0] next_rhythm_select;
 	
@@ -124,13 +124,13 @@ module state_machine(
 					if (note_index == 0) begin
 						next_note_index = 0;
 					end else begin
-						next_note_index = note_index - 6'b1;
+						next_note_index = note_index - 4'b1;
 					end
 				end else if (btn[2]) begin
-					if (note_index == 7) begin
-						next_note_index = 7;
+					if (note_index == 12) begin
+						next_note_index = 12;
 					end else begin
-						next_note_index = note_index + 6'b1;
+						next_note_index = note_index + 4'b1;
 					end
 				end else if (btn[0]) begin
 					next_state = STATE_GROUND;
@@ -143,13 +143,13 @@ module state_machine(
 					if (note_index == 0) begin
 						next_note_index = 0;
 					end else begin
-						next_note_index = note_index - 6'b1;
+						next_note_index = note_index - 4'b1;
 					end
 				end else if (btn[2]) begin
-					if (note_index == 7) begin
-						next_note_index = 7;
+					if (note_index == 12) begin
+						next_note_index = 12;
 					end else begin
-						next_note_index = note_index + 6'b1;
+						next_note_index = note_index + 4'b1;
 					end
 				end else if (btn[0]) begin
 					next_state = STATE_GROUND;
