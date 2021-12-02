@@ -39,21 +39,21 @@ module state_machine(
 	reg [2:0] next_state = STATE_GROUND;
 	assign led = current_state;
 
-	reg [3:0] note_index = 0;	
-	reg [3:0] next_note_index;
+	reg [4:0] note_index = 0;	
+	reg [4:0] next_note_index;
 	
 	wire[2:0] sw_index;
 	wire sw_valid;
 	
 	switch_demux sw_demux(.sw(sw), .select(sw_index), .valid(sw_valid));
 	
-	reg [3:0] pitches [7:0];
-	reg [3:0] next_pitches [7:0];
+	reg [4:0] pitches [7:0];
+	reg [4:0] next_pitches [7:0];
 	reg [2:0] pitch_select;
 	reg [2:0] next_pitch_select;
 	
-	reg [3:0] rhythm [7:0];
-	reg [3:0] next_rhythm [7:0];
+	reg [4:0] rhythm [7:0];
+	reg [4:0] next_rhythm [7:0];
 	reg [2:0] rhythm_select;
 	reg [2:0] next_rhythm_select;
 	
@@ -72,14 +72,14 @@ module state_machine(
 		pitches[6] = 0;
 		pitches[7] = 0;
 		
-		rhythm[0] = 0;
-		rhythm[1] = 0;
-		rhythm[2] = 0;
-		rhythm[3] = 0;
-		rhythm[4] = 0;
-		rhythm[5] = 0;
-		rhythm[6] = 0;
-		rhythm[7] = 0;
+		rhythm[0] = -1;
+		rhythm[1] = -1;
+		rhythm[2] = -1;
+		rhythm[3] = -1;
+		rhythm[4] = -1;
+		rhythm[5] = -1;
+		rhythm[6] = -1;
+		rhythm[7] = -1;
 	end
 	
 	always @* begin
@@ -117,6 +117,24 @@ module state_machine(
 					next_rhythm_select = sw_index;
 				end else if (btn[4]) begin
 					next_state = STATE_PLAYBACK;
+				end else if (btn[3]) begin
+					next_pitches[0] = 0;
+					next_pitches[1] = 0;
+					next_pitches[2] = 0;
+					next_pitches[3] = 0;
+					next_pitches[4] = 0;
+					next_pitches[5] = 0;
+					next_pitches[6] = 0;
+					next_pitches[7] = 0;
+
+					next_rhythm[0] = -1;
+					next_rhythm[1] = -1;
+					next_rhythm[2] = -1;
+					next_rhythm[3] = -1;
+					next_rhythm[4] = -1;
+					next_rhythm[5] = -1;
+					next_rhythm[6] = -1;
+					next_rhythm[7] = -1;
 				end
 			end
 			STATE_PITCH_ADJUST: begin
@@ -127,15 +145,19 @@ module state_machine(
 						next_note_index = note_index - 4'b1;
 					end
 				end else if (btn[2]) begin
-					if (note_index == 12) begin
-						next_note_index = 12;
+					if (note_index == 16) begin
+						next_note_index = 16;
 					end else begin
 						next_note_index = note_index + 4'b1;
 					end
 				end else if (btn[0]) begin
 					next_state = STATE_GROUND;
+					next_pitches[pitch_select] = note_index;
 				end else if (btn[4]) begin
 					next_state = STATE_PLAY_PITCH;
+				end else if (btn[3]) begin
+					next_state = STATE_GROUND;
+					next_pitches[pitch_select] = 0;
 				end
 			end
 			STATE_PLAY_PITCH: begin
@@ -146,8 +168,8 @@ module state_machine(
 						next_note_index = note_index - 4'b1;
 					end
 				end else if (btn[2]) begin
-					if (note_index == 12) begin
-						next_note_index = 12;
+					if (note_index == 16) begin
+						next_note_index = 16;
 					end else begin
 						next_note_index = note_index + 4'b1;
 					end
@@ -156,12 +178,18 @@ module state_machine(
 					next_pitches[pitch_select] = note_index;
 				end else if (btn[4]) begin
 					next_state = STATE_PITCH_ADJUST;
+				end else if (btn[3]) begin
+					next_state = STATE_GROUND;
+					next_pitches[pitch_select] = 0;
 				end
 			end
 			STATE_RHYTHM_ADJUST: begin
 				if (btn[1] && sw_valid) begin
 					next_state = STATE_GROUND;
 					next_rhythm[rhythm_select] = pitches[sw_index];
+				end else if (btn[3]) begin
+					next_state = STATE_GROUND;
+					next_rhythm[rhythm_select] = -1;
 				end
 			end
 			STATE_PLAYBACK: begin
@@ -215,6 +243,8 @@ module state_machine(
 	always @(posedge rclk) begin
 		if (current_state == STATE_PLAYBACK) begin
 			playback_index <= (playback_index + 1) % 8;
+		end else begin
+			playback_index <= 0;
 		end
 	end
 	
