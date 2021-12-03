@@ -5,5 +5,8 @@
      behavior or data corruption.  It is strongly advised that
      users do not edit the contents of this file. -->
 <messages>
+<msg type="warning" file="HDLCompiler" num="1016" delta="unknown" >"E:/CS152A/lab4/tb.v" Line 36: Port <arg fmt="%s" index="1">led</arg> is not connected to this instance
+</msg>
+
 </messages>
 

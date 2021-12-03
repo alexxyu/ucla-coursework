@@ -48,18 +48,75 @@ module tb;
 
 		// Wait 100 ns for global reset to finish
 		#100000;
+		
+		// Assign E3 to switch 0
+		sw[0] = 1;
+		#1000000;
 		btn[0] = 1;
 		#1000000;
 		btn[0] = 0;
+		#1000000;
 		
+		// Play pitch
+		btn[4] = 1;
+		#1000000;
+		btn[4] = 0;
+		#1000000;
+		
+		btn[2] = 1;
+		#1000000;
+		btn[2] = 0;
+		#1000000;
+		btn[2] = 1;
+		#1000000;
+		btn[2] = 0;
+		#1000000;
+		btn[2] = 1;
+		#1000000;
+		btn[2] = 0;
+		#1000000;
+		btn[2] = 1;
+		#1000000;
+		btn[2] = 0;
+		#1000000;
+		
+		btn[0] = 1;
+		#1000000;
+		btn[0] = 0;
+		#1000000;
+		
+		// Insert E3 as first note in measure
+		btn[1] = 1;
+		#1000000;
+		btn[1] = 0;
+		#1000000;
+		
+		btn[1] = 1;
+		#1000000;
+		btn[1] = 0;
+		#1000000;
+		
+		// Insert C3 as second note in measure
+		sw[0] = 0;
+		sw[1] = 1;
+		#1000000;
+		btn[1] = 1;
+		#1000000;
+		btn[1] = 0;
+		#1000000;
+		sw[1] = 0;
+		sw[4] = 1;
+		btn[1] = 1;
+		#1000000;
+		btn[1] = 0;
+		#1000000;
+		
+		// Playback
 		btn[4] = 1;
 		#1000000;
 		btn[4] = 0;
 		
-		#1000000000;
-        
-		// Add stimulus here
-
+		#100000000;
 	end
 	
 	always begin
@@ -68,4 +125,3 @@ module tb;
 	end
       
 endmodule
-
