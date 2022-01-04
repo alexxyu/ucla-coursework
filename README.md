@@ -1,6 +1,6 @@
 # CS118 Project 0
 
-This is the repo for winter22 cs118 project 0.
+This is the repo for Winter 22 CS 118 project 0.
 
 ## Academic Integrity Note
 
