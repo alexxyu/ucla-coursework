@@ -36,10 +36,6 @@ void send_response(int socket, char* filename)
     
     fclose(file_fd);
   }
-
-  // TODO: temporary timeout to ensure all bytes received before exiting
-  sleep(1);
-  close(socket);
 }
 
 void process_request(int socket)
@@ -56,46 +52,60 @@ void process_request(int socket)
   }
 }
 
-int connect_to_client(int port)
+int main(int argc, char *argv[])
 {
   struct sockaddr_in server_addr, client_addr;
+  socklen_t client_len = sizeof(client_addr);
 
-  int server_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-  if (server_socket < 0) {
+  bzero(&server_addr, sizeof(server_addr));
+  server_addr.sin_family = AF_INET;
+  server_addr.sin_port = htons(PORT);
+  server_addr.sin_addr.s_addr = INADDR_ANY;
+
+  int sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+  if (sockfd < 0) {
     fprintf(stderr, "Error creating socket: %s\n", strerror(errno));
     exit(1);
   }
 
-  bzero(&server_addr, sizeof(server_addr));
-  server_addr.sin_family = AF_INET;
-  server_addr.sin_port = htons(port);
-  server_addr.sin_addr.s_addr = INADDR_ANY;
-
-  if( bind(server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0 ) {
+  if( bind(sockfd, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0 ) {
     fprintf(stderr, "Error binding socket to address: %s\n", strerror(errno));
     exit(1);
   }
 
-  if( listen(server_socket, 1) < 0 ) {
+  if( listen(sockfd, 1) < 0 ) {
     fprintf(stderr, "Error while listening to socket: %s\n", strerror(errno));
     exit(1);
   }
 
-  socklen_t client_len = sizeof(client_addr);
-  int new_socket = accept(server_socket, (struct sockaddr *) &client_addr, &client_len);
-  if( new_socket < 0 ) {
-    fprintf(stderr, "Error accepting client connection: %s\n", strerror(errno));
-    exit(1);
+  while(1) {
+    int new_sockfd = accept(sockfd, (struct sockaddr *) &client_addr, &client_len);
+    if( new_sockfd < 0 ) {
+      fprintf(stderr, "Error accepting client connection: %s\n", strerror(errno));
+      exit(1);
+    }
+
+    int child_pid;
+    switch(child_pid = fork()) {
+      case -1:
+        fprintf(stderr, "Error while forking process: %s\n", strerror(errno));
+        exit(1);
+      case 0:
+        // Child process: handle incoming HTTP request
+        fprintf(stderr, "Accepted connection from client\n");
+        process_request(new_sockfd);
+
+        // TODO: temporary timeout to ensure all bytes received before exiting
+        sleep(1);
+        close(new_sockfd);
+        exit(0);
+      default:
+        // Parent process: accept next connection
+        close(new_sockfd);
+        break;
+    }
   }
 
-  close(server_socket);
-
-  return new_socket;
-}
-
-int main(int argc, char *argv[])
-{
-  int socket = connect_to_client(PORT);
-  process_request(socket);
+  close(sockfd);
   return 0;
 }
