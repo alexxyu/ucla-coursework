@@ -5,9 +5,10 @@
 #include <unistd.h>
 #include <netinet/in.h>
 
-int PORT = 80;
+int PORT = 8080;
+int BUF_SIZE = 1024;
 
-char* ERR404_HEADER = "HTTP/1.1 404 Not Found \r\n\r\n";
+char* ERR404_HEADER = "HTTP/1.1 404 Not Found\r\n\r\n";
 char* ERR404_BODY = "<html><h1>Error 404: Not Found</h1></html>";
 
 void send_response(int socket, char* filename)
@@ -15,22 +16,44 @@ void send_response(int socket, char* filename)
   FILE* file_fd = fopen(filename, "r");
 
   if(file_fd == NULL) {
+    // Resource does not exist
     fprintf(stderr, "Resource %s not found\n", filename);
     send(socket, ERR404_HEADER, strlen(ERR404_HEADER), 0);
     send(socket, ERR404_BODY, strlen(ERR404_BODY), 0);
-
-    // temporary timeout to ensure all bytes received before exiting
-    sleep(1);
   } else {
-    char header[1024];
+    // Send header
+    char header[BUF_SIZE];
+    sprintf(header, "HTTP/1.1 200 OK\r\n\r\n");
+    send(socket, header, strlen(header), 0);
+
+    // Read from file and send as body 
+    char body[BUF_SIZE];
+    int bytes_read;
+    while( (bytes_read = fread(body, 1, BUF_SIZE, file_fd)) > 0 ) {
+      fprintf(stderr, "%d bytes sent\n", bytes_read);
+      send(socket, body, bytes_read, 0);
+    }
+    
+    fclose(file_fd);
   }
+
+  // TODO: temporary timeout to ensure all bytes received before exiting
+  sleep(1);
+  close(socket);
 }
 
 void process_request(int socket)
 {
-  // loop and process input
-  char* filename = "abc";
-  send_response(socket, filename);
+  char msg[BUF_SIZE];
+  recv(socket, msg, BUF_SIZE, 0);
+
+  char filename[BUF_SIZE];
+  if(sscanf(msg, "GET %s HTTP/1.1\r\n", filename) != 1) {
+    // HTTP request does not match correct format
+    fprintf(stderr, "Invalid GET request\n");
+  } else {
+    send_response(socket, filename+1);
+  }
 }
 
 int connect_to_client(int port)
@@ -74,7 +97,5 @@ int main(int argc, char *argv[])
 {
   int socket = connect_to_client(PORT);
   process_request(socket);
-  close(socket);
-
   return 0;
 }
