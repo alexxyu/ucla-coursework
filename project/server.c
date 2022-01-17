@@ -28,12 +28,14 @@ void send_response(int socket, char* filename)
 
     // Read from file and send as body 
     char body[BUF_SIZE];
-    int bytes_read;
+
+    int total_bytes = 0, bytes_read;
     while( (bytes_read = fread(body, 1, BUF_SIZE, file_fd)) > 0 ) {
-      fprintf(stderr, "%d bytes sent\n", bytes_read);
       send(socket, body, bytes_read, 0);
+      total_bytes += bytes_read;
     }
     
+    fprintf(stderr, "%d bytes sent\n", total_bytes);
     fclose(file_fd);
   }
 }
@@ -48,7 +50,7 @@ void process_request(int socket)
   }
   msg[bytes_read] = '\0';
 
-  fprintf(stderr, "Received following message:\n%s\n", msg);
+  fprintf(stderr, "Received following message from client:\n%s", msg);
 
   char filename[BUF_SIZE];
   if(sscanf(msg, "GET %s HTTP/1.1\r\n", filename) != 1) {
