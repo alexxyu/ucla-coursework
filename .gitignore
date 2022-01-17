@@ -4,3 +4,5 @@
 /project/*.dSYM
 /project/server
 /project/client
+
+*.DS_Store
