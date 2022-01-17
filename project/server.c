@@ -41,7 +41,14 @@ void send_response(int socket, char* filename)
 void process_request(int socket)
 {
   char msg[BUF_SIZE];
-  recv(socket, msg, BUF_SIZE, 0);
+  int bytes_read = recv(socket, msg, BUF_SIZE, 0);
+  if(bytes_read < 0) {
+    fprintf(stderr, "Error while receiving message from socket: %s\n", strerror(errno));
+    return;
+  }
+  msg[bytes_read] = '\0';
+
+  fprintf(stderr, "Received following message:\n%s\n", msg);
 
   char filename[BUF_SIZE];
   if(sscanf(msg, "GET %s HTTP/1.1\r\n", filename) != 1) {
@@ -94,9 +101,6 @@ int main(int argc, char *argv[])
         // Child process: handle incoming HTTP request
         fprintf(stderr, "Accepted connection from client\n");
         process_request(new_sockfd);
-
-        // TODO: temporary timeout to ensure all bytes received before exiting
-        sleep(1);
         close(new_sockfd);
         exit(0);
       default:
