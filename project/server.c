@@ -20,9 +20,38 @@ void send_response(int socket, char* filename)
     send(socket, ERR404_HEADER, strlen(ERR404_HEADER), 0);
     send(socket, ERR404_BODY, strlen(ERR404_BODY), 0);
   } else {
+    // Parse extension of the requested file
+    char* content_type;
+    char* ext = strrchr(filename, '.');
+    if(ext == NULL) {
+      content_type = "application/octet-stream";
+    } else if(strcmp(ext, ".html") == 0) {
+      content_type = "text/html";
+    } else if(strcmp(ext, ".htm") == 0) {
+      content_type = "text/htm";
+    } else if(strcmp(ext, ".txt") == 0) {
+      content_type = "text/plain";
+    } else if(strcmp(ext, ".jpg") == 0) {
+      content_type = "image/jpg";
+    } else if(strcmp(ext, ".jpeg") == 0) {
+      content_type = "image/jpeg";
+    } else if(strcmp(ext, ".png") == 0) {
+      content_type = "image/png";
+    } else if(strcmp(ext, ".gif") == 0) {
+      content_type = "image/gif";
+    } else {
+      content_type = "application/octet-stream";
+    }
+
+    // Get file size
+    fseek(file_fd, 0L, SEEK_END);
+    int file_size = ftell(file_fd);
+    fseek(file_fd, 0L, SEEK_SET);
+
     // Send header
     char header[BUF_SIZE];
-    sprintf(header, "HTTP/1.1 200 OK\r\n\r\n");
+    sprintf(header, "HTTP/1.1 200 OK\r\nContent-Type: %s\r\nContent-Length: %d\r\n\r\n", 
+            content_type, file_size);
     send(socket, header, strlen(header), 0);
 
     // Read from file and send as body 
@@ -34,7 +63,7 @@ void send_response(int socket, char* filename)
       total_bytes += bytes_read;
     }
     
-    fprintf(stderr, "SERVER: %d bytes sent for resource '%s'\n", total_bytes, filename);
+    fprintf(stderr, "SERVER: %d of %d bytes sent for resource '%s'\n", total_bytes, file_size, filename);
     fclose(file_fd);
   }
 }
