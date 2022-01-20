@@ -101,31 +101,33 @@ void send_response(int socket, char* filename)
 void process_request(int socket)
 {
   char msg[BUF_SIZE];
+  bzero(msg, BUF_SIZE);
   int bytes_read = recv(socket, msg, BUF_SIZE, 0);
   if(bytes_read < 0) {
     fprintf(stderr, "SERVER: Error while receiving message from socket: %s\n", strerror(errno));
     return;
   }
-  msg[bytes_read] = '\0';
   fprintf(stderr, "SERVER: Received following message from client:\n%s", msg);
 
   char filename[BUF_SIZE];
+  bzero(filename, BUF_SIZE);
   if(sscanf(msg, "GET %s HTTP/1.1\r\n", filename) != 1) {
     // HTTP request does not match correct format
     fprintf(stderr, "SERVER: Invalid GET request\n");
   } else {
     // Replace URL encoded spaces ('%20') with actual spaces
-    // TODO: make this work with multiple spaces in filename
     char filename_new[BUF_SIZE];
     const char* delim = "%20";
-    char* token;
-
-    token = strtok(filename, delim);
-    strcat(filename_new, token);
-    while( (token = strtok(NULL, delim)) != NULL ) {
-      strcat(filename_new, " ");
-      strcat(filename_new, token);
-    } 
+    const int delim_len = strlen(delim);
+    for( char* ptr = filename; *ptr != 0; ) {
+      if(strncmp(ptr, delim, delim_len) == 0) {
+        strcat(filename_new, " ");
+        ptr += delim_len;
+      } else {
+        strncat(filename_new, ptr, 1);
+        ptr++;
+      }
+    }
 
     // Send response back to client (also, ignore first '/' in filename)
     send_response(socket, filename_new+1);
