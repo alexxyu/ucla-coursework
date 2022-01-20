@@ -1,18 +1,49 @@
 #include <stdio.h>
-#include <errno.h>
 #include <stdlib.h>
+#include <ctype.h>
+#include <errno.h>
 #include <string.h>
 #include <unistd.h>
+#include <dirent.h>
 #include <netinet/in.h>
 
 const int PORT = 8080;
-const int BUF_SIZE = 1024;
+const int BUF_SIZE = 4096;
 const char* ERR404_HEADER = "HTTP/1.1 404 Not Found\r\n\r\n";
 const char* ERR404_BODY = "<html><h1>Error 404: Not Found</h1></html>";
 
+void strlow(char* a)
+{
+  for(int i=0; a[i] != 0; i++) {
+    a[i] = tolower(a[i]);
+  }
+}
+
 void send_response(int socket, char* filename)
 {
-  FILE* file_fd = fopen(filename, "r");
+  FILE* file_fd = NULL;
+  strlow(filename);
+  char* listing;
+
+  struct dirent* dir;
+  DIR* d = opendir(".");
+  if(d) {
+    // Look at current directory for the requested file (case-insensitive and possibly without extension)
+    int flen = strlen(filename);
+    while ( (dir = readdir(d)) != NULL ) {
+      listing = dir->d_name;
+      strlow(listing);
+      if( strcmp(filename, listing) == 0 ||
+          (strrchr(listing, '.') == (listing + flen) && strncmp(filename, listing, flen) == 0) ) {
+        file_fd = fopen(listing, "r");
+        break;
+      }
+    }
+    closedir(d);
+  } else {
+    fprintf(stderr, "SERVER: Error opening current directory: %s\n", strerror(errno));
+    return;
+  }
 
   if(file_fd == NULL) {
     // Resource does not exist
@@ -20,9 +51,9 @@ void send_response(int socket, char* filename)
     send(socket, ERR404_HEADER, strlen(ERR404_HEADER), 0);
     send(socket, ERR404_BODY, strlen(ERR404_BODY), 0);
   } else {
-    // Parse extension of the requested file
+    // Parse extension of the requested file and set Content-Type header
     char* content_type;
-    char* ext = strrchr(filename, '.');
+    char* ext = strrchr(listing, '.');
     if(ext == NULL) {
       content_type = "application/octet-stream";
     } else if(strcmp(ext, ".html") == 0) {
@@ -54,9 +85,8 @@ void send_response(int socket, char* filename)
             content_type, file_size);
     send(socket, header, strlen(header), 0);
 
-    // Read from file and send as body 
+    // Read bytes from file and send as body of message
     char body[BUF_SIZE];
-
     int total_bytes = 0, bytes_read;
     while( (bytes_read = fread(body, 1, BUF_SIZE, file_fd)) > 0 ) {
       send(socket, body, bytes_read, 0);
@@ -85,6 +115,7 @@ void process_request(int socket)
     fprintf(stderr, "SERVER: Invalid GET request\n");
   } else {
     // Replace URL encoded spaces ('%20') with actual spaces
+    // TODO: make this work with multiple spaces in filename
     char filename_new[BUF_SIZE];
     const char* delim = "%20";
     char* token;
