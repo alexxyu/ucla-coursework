@@ -1,9 +1,9 @@
 .idea
 
-/project/*.o
-/project/*.dSYM
-/project/server
-/project/client
+*.o
+*.dSYM
+server
+client
 
 *.DS_Store
 
