@@ -9,8 +9,16 @@
 
 const int PORT = 8080;
 const int BUF_SIZE = 4096;
-const char* ERR404_HEADER = "HTTP/1.1 404 Not Found\r\n\r\n";
+const char* ERR404_HEADER = "HTTP/1.0 404 Not Found\r\n\r\n";
 const char* ERR404_BODY = "<html><h1>Error 404: Not Found</h1></html>";
+
+int sockfd;
+
+void handler(int sig)
+{
+  fprintf(stderr, "SERVER: Shutting down gracefully...\n");
+  close(sockfd);
+}
 
 void strlow(char* a)
 {
@@ -81,7 +89,7 @@ void send_response(int socket, char* filename)
 
     // Send header
     char header[BUF_SIZE];
-    sprintf(header, "HTTP/1.1 200 OK\r\nContent-Type: %s\r\nContent-Length: %d\r\n\r\n", 
+    sprintf(header, "HTTP/1.0 200 OK\r\nContent-Type: %s\r\nContent-Length: %d\r\n\r\n", 
             content_type, file_size);
     send(socket, header, strlen(header), 0);
 
@@ -111,7 +119,7 @@ void process_request(int socket)
 
   char filename[BUF_SIZE];
   bzero(filename, BUF_SIZE);
-  if(sscanf(msg, "GET %s HTTP/1.1\r\n", filename) != 1) {
+  if(sscanf(msg, "GET %s HTTP/\r\n", filename) != 1) {
     // HTTP request does not match correct format
     fprintf(stderr, "SERVER: Invalid GET request\n");
   } else {
@@ -144,7 +152,7 @@ int main(int argc, char *argv[])
   server_addr.sin_port = htons(PORT);
   server_addr.sin_addr.s_addr = INADDR_ANY;
 
-  int sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+  sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
   if (sockfd < 0) {
     fprintf(stderr, "SERVER: Error creating socket: %s\n", strerror(errno));
     exit(1);
@@ -160,13 +168,10 @@ int main(int argc, char *argv[])
     exit(1);
   }
 
-  while(1) {
-    int new_sockfd = accept(sockfd, (struct sockaddr *) &client_addr, &client_len);
-    if( new_sockfd < 0 ) {
-      fprintf(stderr, "SERVER: Error accepting client connection: %s\n", strerror(errno));
-      exit(1);
-    }
+  signal(SIGINT, handler);
 
+  int new_sockfd;
+  while( (new_sockfd = accept(sockfd, (struct sockaddr *) &client_addr, &client_len)) != -1 ) {
     int child_pid;
     switch(child_pid = fork()) {
       case -1:
@@ -185,6 +190,5 @@ int main(int argc, char *argv[])
     }
   }
 
-  close(sockfd);
   return 0;
 }
