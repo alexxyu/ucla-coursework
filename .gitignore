@@ -6,3 +6,5 @@
 /project/client
 
 *.DS_Store
+
+assets/
