@@ -5,6 +5,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <signal.h>
+#include <sys/socket.h>
 #include <netinet/in.h>
 
 const int PORT = 8080;
@@ -42,7 +44,7 @@ void send_response(int socket, char* filename)
       listing = dir->d_name;
       strlow(listing);
       if( strcmp(filename, listing) == 0 ||
-          (strrchr(listing, '.') == (listing + flen) && strncmp(filename, listing, flen) == 0) ) {
+          (strchr(listing, '.') == (listing + flen) && strncmp(filename, listing, flen) == 0) ) {
         file_fd = fopen(listing, "r");
         break;
       }
