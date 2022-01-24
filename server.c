@@ -91,7 +91,7 @@ void send_response(int socket, char* filename)
 
     // Send header
     char header[BUF_SIZE];
-    sprintf(header, "HTTP/1.0 200 OK\r\nContent-Type: %s\r\nContent-Length: %d\r\n\r\n", 
+    sprintf(header, "HTTP/1.0 200 OK\r\nContent-Type: %s\r\nContent-Length: %d\r\nConnection: close\r\n\r\n", 
             content_type, file_size);
     send(socket, header, strlen(header), 0);
 
