@@ -15,7 +15,7 @@ int main()
 
   int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
   if(sock < 0) {
-    printf("Error creating socket: %s\n", strerror(errno));
+    std::cerr << "ERROR: " << strerror(errno) << std::endl;
     return -1;
   }
 
@@ -27,10 +27,10 @@ int main()
   char buf[65537] = "Hello, world!";
   int ret = sendto(sock, buf, strlen(buf), 0, (sockaddr*)&addr, socklen);
   if(ret < 0) {
-    printf("Error sending data: %s\n", strerror(errno));
+    std::cerr << "ERROR: " << strerror(errno) << std::endl;
     return -1;
   }
-  printf("SENT: %s\n", buf);
+  std::cerr << "SENT: " << buf << std::endl;
 
   close(sock);
   return 0;

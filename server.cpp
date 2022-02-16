@@ -16,7 +16,7 @@ int main()
 
   int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
   if(sock < 0) {
-    printf("Error creating socket: %s\n", strerror(errno));
+    std::cerr << "ERROR: " << strerror(errno) << std::endl;
     return -1;
   }
 
@@ -26,17 +26,17 @@ int main()
   socklen = sizeof(addr);
 
   if( bind(sock, (sockaddr*)&addr, socklen) < 0 ) {
-    printf("Error binding to socket: %s\n", strerror(errno));
+    std::cerr << "ERROR: " << strerror(errno) << std::endl;
     return -1;
   }
   
   char buf[65537];
   int ret = recvfrom(sock, buf, 65537, 0, (sockaddr*)&addr, &socklen);
   buf[ret] = 0;
-  printf("RECEIVED: %s\n", buf);
+  std::cerr << "RECEIVED: " << buf << std::endl;
 
   inet_ntop(AF_INET, &addr.sin_addr, ip_str, socklen);
-  printf("Client IP address: %s port: %d\n", ip_str, ntohs(addr.sin_port));
+  std::cerr << "Client IP address: " << ip_str << " port: " << ntohs(addr.sin_port) << std::endl;
 
   close(sock);
   return 0;
