@@ -10,7 +10,7 @@ int main()
   sockaddr_in addr;
   socklen_t socklen;
 
-  // TODO: port and ip_str
+  // TODO: port and filedir
   int port = 5000;
   char ip_str[65537] = "localhost"; 
 
@@ -31,10 +31,12 @@ int main()
   }
   
   char buf[65537];
-  int ret = recvfrom(sock, buf, 65537, 0, (sockaddr*)&addr, &socklen);
-  buf[ret] = 0;
-  std::cerr << "RECEIVED: " << buf << std::endl;
+  int tot = 0, bytes_read;
+  while( (bytes_read = recvfrom(sock, buf+tot, 65537 - tot, MSG_WAITALL, (sockaddr*)&addr, &socklen)) >= 512 ) {
+    tot += bytes_read;
+  }
 
+  std::cerr << "RECEIVED: " << buf << std::endl;
   inet_ntop(AF_INET, &addr.sin_addr, ip_str, socklen);
   std::cerr << "Client IP address: " << ip_str << " port: " << ntohs(addr.sin_port) << std::endl;
 

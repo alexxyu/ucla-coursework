@@ -10,6 +10,7 @@ int main()
   sockaddr_in addr;
   socklen_t socklen;
 
+  // TODO: port, ip_str, filename
   int port = 5000;
   char ip_str[65537] = "localhost";
 
@@ -24,13 +25,16 @@ int main()
   addr.sin_addr.s_addr = inet_addr("127.0.0.1");
   socklen = sizeof(addr);
 
-  char buf[65537] = "Hello, world!";
-  int ret = sendto(sock, buf, strlen(buf), 0, (sockaddr*)&addr, socklen);
-  if(ret < 0) {
-    std::cerr << "ERROR: " << strerror(errno) << std::endl;
-    return -1;
+  FILE* file = fopen("client.cpp", "r");
+
+  char buf[512];
+  int bytes_read;
+  while( (bytes_read = fread(buf, 1, 512, file)) > 0 ) {
+    if( sendto(sock, buf, bytes_read, 0, (sockaddr*)&addr, socklen) < 0) {
+      std::cerr << "ERROR: " << strerror(errno) << std::endl;
+      return -1;
+    }
   }
-  std::cerr << "SENT: " << buf << std::endl;
 
   close(sock);
   return 0;
