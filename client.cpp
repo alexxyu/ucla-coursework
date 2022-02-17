@@ -1,5 +1,5 @@
-#include <cstring>
 #include <thread>
+#include <fstream>
 #include <iostream>
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -25,16 +25,17 @@ int main()
   addr.sin_addr.s_addr = inet_addr("127.0.0.1");
   socklen = sizeof(addr);
 
-  FILE* file = fopen("client.cpp", "r");
-
   char buf[512];
-  int bytes_read;
-  while( (bytes_read = fread(buf, 1, 512, file)) > 0 ) {
-    if( sendto(sock, buf, bytes_read, 0, (sockaddr*)&addr, socklen) < 0) {
+  std::ifstream ifs("client.cpp");
+  while( !ifs.eof() ) {
+    ifs.read(buf, 512);
+    if( sendto(sock, buf, strlen(buf), 0, (sockaddr*)&addr, socklen) < 0) {
       std::cerr << "ERROR: " << strerror(errno) << std::endl;
       return -1;
     }
+    memset(buf, 0, 512);
   }
+  ifs.close();
 
   close(sock);
   return 0;

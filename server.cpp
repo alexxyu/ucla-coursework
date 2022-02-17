@@ -1,5 +1,5 @@
-#include <cstring>
 #include <thread>
+#include <fstream>
 #include <iostream>
 #include <unistd.h>
 #include <arpa/inet.h>
@@ -30,13 +30,15 @@ int main()
     return -1;
   }
   
-  char buf[65537];
-  int tot = 0, bytes_read;
-  while( (bytes_read = recvfrom(sock, buf+tot, 65537 - tot, MSG_WAITALL, (sockaddr*)&addr, &socklen)) >= 512 ) {
-    tot += bytes_read;
+  int bytes;
+  char buf[512];
+  std::ofstream ofs("files/1.file");
+  while( (bytes = recvfrom(sock, buf, 512, MSG_WAITALL, (sockaddr*)&addr, &socklen)) >= 512 ) {
+    ofs.write(buf, bytes);
   }
-
-  std::cerr << "RECEIVED: " << buf << std::endl;
+  ofs.write(buf, bytes);
+  ofs.close();
+  
   inet_ntop(AF_INET, &addr.sin_addr, ip_str, socklen);
   std::cerr << "Client IP address: " << ip_str << " port: " << ntohs(addr.sin_port) << std::endl;
 
