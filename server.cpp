@@ -1,3 +1,4 @@
+#include "client_connection.h"
 #include "packet.h"
 #include "protocol.h"
 #include <arpa/inet.h>
@@ -8,6 +9,7 @@
 #include <sys/socket.h>
 #include <thread>
 #include <unistd.h>
+#include <unordered_map>
 
 int main(int argc, char* argv[]) {
     if (argc != 3) {
@@ -37,85 +39,46 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    std::stringstream filepath;
-    filepath << filedir << "/"
-             << "1.file";
-    std::ofstream ofs(filepath.str());
+    std::unordered_map<uint16_t, ClientConnection> connections;
+    uint16_t next_connection_id = 1;
 
-    PacketHeader server_header, client_header;
-    server_header.set_sequence_number(INIT_SEQNO_SERVER);
-
-    char buf[PACKET_LENGTH];
-    memset(buf, 0, PACKET_LENGTH);
-
-    // Handshake process: receive SYN packet; send SYN-ACK packet; receive ACK packet (w/ payload)
-    if (recvfrom(sock, buf, HEADER_LENGTH, 0, (sockaddr*) &addr, &socklen) < 0) {
-        std::cerr << "ERROR: " << strerror(errno) << std::endl;
-        return 1;
-    }
-    client_header.decode((uint8_t*) buf);
-    std::cout << "RECV " << client_header.sequence_number() << " " << client_header.acknowledgement_number() << " "
-              << client_header.connection_id() << " " << client_header.ack_flag() << " " << client_header.syn_flag() << " "
-              << client_header.fin_flag() << std::endl;
-
-    if (!client_header.syn_flag()) {
-        std::cerr << "ERROR: invalid SYN packet received" << std::endl;
-        return 1;
-    }
-
-    char client_ip[256];
-    inet_ntop(AF_INET, &addr.sin_addr, client_ip, socklen);
-    std::cerr << "Client IP address: " << client_ip << " port: " << ntohs(addr.sin_port) << std::endl;
-
-    server_header.set_syn_flag();
-    server_header.set_ack_flag();
-    server_header.set_acknowledgement_number(client_header.sequence_number() + 1);
-    server_header.set_connection_id(1);
-    server_header.encode((uint8_t*) buf);
-
-    if (sendto(sock, buf, PACKET_LENGTH, MSG_WAITALL, (sockaddr*) &addr, socklen) < 0) {
-        std::cerr << "ERROR: " << strerror(errno) << std::endl;
-        return 1;
-    }
-    std::cout << "SEND " << server_header.sequence_number() << " " << server_header.acknowledgement_number() << " "
-              << server_header.connection_id() << " " << server_header.ack_flag() << " " << server_header.syn_flag() << " "
-              << server_header.fin_flag() << std::endl;
-
-    size_t bytes_received;
-    bool is_first_msg = true;
+    uint8_t buf[PACKET_LENGTH];
+    ssize_t bytes_received;
     while ((bytes_received = recvfrom(sock, buf, PACKET_LENGTH, MSG_WAITALL, (sockaddr*) &addr, &socklen)) > 0) {
-        client_header.decode((uint8_t*) buf);
-        std::cout << "RECV " << client_header.sequence_number() << " " << client_header.acknowledgement_number() << " "
-                  << client_header.connection_id() << " " << client_header.ack_flag() << " " << client_header.syn_flag() << " "
-                  << client_header.fin_flag() << std::endl;
-
-        ofs.write(buf + HEADER_LENGTH, bytes_received - HEADER_LENGTH);
-
-        server_header.clear_flags();
-        server_header.set_ack_flag();
-        server_header.set_acknowledgement_number(client_header.sequence_number() + bytes_received - HEADER_LENGTH);
-        if (is_first_msg) {
-            server_header.set_sequence_number(server_header.sequence_number() + 1);
-            is_first_msg = false;
+        auto now = std::chrono::system_clock::now();
+        for (auto it = connections.begin(); it != connections.end();) {
+            auto next = it;
+            next++;
+            if (now >= it->second.expiraction_time()) {
+                connections.erase(it);
+            }
+            it = next;
         }
 
-        server_header.encode((uint8_t*) buf);
-        if (sendto(sock, buf, HEADER_LENGTH, 0, (sockaddr*) &addr, socklen) < 0) {
-            std::cerr << "ERROR: " << strerror(errno) << std::endl;
-            return 1;
+        if (bytes_received < HEADER_LENGTH) {
+            std::cerr << "ERROR: packet length (" << bytes_received << " bytes) is too small" << std::endl;
+            continue;
         }
-        std::cout << "SEND " << server_header.sequence_number() << " " << server_header.acknowledgement_number() << " "
-                  << server_header.connection_id() << " " << server_header.ack_flag() << " " << server_header.syn_flag() << " "
-                  << server_header.fin_flag() << std::endl;
 
-        if (bytes_received < PACKET_LENGTH) {
-            break;
+        PacketHeader header;
+        header.decode(buf);
+
+        const uint8_t* payload = buf + HEADER_LENGTH;
+        size_t payload_length = bytes_received - HEADER_LENGTH;
+
+        if (header.syn_flag()) {
+            auto connection_id = next_connection_id++;
+            connections.emplace(std::piecewise_construct, std::forward_as_tuple(connection_id),
+                                std::forward_as_tuple(header, connection_id, filedir, sock, addr));
+        } else {
+            auto it = connections.find(header.connection_id());
+            if (it == connections.end()) {
+                output_server_drop(header);
+            } else {
+                it->second.receive_packet(header, payload, payload_length);
+            }
         }
     }
-    ofs.close();
-
-    // todo: shutdown handshake
-
     if (bytes_received < 0) {
         std::cerr << "ERROR: " << strerror(errno) << std::endl;
         return 1;

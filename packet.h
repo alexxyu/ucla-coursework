@@ -1,11 +1,12 @@
 #pragma once
 
 #include <arpa/inet.h>
+#include <iostream>
 #include <stdint.h>
 
-#define HEADER_LENGTH 12
+#define HEADER_LENGTH  12
 #define PAYLOAD_LENGTH 512
-#define PACKET_LENGTH HEADER_LENGTH+PAYLOAD_LENGTH
+#define PACKET_LENGTH  HEADER_LENGTH + PAYLOAD_LENGTH
 
 class [[gnu::packed]] PacketHeader {
 public:
@@ -65,3 +66,46 @@ private:
 
 // Packet is defined to be 12 bytes
 static_assert(sizeof(PacketHeader) == HEADER_LENGTH, "Packet header length is incorrect.");
+
+inline static void output_server_recv(const PacketHeader& header) {
+    std::cout << "RECV " << header.sequence_number() << " " << header.acknowledgement_number() << " " << header.connection_id();
+    if (header.ack_flag()) {
+        std::cout << " ACK";
+    }
+    if (header.syn_flag()) {
+        std::cout << " SYN";
+    }
+    if (header.fin_flag()) {
+        std::cout << " FIN";
+    }
+    std::cout << std::endl;
+}
+
+inline static void output_server_drop(const PacketHeader& header) {
+    std::cout << "DROP " << header.sequence_number() << " " << header.acknowledgement_number() << " " << header.connection_id();
+    if (header.ack_flag()) {
+        std::cout << " ACK";
+    }
+    if (header.syn_flag()) {
+        std::cout << " SYN";
+    }
+    if (header.fin_flag()) {
+        std::cout << " FIN";
+    }
+    std::cout << std::endl;
+}
+
+inline static void output_server_send(const PacketHeader& header) {
+    std::cout << "SEND " << header.sequence_number() << " " << header.acknowledgement_number() << " " << header.connection_id();
+    if (header.ack_flag()) {
+        std::cout << " ACK";
+    }
+    if (header.syn_flag()) {
+        std::cout << " SYN";
+    }
+    if (header.fin_flag()) {
+        std::cout << " FIN";
+    }
+    // NOTE: server will never send duplicates.
+    std::cout << std::endl;
+}
