@@ -53,6 +53,7 @@ public:
         m_sequence_number = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
         m_acknowledgement_number = (buf[4] << 24) | (buf[5] << 16) | (buf[6] << 8) | buf[7];
         m_connection_id = (buf[8] << 8) | buf[9];
+        m_reserved = buf[10];
         m_flags = buf[11];
     }
 
@@ -107,5 +108,33 @@ inline static void output_server_send(const PacketHeader& header) {
         std::cout << " FIN";
     }
     // NOTE: server will never send duplicates.
+    std::cout << std::endl;
+}
+
+inline static void output_client_recv(const PacketHeader& header, size_t cwnd) {
+    std::cout << "RECV " << header.sequence_number() << " " << header.acknowledgement_number() << " " << header.connection_id() << " " << cwnd;
+    if (header.ack_flag()) {
+        std::cout << " ACK";
+    }
+    if (header.syn_flag()) {
+        std::cout << " SYN";
+    }
+    if (header.fin_flag()) {
+        std::cout << " FIN";
+    }
+    std::cout << std::endl;
+}
+
+inline static void output_client_send(const PacketHeader& header, size_t cwnd) {
+    std::cout << "SEND " << header.sequence_number() << " " << header.acknowledgement_number() << " " << header.connection_id() << " " << cwnd;
+    if (header.ack_flag()) {
+        std::cout << " ACK";
+    }
+    if (header.syn_flag()) {
+        std::cout << " SYN";
+    }
+    if (header.fin_flag()) {
+        std::cout << " FIN";
+    }
     std::cout << std::endl;
 }
