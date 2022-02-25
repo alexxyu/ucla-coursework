@@ -41,6 +41,37 @@ int main(int argc, char* argv[]) {
     char buf[PACKET_LENGTH];
     memset(buf, 0, PACKET_LENGTH);
 
+    // Handshake process: send SYN packet; wait for SYN-ACK packet; send ACK packet (w/ payload)
+    client_header.set_syn_flag();
+    client_header.encode((uint8_t*) buf);
+    if (sendto(sock, buf, HEADER_LENGTH, 0, (sockaddr*) &addr, socklen) < 0) {
+        std::cerr << "ERROR: " << strerror(errno) << std::endl;
+        return 1;
+    }
+    std::cout << "SEND " << client_header.sequence_number() << " " << client_header.acknowledgement_number() << " "
+              << client_header.connection_id() << " " << client_header.ack_flag() << " " << client_header.syn_flag() << " "
+              << client_header.fin_flag() << std::endl;
+
+    if (recvfrom(sock, buf, PACKET_LENGTH, MSG_WAITALL, (sockaddr*) &addr, &socklen) < 0) {
+        std::cerr << "ERROR: " << strerror(errno) << std::endl;
+        return 1;
+    }
+    server_header.decode((uint8_t*) buf);
+    std::cout << "RECV " << server_header.sequence_number() << " " << server_header.acknowledgement_number() << " "
+              << server_header.connection_id() << " " << server_header.ack_flag() << " " << server_header.syn_flag() << " "
+              << server_header.fin_flag() << std::endl;
+
+    if (!server_header.syn_flag() || !server_header.ack_flag() ||
+        server_header.acknowledgement_number() != client_header.sequence_number() + 1) {
+        std::cerr << "ERROR: invalid SYN-ACK packet received" << std::endl;
+    }
+
+    client_header.set_connection_id(server_header.connection_id());
+    client_header.set_sequence_number(client_header.sequence_number() + 1);
+    client_header.clear_flags();
+    client_header.set_ack_flag();
+    client_header.set_acknowledgement_number(server_header.sequence_number() + 1);
+
     size_t bytes_read, bytes_received;
     while (!ifs.eof()) {
         client_header.encode((uint8_t*) buf);
@@ -50,24 +81,27 @@ int main(int argc, char* argv[]) {
             std::cerr << "ERROR: " << strerror(errno) << std::endl;
             return 1;
         }
-        std::cerr << "SEND " << client_header.sequence_number() << " " << client_header.acknowledgement_number() << " "
+        std::cout << "SEND " << client_header.sequence_number() << " " << client_header.acknowledgement_number() << " "
                   << client_header.connection_id() << " " << client_header.ack_flag() << " " << client_header.syn_flag() << " "
                   << client_header.fin_flag() << std::endl;
         client_header.set_sequence_number(client_header.sequence_number() + bytes_read);
 
-        if ((bytes_received = recvfrom(sock, buf, HEADER_LENGTH, MSG_WAITALL, (sockaddr*) &addr, &socklen)) < 0) {
+        if ((bytes_received = recvfrom(sock, buf, PACKET_LENGTH, MSG_WAITALL, (sockaddr*) &addr, &socklen)) < 0) {
             std::cerr << "ERROR: " << strerror(errno) << std::endl;
             return 1;
         }
 
         server_header.decode((uint8_t*) buf);
-        std::cerr << "RECV " << server_header.sequence_number() << " " << server_header.acknowledgement_number() << " "
+        std::cout << "RECV " << server_header.sequence_number() << " " << server_header.acknowledgement_number() << " "
                   << server_header.connection_id() << " " << server_header.ack_flag() << " " << server_header.syn_flag() << " "
                   << server_header.fin_flag() << std::endl;
         client_header.set_acknowledgement_number(server_header.sequence_number());
+        client_header.clear_flags();
         client_header.set_ack_flag();
     }
     ifs.close();
+
+    // todo: shutdown handshake
 
     close(sock);
     return 0;

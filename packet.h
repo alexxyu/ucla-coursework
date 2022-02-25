@@ -28,6 +28,7 @@ public:
     void set_fin_flag() { m_flags |= FIN_FLAG; }
     void set_syn_flag() { m_flags |= SYN_FLAG; }
     void set_ack_flag() { m_flags |= ACK_FLAG; }
+    void clear_flags() { m_flags = 0; }
 
     void encode(uint8_t* buf) {
         buf[0] = (m_sequence_number >> 24) & 0xff;
