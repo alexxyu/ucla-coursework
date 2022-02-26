@@ -1,12 +1,21 @@
 #pragma once
 
-#include <chrono>
-#include <fstream>
-
 #include "packet.h"
 #include "protocol.h"
+#include "sequence_number.h"
+#include <chrono>
+#include <fstream>
+#include <memory>
+#include <queue>
 
 class ClientConnection {
+    struct Packet {
+        SequenceNumber sequence_number;
+        std::vector<uint8_t> data;
+
+        bool operator<(const Packet& other) const { return this->sequence_number < other.sequence_number; }
+    };
+
 public:
     ClientConnection(const PacketHeader& syn_packet, uint16_t connection_id, const std::string& directory, int socket,
                      sockaddr_in client_address);
@@ -27,6 +36,7 @@ private:
     std::ofstream m_stream;
     sockaddr_in m_client_address;
     int m_socket { -1 };
-    uint32_t m_sequence_number { INIT_SEQNO_SERVER };
-    uint32_t m_acknowledgement_number { 0 };
+    SequenceNumber m_sequence_number { INIT_SEQNO_SERVER };
+    SequenceNumber m_acknowledgement_number { 0 };
+    std::priority_queue<Packet> m_pending_packets;
 };
