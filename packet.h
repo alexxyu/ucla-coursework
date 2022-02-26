@@ -1,6 +1,7 @@
 #pragma once
 
 #include <arpa/inet.h>
+#include <cstring>
 #include <iostream>
 #include <stdint.h>
 
@@ -31,31 +32,9 @@ public:
     void set_ack_flag() { m_flags |= ACK_FLAG; }
     void clear_flags() { m_flags = 0; }
 
-    void encode(uint8_t* buf) {
-        buf[0] = (m_sequence_number >> 24) & 0xff;
-        buf[1] = (m_sequence_number >> 16) & 0xff;
-        buf[2] = (m_sequence_number >> 8) & 0xff;
-        buf[3] = (m_sequence_number & 0xff);
+    void encode(uint8_t* buf) { memcpy(buf, this, HEADER_LENGTH); }
 
-        buf[4] = (m_acknowledgement_number >> 24) & 0xff;
-        buf[5] = (m_acknowledgement_number >> 16) & 0xff;
-        buf[6] = (m_acknowledgement_number >> 8) & 0xff;
-        buf[7] = (m_acknowledgement_number & 0xff);
-
-        buf[8] = (m_connection_id >> 8) & 0xff;
-        buf[9] = (m_connection_id & 0xff);
-
-        buf[10] = m_reserved;
-        buf[11] = m_flags;
-    }
-
-    void decode(uint8_t* buf) {
-        m_sequence_number = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
-        m_acknowledgement_number = (buf[4] << 24) | (buf[5] << 16) | (buf[6] << 8) | buf[7];
-        m_connection_id = (buf[8] << 8) | buf[9];
-        m_reserved = buf[10];
-        m_flags = buf[11];
-    }
+    void decode(uint8_t* buf) { memcpy(this, buf, HEADER_LENGTH); }
 
 private:
     uint32_t m_sequence_number { 0 };
@@ -112,7 +91,8 @@ inline static void output_server_send(const PacketHeader& header) {
 }
 
 inline static void output_client_recv(const PacketHeader& header, size_t cwnd) {
-    std::cout << "RECV " << header.sequence_number() << " " << header.acknowledgement_number() << " " << header.connection_id() << " " << cwnd;
+    std::cout << "RECV " << header.sequence_number() << " " << header.acknowledgement_number() << " " << header.connection_id() << " "
+              << cwnd;
     if (header.ack_flag()) {
         std::cout << " ACK";
     }
@@ -126,7 +106,8 @@ inline static void output_client_recv(const PacketHeader& header, size_t cwnd) {
 }
 
 inline static void output_client_send(const PacketHeader& header, size_t cwnd) {
-    std::cout << "SEND " << header.sequence_number() << " " << header.acknowledgement_number() << " " << header.connection_id() << " " << cwnd;
+    std::cout << "SEND " << header.sequence_number() << " " << header.acknowledgement_number() << " " << header.connection_id() << " "
+              << cwnd;
     if (header.ack_flag()) {
         std::cout << " ACK";
     }
