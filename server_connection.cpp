@@ -10,17 +10,19 @@ ServerConnection::ServerConnection(const std::string& filename, int socket, sock
 }
 
 void ServerConnection::init_connection() {
-    uint8_t buffer[HEADER_LENGTH];
     PacketHeader client_header, server_header;
+    uint8_t buffer[HEADER_LENGTH];
+
+    // Send initial SYN packet to the server
     client_header.set_syn_flag();
     client_header.set_sequence_number(m_sequence_number);
     client_header.encode((uint8_t*) buffer);
-
     if (sendto(m_socket, buffer, HEADER_LENGTH, 0, (sockaddr*) &m_server_address, sizeof(m_server_address)) < 0) {
         std::cerr << "ERROR: " << strerror(errno) << std::endl;
     }
     output_client_send(client_header, m_cwnd, false);
 
+    // Expect to receive a SYN-ACK packet back from the server
     socklen_t socklen = sizeof(m_server_address);
     if (recvfrom(m_socket, buffer, HEADER_LENGTH, MSG_WAITALL, (sockaddr*) &m_server_address, &socklen) < 0) {
         std::cerr << "ERROR: " << strerror(errno) << std::endl;
@@ -49,20 +51,20 @@ void ServerConnection::send_data() {
     ssize_t bytes_received;
     socklen_t socklen = sizeof(m_server_address);
     while (!m_stream.eof() || !m_packets.empty()) {
-        send_transmission_round();
+        ssize_t n_sent = send_transmission_round();
 
-        // Wait to receive ACKs from server for transmission round
+        // Wait to receive ACKs from server for the transmission round
         size_t cwnd_next = m_cwnd;
         char buffer[PACKET_LENGTH];
-        while (!m_packets.empty()) {
+        while (n_sent > 0) {
             if ((bytes_received = recvfrom(m_socket, buffer, PACKET_LENGTH, MSG_WAITALL, (sockaddr*) &m_server_address, &socklen)) <= 0) {
                 if (errno == EWOULDBLOCK || errno == EAGAIN) {
-                    // Retransmission timer has expired
+                    // Handle case where retransmission timer has expired
                     cwnd_next = INIT_CWND;
                     m_ssthresh /= 2;
-                    m_packets.front().set_retransmission();
                     break;
                 } else {
+                    // Handle other errors
                     std::cerr << "ERROR: " << errno << " " << strerror(errno) << std::endl;
                 }
             } else {
@@ -86,6 +88,7 @@ void ServerConnection::send_data() {
                     }
                 }
             }
+            n_sent--;
         }
 
         m_cwnd = cwnd_next;
@@ -96,6 +99,8 @@ int ServerConnection::send_transmission_round() {
     int n_sent = 0;
     size_t wnd = std::min(m_cwnd, (size_t) RWND);
 
+    // Read from file and create more packets only if the total bytes in the list of sent packets
+    // does not already exceed the window size
     size_t bytes_read;
     char buffer[PACKET_LENGTH];
     while (!m_stream.eof() && m_packet_bytes < wnd) {
@@ -104,8 +109,8 @@ int ServerConnection::send_transmission_round() {
         header.set_acknowledgement_number(m_acknowledgement_number);
         header.set_connection_id(m_connection_id);
         header.set_ack_flag();
-
         header.encode((uint8_t*) buffer);
+
         m_stream.read(buffer + HEADER_LENGTH, PAYLOAD_LENGTH);
         bytes_read = m_stream.gcount();
 
@@ -113,13 +118,14 @@ int ServerConnection::send_transmission_round() {
         m_packet_bytes += bytes_read;
         m_packets.push_back(p);
 
-        m_sequence_number += bytes_read; // todo: modulo
+        m_sequence_number += bytes_read;
     }
 
+    // Send as many packets as the window size currently allows
     size_t bytes_sent = 0;
     for (Packet& p : m_packets) {
         bytes_sent += p.payload_len();
-        if(bytes_sent > wnd) {
+        if (bytes_sent > wnd) {
             break;
         }
 
@@ -131,6 +137,8 @@ int ServerConnection::send_transmission_round() {
         }
 
         output_client_send(p.header(), m_cwnd, p.is_retransmission());
+        m_packets.front().set_retransmission();
+        n_sent++;
     }
 
     return n_sent;
