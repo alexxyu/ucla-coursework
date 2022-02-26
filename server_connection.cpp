@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstring>
 #include <stdio.h>
+#include <unistd.h>
 
 ServerConnection::ServerConnection(const std::string& filename, int socket, sockaddr_in server_address)
     : m_server_address(server_address), m_socket(socket) {
@@ -25,6 +26,7 @@ void ServerConnection::init_connection() {
 
     // Expect to receive a SYN-ACK packet back from the server
     socklen_t socklen = sizeof(m_server_address);
+    alarm(KEEPALIVE_TIMEOUT);
     if (recvfrom(m_socket, buffer, HEADER_LENGTH, MSG_WAITALL, (sockaddr*) &m_server_address, &socklen) < 0) {
         std::cerr << "ERROR: " << strerror(errno) << std::endl;
     }
@@ -52,6 +54,7 @@ void ServerConnection::send_data() {
     setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*) &rto, sizeof(struct timeval));
 
     ssize_t bytes_received;
+    alarm(KEEPALIVE_TIMEOUT);
     while (!m_stream.eof() || !m_packets.empty()) {
         ssize_t n_sent = send_transmission_round();
 
@@ -88,6 +91,8 @@ void ServerConnection::send_data() {
                         m_packets.pop_front();
                     }
                 }
+
+                alarm(KEEPALIVE_TIMEOUT);
             }
             n_sent--;
         }
@@ -159,6 +164,7 @@ void ServerConnection::close_connection() {
     client_header.encode(buffer);
 
     socklen_t socklen = sizeof(m_server_address);
+    alarm(KEEPALIVE_TIMEOUT);
     while (1) {
         // Send FIN packet to the server
         if (sendto(m_socket, buffer, HEADER_LENGTH, 0, (sockaddr*) &m_server_address, sizeof(m_server_address)) < 0) {

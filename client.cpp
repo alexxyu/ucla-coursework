@@ -7,16 +7,24 @@
 #include <fstream>
 #include <iostream>
 #include <netdb.h>
+#include <signal.h>
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <thread>
 #include <unistd.h>
+
+void timeout_connection(int signum) {
+    std::cerr << "ERROR: connection timed out" << std::endl;
+    _exit(0);
+}
 
 int main(int argc, char* argv[]) {
     if (argc != 4) {
         std::cerr << "Usage: " << argv[0] << " <HOSTNAME-OR-IP> <PORT> <FILENAME>" << std::endl;
         return 1;
     }
+
+    signal(SIGALRM, timeout_connection);
 
     addrinfo hints = { 0 };
     hints.ai_family = AF_INET;
@@ -37,6 +45,13 @@ int main(int argc, char* argv[]) {
         std::cerr << "ERROR: " << strerror(errno) << std::endl;
         return 1;
     }
+
+    std::ifstream ifs(filename);
+    if (ifs.fail()) {
+        std::cerr << "ERROR: " << strerror(errno) << std::endl;
+        return 1;
+    }
+    ifs.close();
 
     ServerConnection sc(filename, sock, *(sockaddr_in*) result->ai_addr);
     freeaddrinfo(result);
