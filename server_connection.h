@@ -44,7 +44,7 @@ private:
     std::ifstream m_stream;
     sockaddr_in m_server_address;
     int m_socket { -1 };
-    uint32_t m_sequence_number { INIT_SEQNO_CLIENT };
-    uint32_t m_acknowledgement_number { 0 };
+    SequenceNumber m_sequence_number { INIT_SEQNO_CLIENT };
+    SequenceNumber m_acknowledgement_number { 0 };
     std::list<Packet> m_packets;
 };

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "sequence_number.h"
 #include <arpa/inet.h>
 #include <cstring>
 #include <iostream>
@@ -15,12 +16,14 @@ public:
     const static uint16_t SYN_FLAG = (1 << 1);
     const static uint16_t ACK_FLAG = (1 << 2);
 
-    uint32_t sequence_number() const { return ntohl(m_sequence_number); }
-    uint32_t acknowledgement_number() const { return ntohl(m_acknowledgement_number); }
+    SequenceNumber sequence_number() const { return SequenceNumber { ntohl(m_sequence_number) }; }
+    SequenceNumber acknowledgement_number() const { return SequenceNumber { ntohl(m_acknowledgement_number) }; }
     uint16_t connection_id() const { return ntohs(m_connection_id); }
 
-    void set_sequence_number(uint32_t sequence_number) { m_sequence_number = htonl(sequence_number); }
-    void set_acknowledgement_number(uint32_t acknowledgement_number) { m_acknowledgement_number = htonl(acknowledgement_number); }
+    void set_sequence_number(SequenceNumber sequence_number) { m_sequence_number = htonl(sequence_number.raw_sequence_number()); }
+    void set_acknowledgement_number(SequenceNumber acknowledgement_number) {
+        m_acknowledgement_number = htonl(acknowledgement_number.raw_sequence_number());
+    }
     void set_connection_id(uint16_t connection_id) { m_connection_id = htons(connection_id); }
 
     bool fin_flag() const { return !!(m_flags & FIN_FLAG); }
@@ -48,7 +51,8 @@ private:
 static_assert(sizeof(PacketHeader) == HEADER_LENGTH, "Packet header length is incorrect.");
 
 inline static void output_server_recv(const PacketHeader& header) {
-    std::cout << "RECV " << header.sequence_number() << " " << header.acknowledgement_number() << " " << header.connection_id();
+    std::cout << "RECV " << header.sequence_number().raw_sequence_number() << " " << header.acknowledgement_number().raw_sequence_number()
+              << " " << header.connection_id();
     if (header.ack_flag()) {
         std::cout << " ACK";
     }
@@ -62,7 +66,8 @@ inline static void output_server_recv(const PacketHeader& header) {
 }
 
 inline static void output_server_drop(const PacketHeader& header) {
-    std::cout << "DROP " << header.sequence_number() << " " << header.acknowledgement_number() << " " << header.connection_id();
+    std::cout << "DROP " << header.sequence_number().raw_sequence_number() << " " << header.acknowledgement_number().raw_sequence_number()
+              << " " << header.connection_id();
     if (header.ack_flag()) {
         std::cout << " ACK";
     }
@@ -76,7 +81,8 @@ inline static void output_server_drop(const PacketHeader& header) {
 }
 
 inline static void output_server_send(const PacketHeader& header) {
-    std::cout << "SEND " << header.sequence_number() << " " << header.acknowledgement_number() << " " << header.connection_id();
+    std::cout << "SEND " << header.sequence_number().raw_sequence_number() << " " << header.acknowledgement_number().raw_sequence_number()
+              << " " << header.connection_id();
     if (header.ack_flag()) {
         std::cout << " ACK";
     }
@@ -91,8 +97,8 @@ inline static void output_server_send(const PacketHeader& header) {
 }
 
 inline static void output_client_recv(const PacketHeader& header, size_t cwnd) {
-    std::cout << "RECV " << header.sequence_number() << " " << header.acknowledgement_number() << " " << header.connection_id() << " "
-              << cwnd;
+    std::cout << "RECV " << header.sequence_number().raw_sequence_number() << " " << header.acknowledgement_number().raw_sequence_number()
+              << " " << header.connection_id() << " " << cwnd;
     if (header.ack_flag()) {
         std::cout << " ACK";
     }
@@ -106,8 +112,8 @@ inline static void output_client_recv(const PacketHeader& header, size_t cwnd) {
 }
 
 inline static void output_client_send(const PacketHeader& header, size_t cwnd) {
-    std::cout << "SEND " << header.sequence_number() << " " << header.acknowledgement_number() << " " << header.connection_id() << " "
-              << cwnd;
+    std::cout << "SEND " << header.sequence_number().raw_sequence_number() << " " << header.acknowledgement_number().raw_sequence_number()
+              << " " << header.connection_id() << " " << cwnd;
     if (header.ack_flag()) {
         std::cout << " ACK";
     }

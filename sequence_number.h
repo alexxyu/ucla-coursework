@@ -1,6 +1,10 @@
 #pragma once
 
-class SequenceNumber {
+#include "protocol.h"
+#include <cstdint>
+#include <cstdlib>
+
+class [[gnu::packed]] SequenceNumber {
 public:
     SequenceNumber(uint32_t sequence_number) : m_sequence_number(sequence_number) {}
 
