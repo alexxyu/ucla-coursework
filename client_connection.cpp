@@ -23,9 +23,17 @@ void ClientConnection::receive_packet(const PacketHeader& header, const uint8_t*
     // This should be validated (only advance sequence number if there was a pending ack or fin):
     m_sequence_number = header.acknowledgement_number();
 
-    // FIXME: don't buffer past the end of the receive window
+    // Clamp the data payload so that it fits in the current window.
+    auto sequence_number = SequenceNumber { header.sequence_number() };
+    if (sequence_number + payload_length > m_acknowledgement_number + RWND) {
+        if (sequence_number > m_acknowledgement_number + RWND) {
+            payload_length = 0;
+        } else {
+            payload_length = (m_acknowledgement_number + RWND).difference(sequence_number);
+        }
+    }
 
-    if (payload_length != 0) {
+    if (payload_length != 0 && sequence_number + payload_length > m_acknowledgement_number) {
         m_pending_packets.push({ header.sequence_number(), std::vector<uint8_t>(payload, payload + payload_length) });
     }
 
