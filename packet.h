@@ -114,7 +114,7 @@ inline static void output_client_recv(const PacketHeader& header, size_t cwnd) {
     std::cout << std::endl;
 }
 
-inline static void output_client_send(const PacketHeader& header, size_t cwnd) {
+inline static void output_client_send(const PacketHeader& header, size_t cwnd, bool is_dup) {
     std::cout << "SEND " << header.sequence_number().raw_sequence_number() << " " << header.acknowledgement_number().raw_sequence_number()
               << " " << header.connection_id() << " " << cwnd;
     if (header.ack_flag()) {
@@ -125,6 +125,9 @@ inline static void output_client_send(const PacketHeader& header, size_t cwnd) {
     }
     if (header.fin_flag()) {
         std::cout << " FIN";
+    }
+    if (is_dup) {
+        std::cout << " DUP";
     }
     std::cout << std::endl;
 }

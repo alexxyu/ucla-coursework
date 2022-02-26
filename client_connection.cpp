@@ -1,9 +1,6 @@
 #include "client_connection.h"
 #include "packet.h"
 
-#include <chrono>
-#include <thread>
-
 ClientConnection::ClientConnection(const PacketHeader& syn_packet, uint16_t connection_id, const std::string& directory, int socket,
                                    sockaddr_in client_address)
     : m_connection_id(connection_id), m_client_address(client_address), m_socket(socket) {

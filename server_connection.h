@@ -17,10 +17,14 @@ public:
     PacketHeader header() const { return m_header; }
     size_t payload_len() const { return m_payload_len; }
     const char* payload() const { return m_payload; }
+    
+    bool is_retransmission() const { return m_is_retransmission; }
+    void set_retransmission() { m_is_retransmission = true; }
 
 private:
     PacketHeader m_header;
     size_t m_payload_len { 0 };
+    bool m_is_retransmission { false };
     char m_payload[PAYLOAD_LENGTH];
 };
 
@@ -47,4 +51,5 @@ private:
     SequenceNumber m_sequence_number { INIT_SEQNO_CLIENT };
     SequenceNumber m_acknowledgement_number { 0 };
     std::list<Packet> m_packets;
+    size_t m_packet_bytes { 0 };
 };

@@ -19,7 +19,7 @@ void ServerConnection::init_connection() {
     if (sendto(m_socket, buffer, HEADER_LENGTH, 0, (sockaddr*) &m_server_address, sizeof(m_server_address)) < 0) {
         std::cerr << "ERROR: " << strerror(errno) << std::endl;
     }
-    output_client_send(client_header, m_cwnd);
+    output_client_send(client_header, m_cwnd, false);
 
     socklen_t socklen = sizeof(m_server_address);
     if (recvfrom(m_socket, buffer, HEADER_LENGTH, MSG_WAITALL, (sockaddr*) &m_server_address, &socklen) < 0) {
@@ -54,28 +54,37 @@ void ServerConnection::send_data() {
         // Wait to receive ACKs from server for transmission round
         size_t cwnd_next = m_cwnd;
         char buffer[PACKET_LENGTH];
-
         while (!m_packets.empty()) {
             if ((bytes_received = recvfrom(m_socket, buffer, PACKET_LENGTH, MSG_WAITALL, (sockaddr*) &m_server_address, &socklen)) <= 0) {
-                std::cerr << "ERROR: " << strerror(errno) << std::endl;
-
-                cwnd_next = 1;
-                m_ssthresh /= 2;
-                break;
+                if (errno == EWOULDBLOCK || errno == EAGAIN) {
+                    // Retransmission timer has expired
+                    cwnd_next = INIT_CWND;
+                    m_ssthresh /= 2;
+                    m_packets.front().set_retransmission();
+                    break;
+                } else {
+                    std::cerr << "ERROR: " << errno << " " << strerror(errno) << std::endl;
+                }
             } else {
                 PacketHeader server_header;
                 server_header.decode((uint8_t*) buffer);
                 output_client_recv(server_header, m_cwnd);
 
-                if (m_cwnd < m_ssthresh) {
-                    // Slow start phase
-                    cwnd_next += PAYLOAD_LENGTH;
-                } else {
-                    // Congestion avoidance phase
-                    cwnd_next += (PAYLOAD_LENGTH * PAYLOAD_LENGTH) / m_cwnd;
-                }
+                if (server_header.ack_flag()) {
+                    if (m_cwnd < m_ssthresh) {
+                        // Slow start phase
+                        cwnd_next += PAYLOAD_LENGTH;
+                    } else {
+                        // Congestion avoidance phase
+                        cwnd_next += (PAYLOAD_LENGTH * PAYLOAD_LENGTH) / m_cwnd;
+                    }
 
-                m_packets.pop_front();
+                    SequenceNumber ack = server_header.acknowledgement_number();
+                    while (!m_packets.empty() && ack >= m_packets.front().header().sequence_number() + m_packets.front().payload_len()) {
+                        m_packet_bytes -= m_packets.front().payload_len();
+                        m_packets.pop_front();
+                    }
+                }
             }
         }
 
@@ -85,16 +94,11 @@ void ServerConnection::send_data() {
 
 int ServerConnection::send_transmission_round() {
     int n_sent = 0;
-    size_t byteswnd_read = 0;
-    for (Packet p : m_packets) {
-        byteswnd_read += p.payload_len() + HEADER_LENGTH;
-    }
-
     size_t wnd = std::min(m_cwnd, (size_t) RWND);
 
     size_t bytes_read;
     char buffer[PACKET_LENGTH];
-    while (!m_stream.eof() && byteswnd_read < wnd) {
+    while (!m_stream.eof() && m_packet_bytes < wnd) {
         PacketHeader header;
         header.set_sequence_number(m_sequence_number);
         header.set_acknowledgement_number(m_acknowledgement_number);
@@ -106,13 +110,19 @@ int ServerConnection::send_transmission_round() {
         bytes_read = m_stream.gcount();
 
         Packet p(header, buffer + HEADER_LENGTH, bytes_read);
+        m_packet_bytes += bytes_read;
         m_packets.push_back(p);
 
-        byteswnd_read += bytes_read;
         m_sequence_number += bytes_read; // todo: modulo
     }
 
-    for (Packet p : m_packets) {
+    size_t bytes_sent = 0;
+    for (Packet& p : m_packets) {
+        bytes_sent += p.payload_len();
+        if(bytes_sent > wnd) {
+            break;
+        }
+
         p.header().encode((uint8_t*) buffer);
         memcpy(buffer + HEADER_LENGTH, p.payload(), p.payload_len());
 
@@ -120,7 +130,7 @@ int ServerConnection::send_transmission_round() {
             std::cerr << "ERROR: " << strerror(errno) << std::endl;
         }
 
-        output_client_send(p.header(), m_cwnd);
+        output_client_send(p.header(), m_cwnd, p.is_retransmission());
     }
 
     return n_sent;

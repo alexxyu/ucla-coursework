@@ -37,7 +37,6 @@ To dissect tcpdump-recorded file, you can use `-r <pcapfile>` option. For exampl
 * Hostname resolution
 * Graceful exit on SIGQUIT / SIGTERM signal
 * Error handling
-* Client-side ACK validation and Packet processing
 
     ###########################################################
     ##                                                       ##
