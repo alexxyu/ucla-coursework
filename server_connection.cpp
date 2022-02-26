@@ -102,7 +102,7 @@ int ServerConnection::send_transmission_round() {
 
     // Read from file and create more packets only if the total bytes in the list of sent packets
     // does not already exceed the window size
-    size_t bytes_read;
+    ssize_t bytes_read;
     uint8_t buffer[PACKET_LENGTH];
     while (!m_stream.eof() && m_packet_bytes < wnd) {
         PacketHeader header;
@@ -115,11 +115,13 @@ int ServerConnection::send_transmission_round() {
         m_stream.read((char*) buffer + HEADER_LENGTH, PAYLOAD_LENGTH);
         bytes_read = m_stream.gcount();
 
-        Packet p(header, buffer + HEADER_LENGTH, bytes_read);
-        m_packet_bytes += bytes_read;
-        m_packets.push_back(p);
+        if (bytes_read > 0) {
+            Packet p(header, buffer + HEADER_LENGTH, bytes_read);
+            m_packet_bytes += bytes_read;
+            m_packets.push_back(p);
 
-        m_sequence_number += bytes_read;
+            m_sequence_number += bytes_read;
+        }
     }
 
     // Send as many packets as the window size currently allows
@@ -180,6 +182,7 @@ void ServerConnection::close_connection() {
             break;
         }
     }
+    m_sequence_number += 1;
 
     if (server_header.fin_flag()) {
         send_ack();
@@ -200,7 +203,9 @@ void ServerConnection::close_connection() {
         } else {
             server_header.decode(buffer);
 
-            if (server_header.fin_flag()) {
+            if (server_header.acknowledgement_number() != m_sequence_number || server_header.sequence_number() != m_acknowledgement_number) {
+                std::cerr << "ERROR: inconsistent ACK/seq number" << std::endl;
+            } else if (server_header.fin_flag()) {
                 output_client_recv(server_header, m_cwnd);
                 send_ack();
             }
