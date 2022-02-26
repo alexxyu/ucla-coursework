@@ -74,7 +74,7 @@ void ServerConnection::send_data() {
                 output_client_recv(server_header, std::min(cwnd_next, (size_t) MAX_CWND), m_ssthresh);
 
                 if (server_header.ack_flag()) {
-                    if (m_cwnd < m_ssthresh) {
+                    if (cwnd_next < m_ssthresh) {
                         // Slow start phase
                         cwnd_next += PAYLOAD_LENGTH;
                     } else {
@@ -140,7 +140,7 @@ int ServerConnection::send_transmission_round() {
         }
 
         output_client_send(p.header(), m_cwnd, m_ssthresh, p.is_retransmission());
-        m_packets.front().set_retransmission();
+        p.set_retransmission();
         n_sent++;
     }
 
