@@ -37,7 +37,7 @@ ClientConnection::ReceiveAction ClientConnection::receive_packet(const PacketHea
     }
 
     // Clamp the data payload so that it fits in the current window.
-    auto sequence_number = SequenceNumber { header.sequence_number() };
+    auto sequence_number = header.sequence_number();
     if (sequence_number + payload_length > m_acknowledgement_number + RWND) {
         if (sequence_number > m_acknowledgement_number + RWND) {
             payload_length = 0;

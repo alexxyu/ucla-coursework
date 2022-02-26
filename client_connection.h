@@ -15,7 +15,7 @@ class ClientConnection {
         std::vector<uint8_t> data;
         bool is_fin;
 
-        bool operator<(const Packet& other) const { return this->sequence_number < other.sequence_number; }
+        bool operator>(const Packet& other) const { return this->sequence_number > other.sequence_number; }
     };
 
 public:
@@ -52,5 +52,5 @@ private:
     bool m_pending_fin { false };
     SequenceNumber m_sequence_number { INIT_SEQNO_SERVER };
     SequenceNumber m_acknowledgement_number { 0 };
-    std::priority_queue<Packet> m_pending_packets;
+    std::priority_queue<Packet, std::vector<Packet>, std::greater<Packet>> m_pending_packets;
 };
