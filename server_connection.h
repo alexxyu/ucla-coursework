@@ -1,11 +1,11 @@
 #pragma once
 
+#include "packet.h"
+#include "protocol.h"
+
 #include <chrono>
 #include <fstream>
 #include <list>
-
-#include "packet.h"
-#include "protocol.h"
 
 class Packet {
 public:
@@ -40,7 +40,7 @@ public:
 
 private:
     int send_transmission_round();
-    void wait_for_ACK(bool send_syn, bool send_fin);
+    void send_ack();
 
     size_t m_cwnd { INIT_CWND };
     size_t m_ssthresh { INIT_SSTHRESH };

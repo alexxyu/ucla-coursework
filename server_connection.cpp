@@ -1,5 +1,6 @@
 #include "server_connection.h"
 #include "packet.h"
+#include <chrono>
 #include <cmath>
 #include <cstring>
 #include <stdio.h>
@@ -43,7 +44,7 @@ void ServerConnection::init_connection() {
 void ServerConnection::send_data() {
     uint8_t buffer[PACKET_LENGTH];
     socklen_t socklen = sizeof(m_server_address);
-    
+
     timeval rto;
     double rto_intpart;
     rto.tv_usec = std::modf(RETRANSMISSION_TIMEOUT, &rto_intpart) * 1000000UL;
@@ -145,8 +146,78 @@ int ServerConnection::send_transmission_round() {
 }
 
 void ServerConnection::close_connection() {
+    uint8_t buffer[HEADER_LENGTH];
+
     m_stream.close();
 
-    // todo: shutdown handshake
+    PacketHeader client_header, server_header;
+    client_header.set_fin_flag();
+    client_header.set_sequence_number(m_sequence_number);
+    client_header.encode(buffer);
 
+    socklen_t socklen = sizeof(m_server_address);
+    while (1) {
+        // Send FIN packet to the server
+        if (sendto(m_socket, buffer, HEADER_LENGTH, 0, (sockaddr*) &m_server_address, sizeof(m_server_address)) < 0) {
+            std::cerr << "ERROR: " << strerror(errno) << std::endl;
+        }
+        output_client_send(client_header, m_cwnd, false);
+
+        // Expect to receive a [FIN-]ACK packet back from the server
+        if (recvfrom(m_socket, buffer, HEADER_LENGTH, MSG_WAITALL, (sockaddr*) &m_server_address, &socklen) < 0) {
+            if (errno != EWOULDBLOCK && errno != EAGAIN) {
+                std::cerr << "ERROR: " << errno << " " << strerror(errno) << std::endl;
+            }
+        } else {
+            server_header.decode(buffer);
+            output_client_recv(server_header, m_cwnd);
+
+            if (!server_header.ack_flag() || server_header.acknowledgement_number() != client_header.sequence_number() + 1) {
+                std::cerr << "ERROR: invalid ACK packet received" << std::endl;
+            }
+
+            break;
+        }
+    }
+
+    if (server_header.fin_flag()) {
+        send_ack();
+    }
+
+    struct timeval read_timeout;
+    read_timeout.tv_sec = 0;
+    read_timeout.tv_usec = 100;
+    setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, &read_timeout, sizeof(read_timeout));
+
+    // Respond to any incoming FIN packets with ACKs until timeout
+    for (auto start = std::chrono::steady_clock::now(), now = start; now < start + std::chrono::seconds { FIN_TIMEOUT };
+         now = std::chrono::steady_clock::now()) {
+        if (recvfrom(m_socket, buffer, PACKET_LENGTH, MSG_WAITALL, (sockaddr*) &m_server_address, &socklen) <= 0) {
+            if (errno != EWOULDBLOCK && errno != EAGAIN) {
+                std::cerr << "ERROR: " << errno << " " << strerror(errno) << std::endl;
+            }
+        } else {
+            send_ack();
+        }
+    }
+
+    // Note: At this point, the connection is closed
+}
+
+void ServerConnection::send_ack() {
+    uint8_t buffer[HEADER_LENGTH];
+
+    m_acknowledgement_number += 1;
+
+    PacketHeader ack_header;
+    ack_header.set_ack_flag();
+    ack_header.set_sequence_number(m_sequence_number);
+    ack_header.set_acknowledgement_number(m_acknowledgement_number);
+    ack_header.encode(buffer);
+
+    if (sendto(m_socket, buffer, HEADER_LENGTH, 0, (sockaddr*) &m_server_address, sizeof(m_server_address)) < 0) {
+        std::cerr << "ERROR: " << strerror(errno) << std::endl;
+    }
+
+    output_client_send(ack_header, m_cwnd, false);
 }

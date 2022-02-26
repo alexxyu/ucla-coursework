@@ -3,6 +3,7 @@
 #include "packet.h"
 #include "protocol.h"
 #include "sequence_number.h"
+
 #include <chrono>
 #include <fstream>
 #include <memory>
@@ -24,7 +25,9 @@ public:
 
     uint16_t connection_id() const { return m_connection_id; }
 
-    std::chrono::time_point<std::chrono::system_clock> expiraction_time() const { return m_last_received + std::chrono::seconds { 10 }; }
+    std::chrono::time_point<std::chrono::system_clock> expiraction_time() const {
+        return m_last_received + std::chrono::seconds { KEEPALIVE_TIMEOUT };
+    }
 
 private:
     void send_ack(bool send_syn, bool send_fin, bool is_dup);
