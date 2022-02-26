@@ -12,16 +12,29 @@ ClientConnection::ClientConnection(const PacketHeader& syn_packet, uint16_t conn
     update_last_received_time();
 
     output_server_recv(syn_packet);
-    send_ack(true, false, false);
+
+    m_pending_syn = true;
+    send_ack(false);
 }
 
-void ClientConnection::receive_packet(const PacketHeader& header, const uint8_t* payload, size_t payload_length) {
+ClientConnection::ReceiveAction ClientConnection::receive_packet(const PacketHeader& header, const uint8_t* payload,
+                                                                 size_t payload_length) {
     output_server_recv(header);
 
     update_last_received_time();
 
-    // This should be validated (only advance sequence number if there was a pending ack or fin):
-    m_sequence_number = header.acknowledgement_number();
+    if (header.ack_flag() && header.acknowledgement_number() != m_sequence_number) {
+        if ((!pending_syn() && !pending_fin()) || header.acknowledgement_number() != m_sequence_number + 1) {
+            std::cerr << "ERROR: Incoming ACK has nonsense acknowledgement number" << std::endl;
+        } else if (pending_syn()) {
+            m_pending_syn = false;
+            m_sequence_number += 1;
+        } else if (pending_fin()) {
+            m_pending_fin = false;
+            m_stream.close();
+            return ReceiveAction::Close;
+        }
+    }
 
     // Clamp the data payload so that it fits in the current window.
     auto sequence_number = SequenceNumber { header.sequence_number() };
@@ -33,14 +46,19 @@ void ClientConnection::receive_packet(const PacketHeader& header, const uint8_t*
         }
     }
 
-    if (payload_length != 0 && sequence_number + payload_length > m_acknowledgement_number) {
-        m_pending_packets.push({ header.sequence_number(), std::vector<uint8_t>(payload, payload + payload_length) });
+    if (header.fin_flag()) {
+        m_pending_packets.push({ header.sequence_number(), {}, true });
+    } else if (payload_length != 0 && sequence_number + payload_length > m_acknowledgement_number) {
+        m_pending_packets.push({ header.sequence_number(), std::vector<uint8_t>(payload, payload + payload_length), header.fin_flag() });
     }
 
     auto original_acknowledgement_number = m_acknowledgement_number;
     while (!m_pending_packets.empty() && m_pending_packets.top().sequence_number <= m_acknowledgement_number) {
         auto& packet = m_pending_packets.top();
-        if (packet.sequence_number + packet.data.size() > m_acknowledgement_number) {
+        if (packet.is_fin && packet.sequence_number == m_acknowledgement_number) {
+            m_acknowledgement_number += 1;
+            m_pending_fin = true;
+        } else if (packet.sequence_number + packet.data.size() > m_acknowledgement_number) {
             auto relevant_length = (packet.sequence_number + packet.data.size()).difference(m_acknowledgement_number);
             if (relevant_length > 0) {
                 receive_data(packet.data.data() + (packet.data.size() - relevant_length), relevant_length);
@@ -52,7 +70,8 @@ void ClientConnection::receive_packet(const PacketHeader& header, const uint8_t*
     }
 
     bool is_dup = original_acknowledgement_number == m_acknowledgement_number;
-    send_ack(false, header.fin_flag(), is_dup);
+    send_ack(is_dup);
+    return ReceiveAction::KeepOpen;
 }
 
 void ClientConnection::receive_data(const uint8_t* data, size_t length) {
@@ -64,16 +83,16 @@ void ClientConnection::update_last_received_time() {
     m_last_received = std::chrono::system_clock::now();
 }
 
-void ClientConnection::send_ack(bool send_syn, bool send_fin, bool is_dup) {
+void ClientConnection::send_ack(bool is_dup) {
     PacketHeader header;
     header.set_sequence_number(m_sequence_number);
     header.set_acknowledgement_number(m_acknowledgement_number);
     header.set_connection_id(m_connection_id);
     header.set_ack_flag();
-    if (send_syn) {
+    if (pending_syn()) {
         header.set_syn_flag();
     }
-    if (send_fin) {
+    if (pending_fin()) {
         header.set_fin_flag();
     }
 

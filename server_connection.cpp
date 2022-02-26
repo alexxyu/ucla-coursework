@@ -173,7 +173,7 @@ void ServerConnection::close_connection() {
             server_header.decode(buffer);
             output_client_recv(server_header, m_cwnd);
 
-            if (!server_header.ack_flag() || server_header.acknowledgement_number() != client_header.sequence_number() + 1) {
+            if (!server_header.ack_flag() || server_header.acknowledgement_number() != m_sequence_number + 1) {
                 std::cerr << "ERROR: invalid/inconsistent ACK packet received" << std::endl;
             }
 
@@ -193,7 +193,7 @@ void ServerConnection::close_connection() {
     // Respond to any incoming FIN packets with ACKs until timeout
     for (auto start = std::chrono::steady_clock::now(), now = start; now < start + std::chrono::seconds { FIN_TIMEOUT };
          now = std::chrono::steady_clock::now()) {
-        if (recvfrom(m_socket, buffer, PACKET_LENGTH, MSG_WAITALL, (sockaddr*) &m_server_address, &socklen) <= 0) {
+        if (recvfrom(m_socket, buffer, HEADER_LENGTH, MSG_WAITALL, (sockaddr*) &m_server_address, &socklen) <= 0) {
             if (errno != EWOULDBLOCK && errno != EAGAIN) {
                 std::cerr << "ERROR: " << errno << " " << strerror(errno) << std::endl;
             }

@@ -75,7 +75,10 @@ int main(int argc, char* argv[]) {
             if (it == connections.end()) {
                 output_server_drop(header);
             } else {
-                it->second.receive_packet(header, payload, payload_length);
+                auto action = it->second.receive_packet(header, payload, payload_length);
+                if (action == ClientConnection::ReceiveAction::Close) {
+                    connections.erase(it);
+                }
             }
         }
     }
