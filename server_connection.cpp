@@ -16,7 +16,7 @@ void ServerConnection::init_connection() {
     // Send initial SYN packet to the server
     client_header.set_syn_flag();
     client_header.set_sequence_number(m_sequence_number);
-    client_header.encode((uint8_t*) buffer);
+    client_header.encode(buffer);
     if (sendto(m_socket, buffer, HEADER_LENGTH, 0, (sockaddr*) &m_server_address, sizeof(m_server_address)) < 0) {
         std::cerr << "ERROR: " << strerror(errno) << std::endl;
     }
@@ -27,7 +27,7 @@ void ServerConnection::init_connection() {
     if (recvfrom(m_socket, buffer, HEADER_LENGTH, MSG_WAITALL, (sockaddr*) &m_server_address, &socklen) < 0) {
         std::cerr << "ERROR: " << strerror(errno) << std::endl;
     }
-    server_header.decode((uint8_t*) buffer);
+    server_header.decode(buffer);
     output_client_recv(server_header, m_cwnd);
 
     if (!server_header.syn_flag() || !server_header.ack_flag() ||
@@ -41,21 +41,21 @@ void ServerConnection::init_connection() {
 }
 
 void ServerConnection::send_data() {
+    uint8_t buffer[PACKET_LENGTH];
+    socklen_t socklen = sizeof(m_server_address);
+    
     timeval rto;
     double rto_intpart;
-    rto.tv_usec = std::modf(RETRANSMISSION_TIMEOUT, &rto_intpart) * 1000000;
+    rto.tv_usec = std::modf(RETRANSMISSION_TIMEOUT, &rto_intpart) * 1000000UL;
     rto.tv_sec = rto_intpart;
-
     setsockopt(m_socket, SOL_SOCKET, SO_RCVTIMEO, (struct timeval*) &rto, sizeof(struct timeval));
 
     ssize_t bytes_received;
-    socklen_t socklen = sizeof(m_server_address);
     while (!m_stream.eof() || !m_packets.empty()) {
         ssize_t n_sent = send_transmission_round();
 
         // Wait to receive ACKs from server for the transmission round
         size_t cwnd_next = m_cwnd;
-        char buffer[PACKET_LENGTH];
         while (n_sent > 0) {
             if ((bytes_received = recvfrom(m_socket, buffer, PACKET_LENGTH, MSG_WAITALL, (sockaddr*) &m_server_address, &socklen)) <= 0) {
                 if (errno == EWOULDBLOCK || errno == EAGAIN) {
@@ -69,7 +69,7 @@ void ServerConnection::send_data() {
                 }
             } else {
                 PacketHeader server_header;
-                server_header.decode((uint8_t*) buffer);
+                server_header.decode(buffer);
                 output_client_recv(server_header, m_cwnd);
 
                 if (server_header.ack_flag()) {
@@ -102,16 +102,16 @@ int ServerConnection::send_transmission_round() {
     // Read from file and create more packets only if the total bytes in the list of sent packets
     // does not already exceed the window size
     size_t bytes_read;
-    char buffer[PACKET_LENGTH];
+    uint8_t buffer[PACKET_LENGTH];
     while (!m_stream.eof() && m_packet_bytes < wnd) {
         PacketHeader header;
         header.set_sequence_number(m_sequence_number);
         header.set_acknowledgement_number(m_acknowledgement_number);
         header.set_connection_id(m_connection_id);
         header.set_ack_flag();
-        header.encode((uint8_t*) buffer);
+        header.encode(buffer);
 
-        m_stream.read(buffer + HEADER_LENGTH, PAYLOAD_LENGTH);
+        m_stream.read((char*) buffer + HEADER_LENGTH, PAYLOAD_LENGTH);
         bytes_read = m_stream.gcount();
 
         Packet p(header, buffer + HEADER_LENGTH, bytes_read);
@@ -129,7 +129,7 @@ int ServerConnection::send_transmission_round() {
             break;
         }
 
-        p.header().encode((uint8_t*) buffer);
+        p.header().encode(buffer);
         memcpy(buffer + HEADER_LENGTH, p.payload(), p.payload_len());
 
         if (sendto(m_socket, buffer, HEADER_LENGTH + p.payload_len(), 0, (sockaddr*) &m_server_address, sizeof(m_server_address)) < 0) {
@@ -148,4 +148,5 @@ void ServerConnection::close_connection() {
     m_stream.close();
 
     // todo: shutdown handshake
+
 }

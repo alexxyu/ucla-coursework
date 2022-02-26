@@ -9,14 +9,14 @@
 
 class Packet {
 public:
-    Packet(const PacketHeader& header, char* buf, size_t len) : m_header(header) {
+    Packet(const PacketHeader& header, uint8_t* buf, size_t len) : m_header(header) {
         memcpy(m_payload, buf, len);
         m_payload_len = len;
     }
 
     PacketHeader header() const { return m_header; }
     size_t payload_len() const { return m_payload_len; }
-    const char* payload() const { return m_payload; }
+    const uint8_t* payload() const { return m_payload; }
 
     bool is_retransmission() const { return m_is_retransmission; }
     void set_retransmission() { m_is_retransmission = true; }
@@ -25,7 +25,7 @@ private:
     PacketHeader m_header;
     size_t m_payload_len { 0 };
     bool m_is_retransmission { false };
-    char m_payload[PAYLOAD_LENGTH];
+    uint8_t m_payload[PAYLOAD_LENGTH];
 };
 
 class ServerConnection {
