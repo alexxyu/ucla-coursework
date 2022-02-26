@@ -2,19 +2,26 @@
 
 #include <chrono>
 #include <fstream>
+#include <list>
 
 #include "packet.h"
 #include "protocol.h"
 
 class Packet {
 public:
-    Packet(const PacketHeader& header, char* m_payload);
-    Packet* next() const { return m_next; }
+    Packet(const PacketHeader& header, char* buf, size_t len) : m_header(header) {
+        memcpy(m_payload, buf, len);
+        m_payload_len = len;
+    }
+
+    PacketHeader header() const { return m_header; }
+    size_t payload_len() const { return m_payload_len; }
+    const char* payload() const { return m_payload; }
 
 private:
     PacketHeader m_header;
-    char* m_payload;
-    Packet* m_next { nullptr };
+    size_t m_payload_len { 0 };
+    char m_payload[PAYLOAD_LENGTH];
 };
 
 class ServerConnection {
@@ -39,6 +46,5 @@ private:
     int m_socket { -1 };
     uint32_t m_sequence_number { INIT_SEQNO_CLIENT };
     uint32_t m_acknowledgement_number { 0 };
-    Packet* m_packets_head { nullptr };
-    Packet* m_packets_tail { nullptr };
+    std::list<Packet> m_packets;
 };

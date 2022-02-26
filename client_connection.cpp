@@ -1,6 +1,9 @@
 #include "client_connection.h"
 #include "packet.h"
 
+#include <chrono>
+#include <thread>
+
 ClientConnection::ClientConnection(const PacketHeader& syn_packet, uint16_t connection_id, const std::string& directory, int socket,
                                    sockaddr_in client_address)
     : m_connection_id(connection_id), m_client_address(client_address), m_socket(socket) {
@@ -36,6 +39,8 @@ void ClientConnection::receive_packet(const PacketHeader& header, const uint8_t*
     if (payload_length != 0 && sequence_number + payload_length > m_acknowledgement_number) {
         m_pending_packets.push({ header.sequence_number(), std::vector<uint8_t>(payload, payload + payload_length) });
     }
+
+    std::cerr << payload_length << std::endl;
 
     while (!m_pending_packets.empty() && m_pending_packets.top().sequence_number <= m_acknowledgement_number) {
         auto& packet = m_pending_packets.top();

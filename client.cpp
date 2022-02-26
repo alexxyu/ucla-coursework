@@ -3,7 +3,6 @@
 #include "server_connection.h"
 #include <algorithm>
 #include <arpa/inet.h>
-#include <cmath>
 #include <cstring>
 #include <fstream>
 #include <iostream>
