@@ -95,7 +95,6 @@ inline static void output_server_send(const PacketHeader& header, bool duplicate
     if (duplicate) {
         std::cout << " DUP";
     }
-    // NOTE: server will never send duplicates.
     std::cout << std::endl;
 }
 

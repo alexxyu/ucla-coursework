@@ -44,13 +44,15 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    freeaddrinfo(result);
+
     std::unordered_map<uint16_t, ClientConnection> connections;
     uint16_t next_connection_id = 1;
 
     uint8_t buf[PACKET_LENGTH];
     ssize_t bytes_received;
     sockaddr_in addr;
-    socklen_t socklen;
+    socklen_t socklen = sizeof(addr);
     while ((bytes_received = recvfrom(sock, buf, PACKET_LENGTH, MSG_WAITALL, (sockaddr*) &addr, &socklen)) > 0) {
         auto now = std::chrono::system_clock::now();
         for (auto it = connections.begin(); it != connections.end();) {

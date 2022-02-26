@@ -39,6 +39,8 @@ int main(int argc, char* argv[]) {
     }
 
     ServerConnection sc(filename, sock, *(sockaddr_in*) result->ai_addr);
+    freeaddrinfo(result);
+
     sc.init_connection();
     sc.send_data();
     sc.close_connection();
