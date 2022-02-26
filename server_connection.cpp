@@ -151,8 +151,9 @@ void ServerConnection::close_connection() {
     m_stream.close();
 
     PacketHeader client_header, server_header;
-    client_header.set_fin_flag();
     client_header.set_sequence_number(m_sequence_number);
+    client_header.set_connection_id(m_connection_id);
+    client_header.set_fin_flag();
     client_header.encode(buffer);
 
     socklen_t socklen = sizeof(m_server_address);
@@ -173,7 +174,7 @@ void ServerConnection::close_connection() {
             output_client_recv(server_header, m_cwnd);
 
             if (!server_header.ack_flag() || server_header.acknowledgement_number() != client_header.sequence_number() + 1) {
-                std::cerr << "ERROR: invalid ACK packet received" << std::endl;
+                std::cerr << "ERROR: invalid/inconsistent ACK packet received" << std::endl;
             }
 
             break;
@@ -197,7 +198,12 @@ void ServerConnection::close_connection() {
                 std::cerr << "ERROR: " << errno << " " << strerror(errno) << std::endl;
             }
         } else {
-            send_ack();
+            server_header.decode(buffer);
+
+            if (server_header.fin_flag()) {
+                output_client_recv(server_header, m_cwnd);
+                send_ack();
+            }
         }
     }
 
@@ -210,9 +216,10 @@ void ServerConnection::send_ack() {
     m_acknowledgement_number += 1;
 
     PacketHeader ack_header;
-    ack_header.set_ack_flag();
     ack_header.set_sequence_number(m_sequence_number);
     ack_header.set_acknowledgement_number(m_acknowledgement_number);
+    ack_header.set_connection_id(m_connection_id);
+    ack_header.set_ack_flag();
     ack_header.encode(buffer);
 
     if (sendto(m_socket, buffer, HEADER_LENGTH, 0, (sockaddr*) &m_server_address, sizeof(m_server_address)) < 0) {
