@@ -71,7 +71,7 @@ void ServerConnection::send_data() {
             } else {
                 PacketHeader server_header;
                 server_header.decode(buffer);
-                output_client_recv(server_header, m_cwnd, m_ssthresh);
+                output_client_recv(server_header, std::min(cwnd_next, (size_t) MAX_CWND), m_ssthresh);
 
                 if (server_header.ack_flag()) {
                     if (m_cwnd < m_ssthresh) {
@@ -174,11 +174,6 @@ void ServerConnection::close_connection() {
         } else {
             server_header.decode(buffer);
             output_client_recv(server_header, m_cwnd, m_ssthresh);
-
-            if (!server_header.ack_flag() || server_header.acknowledgement_number() != m_sequence_number + 1) {
-                std::cerr << "ERROR: invalid/inconsistent ACK packet received" << std::endl;
-            }
-
             break;
         }
     }
@@ -203,9 +198,7 @@ void ServerConnection::close_connection() {
         } else {
             server_header.decode(buffer);
 
-            if (server_header.acknowledgement_number() != m_sequence_number || server_header.sequence_number() != m_acknowledgement_number) {
-                std::cerr << "ERROR: inconsistent ACK/seq number" << std::endl;
-            } else if (server_header.fin_flag()) {
+            if (server_header.fin_flag()) {
                 output_client_recv(server_header, m_cwnd, m_ssthresh);
                 send_ack();
             }
