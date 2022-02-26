@@ -21,7 +21,7 @@ void ServerConnection::init_connection() {
     if (sendto(m_socket, buffer, HEADER_LENGTH, 0, (sockaddr*) &m_server_address, sizeof(m_server_address)) < 0) {
         std::cerr << "ERROR: " << strerror(errno) << std::endl;
     }
-    output_client_send(client_header, m_cwnd, false);
+    output_client_send(client_header, m_cwnd, m_ssthresh, false);
 
     // Expect to receive a SYN-ACK packet back from the server
     socklen_t socklen = sizeof(m_server_address);
@@ -29,7 +29,7 @@ void ServerConnection::init_connection() {
         std::cerr << "ERROR: " << strerror(errno) << std::endl;
     }
     server_header.decode(buffer);
-    output_client_recv(server_header, m_cwnd);
+    output_client_recv(server_header, m_cwnd, m_ssthresh);
 
     if (!server_header.syn_flag() || !server_header.ack_flag() ||
         server_header.acknowledgement_number() != client_header.sequence_number() + 1) {
@@ -71,7 +71,7 @@ void ServerConnection::send_data() {
             } else {
                 PacketHeader server_header;
                 server_header.decode(buffer);
-                output_client_recv(server_header, m_cwnd);
+                output_client_recv(server_header, m_cwnd, m_ssthresh);
 
                 if (server_header.ack_flag()) {
                     if (m_cwnd < m_ssthresh) {
@@ -92,7 +92,7 @@ void ServerConnection::send_data() {
             n_sent--;
         }
 
-        m_cwnd = cwnd_next;
+        m_cwnd = std::min(cwnd_next, (size_t) MAX_CWND);
     }
 }
 
@@ -139,7 +139,7 @@ int ServerConnection::send_transmission_round() {
             std::cerr << "ERROR: " << strerror(errno) << std::endl;
         }
 
-        output_client_send(p.header(), m_cwnd, p.is_retransmission());
+        output_client_send(p.header(), m_cwnd, m_ssthresh, p.is_retransmission());
         m_packets.front().set_retransmission();
         n_sent++;
     }
@@ -164,7 +164,7 @@ void ServerConnection::close_connection() {
         if (sendto(m_socket, buffer, HEADER_LENGTH, 0, (sockaddr*) &m_server_address, sizeof(m_server_address)) < 0) {
             std::cerr << "ERROR: " << strerror(errno) << std::endl;
         }
-        output_client_send(client_header, m_cwnd, false);
+        output_client_send(client_header, m_cwnd, m_ssthresh, false);
 
         // Expect to receive a [FIN-]ACK packet back from the server
         if (recvfrom(m_socket, buffer, HEADER_LENGTH, MSG_WAITALL, (sockaddr*) &m_server_address, &socklen) < 0) {
@@ -173,7 +173,7 @@ void ServerConnection::close_connection() {
             }
         } else {
             server_header.decode(buffer);
-            output_client_recv(server_header, m_cwnd);
+            output_client_recv(server_header, m_cwnd, m_ssthresh);
 
             if (!server_header.ack_flag() || server_header.acknowledgement_number() != m_sequence_number + 1) {
                 std::cerr << "ERROR: invalid/inconsistent ACK packet received" << std::endl;
@@ -206,7 +206,7 @@ void ServerConnection::close_connection() {
             if (server_header.acknowledgement_number() != m_sequence_number || server_header.sequence_number() != m_acknowledgement_number) {
                 std::cerr << "ERROR: inconsistent ACK/seq number" << std::endl;
             } else if (server_header.fin_flag()) {
-                output_client_recv(server_header, m_cwnd);
+                output_client_recv(server_header, m_cwnd, m_ssthresh);
                 send_ack();
             }
         }
@@ -231,5 +231,5 @@ void ServerConnection::send_ack() {
         std::cerr << "ERROR: " << strerror(errno) << std::endl;
     }
 
-    output_client_send(ack_header, m_cwnd, false);
+    output_client_send(ack_header, m_cwnd, m_ssthresh, false);
 }

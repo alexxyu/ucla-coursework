@@ -99,9 +99,9 @@ inline static void output_server_send(const PacketHeader& header, bool duplicate
     std::cout << std::endl;
 }
 
-inline static void output_client_recv(const PacketHeader& header, size_t cwnd) {
+inline static void output_client_recv(const PacketHeader& header, size_t cwnd, size_t ssthresh) {
     std::cout << "RECV " << header.sequence_number().raw_sequence_number() << " " << header.acknowledgement_number().raw_sequence_number()
-              << " " << header.connection_id() << " " << cwnd;
+              << " " << header.connection_id() << " " << cwnd << " " << ssthresh;
     if (header.ack_flag()) {
         std::cout << " ACK";
     }
@@ -114,9 +114,9 @@ inline static void output_client_recv(const PacketHeader& header, size_t cwnd) {
     std::cout << std::endl;
 }
 
-inline static void output_client_send(const PacketHeader& header, size_t cwnd, bool is_dup) {
+inline static void output_client_send(const PacketHeader& header, size_t cwnd, size_t ssthresh, bool is_dup) {
     std::cout << "SEND " << header.sequence_number().raw_sequence_number() << " " << header.acknowledgement_number().raw_sequence_number()
-              << " " << header.connection_id() << " " << cwnd;
+              << " " << header.connection_id() << " " << cwnd << " " << ssthresh;
     if (header.ack_flag()) {
         std::cout << " ACK";
     }

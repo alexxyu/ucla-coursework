@@ -10,4 +10,5 @@
 #define MAX_SEQNO     102400
 #define RWND          51200
 #define INIT_CWND     512
+#define MAX_CWND      51200
 #define INIT_SSTHRESH 10000
