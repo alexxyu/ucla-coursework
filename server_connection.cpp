@@ -74,7 +74,6 @@ void ServerConnection::send_data() {
             } else {
                 PacketHeader server_header;
                 server_header.decode(buffer);
-                output_client_recv(server_header, std::min(cwnd_next, (size_t) MAX_CWND), m_ssthresh);
 
                 if (server_header.ack_flag()) {
                     if (cwnd_next < m_ssthresh) {
@@ -92,6 +91,7 @@ void ServerConnection::send_data() {
                     }
                 }
 
+                output_client_recv(server_header, std::min(cwnd_next, (size_t) MAX_CWND), m_ssthresh);
                 alarm(KEEPALIVE_TIMEOUT);
             }
             n_sent--;
