@@ -15,7 +15,7 @@ ClientConnection::ClientConnection(const PacketHeader& syn_packet, uint16_t conn
     update_last_received_time();
 
     output_server_recv(syn_packet);
-    send_ack(true, false);
+    send_ack(true, false, false);
 }
 
 void ClientConnection::receive_packet(const PacketHeader& header, const uint8_t* payload, size_t payload_length) {
@@ -40,6 +40,7 @@ void ClientConnection::receive_packet(const PacketHeader& header, const uint8_t*
         m_pending_packets.push({ header.sequence_number(), std::vector<uint8_t>(payload, payload + payload_length) });
     }
 
+    auto original_acknowledgement_number = m_acknowledgement_number;
     while (!m_pending_packets.empty() && m_pending_packets.top().sequence_number <= m_acknowledgement_number) {
         auto& packet = m_pending_packets.top();
         if (packet.sequence_number + packet.data.size() > m_acknowledgement_number) {
@@ -53,7 +54,8 @@ void ClientConnection::receive_packet(const PacketHeader& header, const uint8_t*
         m_pending_packets.pop();
     }
 
-    send_ack(false, header.fin_flag());
+    bool is_dup = original_acknowledgement_number == m_acknowledgement_number;
+    send_ack(false, header.fin_flag(), is_dup);
 }
 
 void ClientConnection::receive_data(const uint8_t* data, size_t length) {
@@ -65,7 +67,7 @@ void ClientConnection::update_last_received_time() {
     m_last_received = std::chrono::system_clock::now();
 }
 
-void ClientConnection::send_ack(bool send_syn, bool send_fin) {
+void ClientConnection::send_ack(bool send_syn, bool send_fin, bool is_dup) {
     PacketHeader header;
     header.set_sequence_number(m_sequence_number);
     header.set_acknowledgement_number(m_acknowledgement_number);
@@ -81,6 +83,6 @@ void ClientConnection::send_ack(bool send_syn, bool send_fin) {
     uint8_t buffer[HEADER_LENGTH];
     header.encode(buffer);
 
-    output_server_send(header);
+    output_server_send(header, is_dup);
     sendto(m_socket, buffer, sizeof(buffer), 0, (sockaddr*) &m_client_address, sizeof(m_client_address));
 }

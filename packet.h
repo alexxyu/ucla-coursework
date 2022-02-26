@@ -80,7 +80,7 @@ inline static void output_server_drop(const PacketHeader& header) {
     std::cout << std::endl;
 }
 
-inline static void output_server_send(const PacketHeader& header) {
+inline static void output_server_send(const PacketHeader& header, bool duplicate) {
     std::cout << "SEND " << header.sequence_number().raw_sequence_number() << " " << header.acknowledgement_number().raw_sequence_number()
               << " " << header.connection_id();
     if (header.ack_flag()) {
@@ -91,6 +91,9 @@ inline static void output_server_send(const PacketHeader& header) {
     }
     if (header.fin_flag()) {
         std::cout << " FIN";
+    }
+    if (duplicate) {
+        std::cout << " DUP";
     }
     // NOTE: server will never send duplicates.
     std::cout << std::endl;

@@ -27,7 +27,7 @@ public:
     std::chrono::time_point<std::chrono::system_clock> expiraction_time() const { return m_last_received + std::chrono::seconds { 10 }; }
 
 private:
-    void send_ack(bool send_syn, bool send_fin);
+    void send_ack(bool send_syn, bool send_fin, bool is_dup);
     void receive_data(const uint8_t* data, size_t length);
     void update_last_received_time();
 
