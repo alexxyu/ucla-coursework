@@ -61,8 +61,8 @@ void ServerConnection::send_data() {
             if ((bytes_received = recvfrom(m_socket, buffer, PACKET_LENGTH, MSG_WAITALL, (sockaddr*) &m_server_address, &socklen)) <= 0) {
                 if (errno == EWOULDBLOCK || errno == EAGAIN) {
                     // Handle case where retransmission timer has expired
+                    m_ssthresh = cwnd_next / 2;
                     cwnd_next = INIT_CWND;
-                    m_ssthresh /= 2;
                     break;
                 } else {
                     // Handle other errors
