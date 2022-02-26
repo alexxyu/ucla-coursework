@@ -5,6 +5,7 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
+#include <netdb.h>
 #include <sstream>
 #include <sys/socket.h>
 #include <thread>
@@ -17,10 +18,19 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    sockaddr_in addr;
-    socklen_t socklen;
+    addrinfo hints = { 0 };
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_DGRAM;
+    hints.ai_protocol = IPPROTO_UDP;
+    hints.ai_flags = AI_PASSIVE | AI_NUMERICSERV;
 
-    int port = atoi(argv[1]);
+    addrinfo* result;
+    int error = getaddrinfo(nullptr, argv[1], &hints, &result);
+    if (error) {
+        std::cerr << "ERROR: failed to resolve address/port: " << gai_strerror(error) << std::endl;
+        return 1;
+    }
+
     char* filedir = argv[2];
 
     int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -29,12 +39,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(port);
-    addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    socklen = sizeof(addr);
-
-    if (bind(sock, (sockaddr*) &addr, socklen) < 0) {
+    if (bind(sock, result->ai_addr, result->ai_addrlen) < 0) {
         std::cerr << "ERROR: " << strerror(errno) << std::endl;
         return 1;
     }
@@ -44,6 +49,8 @@ int main(int argc, char* argv[]) {
 
     uint8_t buf[PACKET_LENGTH];
     ssize_t bytes_received;
+    sockaddr_in addr;
+    socklen_t socklen;
     while ((bytes_received = recvfrom(sock, buf, PACKET_LENGTH, MSG_WAITALL, (sockaddr*) &addr, &socklen)) > 0) {
         auto now = std::chrono::system_clock::now();
         for (auto it = connections.begin(); it != connections.end();) {

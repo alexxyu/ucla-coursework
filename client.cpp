@@ -20,6 +20,9 @@ int main(int argc, char* argv[]) {
 
     addrinfo hints = { 0 };
     hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_DGRAM;
+    hints.ai_protocol = IPPROTO_UDP;
+    hints.ai_flags = AI_NUMERICSERV;
 
     addrinfo* result;
     int error = getaddrinfo(argv[1], argv[2], &hints, &result);
