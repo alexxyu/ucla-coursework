@@ -1,13 +1,14 @@
 CXX=g++
 CXXOPTIMIZE= -O2
 CXXFLAGS= -g -Wall -pthread -std=c++11 $(CXXOPTIMIZE)
-USERID=005395690_ALEXID
+USERID=005395690_105295708
 
 SERVER_OBJ=\
 client_connection.o \
 server.o
 
 CLIENT_OBJ=\
+server_connection.o \
 client.o
 
 all: server client
