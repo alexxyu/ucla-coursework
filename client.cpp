@@ -6,6 +6,7 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
+#include <netdb.h>
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <thread>
@@ -17,24 +18,24 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    sockaddr_in addr;
+    addrinfo hints = { 0 };
+    hints.ai_family = AF_INET;
 
-    // TODO: resolve hostname / ip
-    // char* ip_str = argv[1];
-    int port = atoi(argv[2]);
+    addrinfo* result;
+    int error = getaddrinfo(argv[1], argv[2], &hints, &result);
+    if (error) {
+        std::cerr << "ERROR: failed to resolve address/port: " << gai_strerror(error) << std::endl;
+        return 1;
+    }
+
     const char* filename = argv[3];
-
     int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (sock < 0) {
         std::cerr << "ERROR: " << strerror(errno) << std::endl;
         return 1;
     }
 
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(port);
-    addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-
-    ServerConnection sc(filename, sock, addr);
+    ServerConnection sc(filename, sock, *(sockaddr_in*) result->ai_addr);
     sc.init_connection();
     sc.send_data();
     sc.close_connection();
