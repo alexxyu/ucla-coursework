@@ -6,17 +6,25 @@
 #include <fstream>
 #include <iostream>
 #include <netdb.h>
+#include <signal.h>
 #include <sstream>
 #include <sys/socket.h>
 #include <thread>
 #include <unistd.h>
 #include <unordered_map>
 
+void quit(int signum) {
+    exit(0);
+}
+
 int main(int argc, char* argv[]) {
     if (argc != 3) {
         std::cerr << "Usage: " << argv[0] << " <PORT> <FILE-DIR>" << std::endl;
         return 1;
     }
+
+    signal(SIGQUIT, quit);
+    signal(SIGTERM, quit);
 
     addrinfo hints = { 0 };
     hints.ai_family = AF_INET;

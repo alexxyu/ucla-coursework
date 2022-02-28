@@ -21,6 +21,7 @@ void ServerConnection::init_connection() {
     client_header.encode(buffer);
     if (sendto(m_socket, buffer, HEADER_LENGTH, 0, (sockaddr*) &m_server_address, sizeof(m_server_address)) < 0) {
         std::cerr << "ERROR: " << strerror(errno) << std::endl;
+        return;
     }
     output_client_send(client_header, m_cwnd, m_ssthresh, false);
 
@@ -29,6 +30,7 @@ void ServerConnection::init_connection() {
     alarm(KEEPALIVE_TIMEOUT);
     if (recvfrom(m_socket, buffer, HEADER_LENGTH, MSG_WAITALL, (sockaddr*) &m_server_address, &socklen) < 0) {
         std::cerr << "ERROR: " << strerror(errno) << std::endl;
+        return;
     }
     server_header.decode(buffer);
     output_client_recv(server_header, m_cwnd, m_ssthresh);
@@ -69,7 +71,8 @@ void ServerConnection::send_data() {
                     break;
                 } else {
                     // Handle other errors
-                    std::cerr << "ERROR: " << errno << " " << strerror(errno) << std::endl;
+                    std::cerr << "ERROR: " << strerror(errno) << std::endl;
+                    return;
                 }
             } else {
                 PacketHeader server_header;
@@ -86,7 +89,7 @@ void ServerConnection::send_data() {
 
                     SequenceNumber ack = server_header.acknowledgement_number();
                     while (!m_packets.empty() && ack >= m_packets.front().header().sequence_number() + m_packets.front().payload_len()) {
-                        m_packet_bytes -= m_packets.front().payload_len();
+                        m_bytes_queued -= m_packets.front().payload_len();
                         m_packets.pop_front();
                     }
                 }
@@ -109,7 +112,7 @@ int ServerConnection::send_transmission_round() {
     // does not already exceed the window size
     ssize_t bytes_read;
     uint8_t buffer[PACKET_LENGTH];
-    while (!m_stream.eof() && m_packet_bytes < wnd) {
+    while (!m_stream.eof() && m_bytes_queued < wnd) {
         PacketHeader header;
         header.set_sequence_number(m_sequence_number);
         header.set_acknowledgement_number(m_acknowledgement_number);
@@ -122,7 +125,7 @@ int ServerConnection::send_transmission_round() {
 
         if (bytes_read > 0) {
             Packet p(header, buffer + HEADER_LENGTH, bytes_read);
-            m_packet_bytes += bytes_read;
+            m_bytes_queued += bytes_read;
             m_packets.push_back(p);
 
             m_sequence_number += bytes_read;
@@ -169,23 +172,29 @@ void ServerConnection::close_connection() {
         // Send FIN packet to the server
         if (sendto(m_socket, buffer, HEADER_LENGTH, 0, (sockaddr*) &m_server_address, sizeof(m_server_address)) < 0) {
             std::cerr << "ERROR: " << strerror(errno) << std::endl;
+            return;
         }
         output_client_send(client_header, m_cwnd, m_ssthresh, false);
 
         // Expect to receive a [FIN-]ACK packet back from the server
         if (recvfrom(m_socket, buffer, HEADER_LENGTH, MSG_WAITALL, (sockaddr*) &m_server_address, &socklen) < 0) {
             if (errno != EWOULDBLOCK && errno != EAGAIN) {
-                std::cerr << "ERROR: " << errno << " " << strerror(errno) << std::endl;
+                std::cerr << "ERROR: " << strerror(errno) << std::endl;
+                return;
             }
         } else {
             server_header.decode(buffer);
-            output_client_recv(server_header, m_cwnd, m_ssthresh);
-            break;
+
+            if (server_header.ack_flag() && server_header.acknowledgement_number() == m_sequence_number + 1) {
+                m_sequence_number += 1;
+                output_client_recv(server_header, m_cwnd, m_ssthresh);
+                break;
+            }
         }
     }
-    m_sequence_number += 1;
 
-    if (server_header.fin_flag()) {
+    if (server_header.fin_flag() && server_header.sequence_number() == m_acknowledgement_number) {
+        m_acknowledgement_number += 1;
         send_ack();
     }
 
@@ -199,12 +208,13 @@ void ServerConnection::close_connection() {
          now = std::chrono::steady_clock::now()) {
         if (recvfrom(m_socket, buffer, HEADER_LENGTH, MSG_WAITALL, (sockaddr*) &m_server_address, &socklen) <= 0) {
             if (errno != EWOULDBLOCK && errno != EAGAIN) {
-                std::cerr << "ERROR: " << errno << " " << strerror(errno) << std::endl;
+                std::cerr << "ERROR: " << strerror(errno) << std::endl;
+                return;
             }
         } else {
             server_header.decode(buffer);
 
-            if (server_header.fin_flag()) {
+            if (server_header.fin_flag() && server_header.sequence_number() + 1 == m_acknowledgement_number) {
                 output_client_recv(server_header, m_cwnd, m_ssthresh);
                 send_ack();
             }
@@ -217,8 +227,6 @@ void ServerConnection::close_connection() {
 void ServerConnection::send_ack() {
     uint8_t buffer[HEADER_LENGTH];
 
-    m_acknowledgement_number += 1;
-
     PacketHeader ack_header;
     ack_header.set_sequence_number(m_sequence_number);
     ack_header.set_acknowledgement_number(m_acknowledgement_number);
@@ -228,6 +236,7 @@ void ServerConnection::send_ack() {
 
     if (sendto(m_socket, buffer, HEADER_LENGTH, 0, (sockaddr*) &m_server_address, sizeof(m_server_address)) < 0) {
         std::cerr << "ERROR: " << strerror(errno) << std::endl;
+        return;
     }
 
     output_client_send(ack_header, m_cwnd, m_ssthresh, false);

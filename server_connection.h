@@ -51,5 +51,5 @@ private:
     SequenceNumber m_sequence_number { INIT_SEQNO_CLIENT };
     SequenceNumber m_acknowledgement_number { 0 };
     std::list<Packet> m_packets;
-    size_t m_packet_bytes { 0 };
+    size_t m_bytes_queued { 0 };
 };

@@ -15,7 +15,7 @@
 
 void timeout_connection(int signum) {
     std::cerr << "ERROR: connection timed out" << std::endl;
-    _exit(1);
+    exit(1);
 }
 
 int main(int argc, char* argv[]) {

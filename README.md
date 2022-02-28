@@ -33,9 +33,6 @@ To dissect tcpdump-recorded file, you can use `-r <pcapfile>` option. For exampl
 
 ## TODO
 
-* Graceful exit on SIGQUIT / SIGTERM signal
-* Error handling
-
     ###########################################################
     ##                                                       ##
     ## REPLACE CONTENT OF THIS FILE WITH YOUR PROJECT REPORT ##
