@@ -82,9 +82,11 @@ void ServerConnection::send_data() {
                     if (cwnd_next < m_ssthresh) {
                         // Slow start phase
                         cwnd_next += PAYLOAD_LENGTH;
+                        cwnd_next = std::min(cwnd_next, (size_t) MAX_CWND);
                     } else {
                         // Congestion avoidance phase
                         cwnd_next += (PAYLOAD_LENGTH * PAYLOAD_LENGTH) / m_cwnd;
+                        cwnd_next = std::min(cwnd_next, (size_t) MAX_CWND);
                     }
 
                     SequenceNumber ack = server_header.acknowledgement_number();
@@ -94,7 +96,7 @@ void ServerConnection::send_data() {
                     }
                 }
 
-                output_client_recv(server_header, std::min(cwnd_next, (size_t) MAX_CWND), m_ssthresh);
+                output_client_recv(server_header, cwnd_next, m_ssthresh);
                 alarm(KEEPALIVE_TIMEOUT);
             }
             n_sent--;
@@ -115,9 +117,14 @@ int ServerConnection::send_transmission_round() {
     while (!m_stream.eof() && m_bytes_queued < wnd) {
         PacketHeader header;
         header.set_sequence_number(m_sequence_number);
-        header.set_acknowledgement_number(m_acknowledgement_number);
         header.set_connection_id(m_connection_id);
-        header.set_ack_flag();
+
+        if (m_sequence_number == INIT_SEQNO_CLIENT + 1) {
+            // Only set ACK flag and field if it's the first packet with data sent out
+            header.set_acknowledgement_number(m_acknowledgement_number);
+            header.set_ack_flag();
+        }
+
         header.encode(buffer);
 
         m_stream.read((char*) buffer + HEADER_LENGTH, PAYLOAD_LENGTH);
