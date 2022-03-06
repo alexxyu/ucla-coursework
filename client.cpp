@@ -18,6 +18,10 @@ void timeout_connection(int signum) {
     exit(1);
 }
 
+void quit(int signum) {
+    exit(0);
+}
+
 int main(int argc, char* argv[]) {
     if (argc != 4) {
         std::cerr << "Usage: " << argv[0] << " <HOSTNAME-OR-IP> <PORT> <FILENAME>" << std::endl;
@@ -25,6 +29,9 @@ int main(int argc, char* argv[]) {
     }
 
     signal(SIGALRM, timeout_connection);
+    signal(SIGINT, quit);
+    signal(SIGQUIT, quit);
+    signal(SIGTERM, quit);
 
     addrinfo hints = { 0 };
     hints.ai_family = AF_INET;

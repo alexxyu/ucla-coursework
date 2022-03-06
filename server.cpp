@@ -23,6 +23,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    signal(SIGINT, quit);
     signal(SIGQUIT, quit);
     signal(SIGTERM, quit);
 
