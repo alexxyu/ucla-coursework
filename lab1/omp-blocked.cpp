@@ -11,8 +11,7 @@
 void GemmParallelBlocked(const float a[kI][kK], const float b[kK][kJ],
                          float c[kI][kJ]) {
   float p;
-  int i, k, j;
-  int ii, jj, kk;
+  int i, j, k, ii, jj, kk;
 
   float aT[BLOCK_SIZE][BLOCK_SIZE];
   float bT[BLOCK_SIZE][BLOCK_SIZE];
@@ -21,18 +20,17 @@ void GemmParallelBlocked(const float a[kI][kK], const float b[kK][kJ],
     std::memset(c[i], 0, sizeof(float) * kI);
 
     for (k=0; k<kK; k+=BLOCK_SIZE) {
-      #pragma omp parallel for shared(a,aT)
+      #pragma omp parallel for shared(i,k,a,aT)
       for (ii=0; ii<BLOCK_SIZE; ii++) {
         std::memcpy(aT[ii], a[i+ii]+k, sizeof(float) * BLOCK_SIZE);
       }
 
+      #pragma omp parallel for shared(i,k,aT,b,c) private(ii,jj,kk,bT,p)
       for (j=0; j<kJ; j+=BLOCK_SIZE) {
-        #pragma omp parallel for shared(b,bT)
         for (kk=0; kk<BLOCK_SIZE; kk++) {
           std::memcpy(bT[kk], b[k+kk]+j, sizeof(float) * BLOCK_SIZE);
         }
 
-        #pragma omp parallel for shared(aT,bT) private(p,kk,jj)
         for (ii=0; ii<BLOCK_SIZE; ii++) {
           for (kk=0; kk<BLOCK_SIZE; kk++) {
             p = aT[ii][kk];
