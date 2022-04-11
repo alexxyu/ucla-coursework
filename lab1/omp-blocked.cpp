@@ -6,7 +6,7 @@
 #include "lib/gemm.h"
 
 // Using declarations, if any...
-#define BLOCK_SIZE 256
+#define BLOCK_SIZE 64
 
 void GemmParallelBlocked(const float a[kI][kK], const float b[kK][kJ],
                          float c[kI][kJ]) {
