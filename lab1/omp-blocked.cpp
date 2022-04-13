@@ -6,12 +6,15 @@
 #include "lib/gemm.h"
 
 // Using declarations, if any...
+#define N_THREADS 8
 #define BLOCK_SIZE 64
 
 void GemmParallelBlocked(const float a[kI][kK], const float b[kK][kJ],
                          float c[kI][kJ]) {
   float p;
   int i, j, k, ii, jj, kk;
+
+  omp_set_num_threads(N_THREADS);
 
   float aT[BLOCK_SIZE][BLOCK_SIZE];
   float bT[BLOCK_SIZE][BLOCK_SIZE];

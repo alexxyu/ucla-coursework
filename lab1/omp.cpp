@@ -5,11 +5,14 @@
 #include "lib/gemm.h"
 
 // Using declarations, if any...
+#define N_THREADS 8
 
 void GemmParallel(const float a[kI][kK], const float b[kK][kJ],
                   float c[kI][kJ]) {
   float p;
   int i, k, j;
+
+  omp_set_num_threads(N_THREADS);
   
   #pragma omp parallel for shared(a,b,c) private(j,k,p)
   for (i=0; i<kI; i++) {
