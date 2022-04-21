@@ -1,7 +1,7 @@
 // Header inclusions, if any...
 
 #include <mpi.h>
-#include <string.h>
+#include <cstring>
 #include <iostream>
 
 #include "lib/gemm.h"
@@ -36,16 +36,15 @@ void GemmParallelBlocked(const float a[kI][kK], const float b[kK][kJ],
   MPI_Scatter(
     a, aS*kK, MPI_FLOAT,
     aT, aS*kK, MPI_FLOAT,
-    0,
-    MPI_COMM_WORLD
+    0, MPI_COMM_WORLD
   );
 
   MPI_Bcast(
     bT, kK*kJ, MPI_FLOAT,
-    0,
-    MPI_COMM_WORLD
+    0, MPI_COMM_WORLD
   );
 
+  std::memset(cT, 0, sizeof(float) * aS * kJ);
   for (i=0; i<aS; i++) {
     for (k=0; k<kK; k++) {
       for (j=0; j<kJ; j++) {
