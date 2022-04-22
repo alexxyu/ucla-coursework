@@ -22,6 +22,8 @@ void GemmParallelBlocked(const float a[kI][kK], const float b[kK][kJ],
   MPI_Comm_size(MPI_COMM_WORLD, &pnum);
   MPI_Comm_rank(MPI_COMM_WORLD, &pid);
 
+  int runs_k = kK/pnum/BLOCK_SIZE;
+
   // Used for holding block input/output
   float* aBlock = (float*) lab2::aligned_alloc(ALIGNMENT_SIZE, sizeof(float) * BLOCK_SIZE * BLOCK_SIZE);
   float* bBlock = (float*) lab2::aligned_alloc(ALIGNMENT_SIZE, sizeof(float) * BLOCK_SIZE * BLOCK_SIZE);
@@ -29,6 +31,7 @@ void GemmParallelBlocked(const float a[kI][kK], const float b[kK][kJ],
   std::memset(cBlock, 0, sizeof(float) * kI * kJ);
 
   // bBuffer used for scattering blocks of b for given j
+  float* bBlocks = (float*) lab2::aligned_alloc(ALIGNMENT_SIZE, sizeof(float) * runs_k * BLOCK_SIZE * kJ);
   float* bBuffer = (float*) lab2::aligned_alloc(ALIGNMENT_SIZE, sizeof(float) * kK * BLOCK_SIZE);
 
   // cBuffer used to hold reduction of all c blocks
@@ -38,8 +41,18 @@ void GemmParallelBlocked(const float a[kI][kK], const float b[kK][kJ],
     std::memset(c, 0, sizeof(float) * kI * kJ);
   }
 
+  // Read columns of b into bBuffer and scatter blocks among processors
+  for (r=0; r<runs_k; r++) {
+    int start = r*pnum*BLOCK_SIZE;
+    MPI_Scatter(
+      b[start], BLOCK_SIZE*kJ, MPI_FLOAT,
+      bBlocks+(r*BLOCK_SIZE*kJ), BLOCK_SIZE*kJ, MPI_FLOAT,
+      0, MPI_COMM_WORLD
+    );
+  }
+
   for (i=0; i<kI; i+=BLOCK_SIZE) {
-    for (r=0; r<kK/pnum/BLOCK_SIZE; r++) {
+    for (r=0; r<runs_k; r++) {
       int start = r*pnum*BLOCK_SIZE;
       // Scatter block of a among processors
       for (ii=0; ii<BLOCK_SIZE; ii++) {
@@ -51,18 +64,9 @@ void GemmParallelBlocked(const float a[kI][kK], const float b[kK][kJ],
       }
 
       for (j=0; j<kJ; j+=BLOCK_SIZE) {
-        // Read columns of b into bBuffer and scatter blocks among processors
-        if (pid == 0) {
-          for (k=0; k<pnum*BLOCK_SIZE; k++) {
-            std::memcpy(bBuffer+(k*BLOCK_SIZE), b[k+start]+j, sizeof(float)*BLOCK_SIZE);
-          }
+        for (kk=0; kk<BLOCK_SIZE; kk++) {
+          std::memcpy(bBlock+(kk*BLOCK_SIZE), bBlocks+(r*kJ*BLOCK_SIZE)+(kk*kJ)+j, sizeof(float) * BLOCK_SIZE);
         }
-
-        MPI_Scatter(
-          bBuffer, BLOCK_SIZE*BLOCK_SIZE, MPI_FLOAT,
-          bBlock, BLOCK_SIZE*BLOCK_SIZE, MPI_FLOAT,
-          0, MPI_COMM_WORLD
-        );
 
         // Do matrix multiplication on blocks
         for (ii=0; ii<BLOCK_SIZE; ii++) {
