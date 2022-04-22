@@ -11,6 +11,7 @@
 
 // Using declarations, if any...
 #define BLOCK_SIZE 256
+#define ALIGNMENT_SIZE 4096
 
 void GemmParallelBlocked(const float a[kI][kK], const float b[kK][kJ],
                          float c[kI][kJ]) {
@@ -22,15 +23,16 @@ void GemmParallelBlocked(const float a[kI][kK], const float b[kK][kJ],
   MPI_Comm_rank(MPI_COMM_WORLD, &pid);
 
   // Used for holding block input/output
-  float* aBlock = (float*) malloc(sizeof(float) * BLOCK_SIZE * BLOCK_SIZE);
-  float* bBlock = (float*) malloc(sizeof(float) * BLOCK_SIZE * BLOCK_SIZE);
-  float* cBlock = (float*) malloc(sizeof(float) * BLOCK_SIZE * BLOCK_SIZE);
+  float* aBlock = (float*) lab2::aligned_alloc(ALIGNMENT_SIZE, sizeof(float) * BLOCK_SIZE * BLOCK_SIZE);
+  float* bBlock = (float*) lab2::aligned_alloc(ALIGNMENT_SIZE, sizeof(float) * BLOCK_SIZE * BLOCK_SIZE);
+  float* cBlock = (float*) lab2::aligned_alloc(ALIGNMENT_SIZE, sizeof(float) * kI * kJ);
+  std::memset(cBlock, 0, sizeof(float) * kI * kJ);
 
   // bBuffer used for scattering blocks of b for given j
-  float* bBuffer = (float*) malloc(sizeof(float) * kK * kJ);
+  float* bBuffer = (float*) lab2::aligned_alloc(ALIGNMENT_SIZE, sizeof(float) * kK * BLOCK_SIZE);
 
   // cBuffer used to hold reduction of all c blocks
-  float* cBuffer = (float*) malloc(sizeof(float) * BLOCK_SIZE * BLOCK_SIZE);
+  float* cBuffer = (float*) lab2::aligned_alloc(ALIGNMENT_SIZE, sizeof(float) * BLOCK_SIZE * BLOCK_SIZE);
 
   if (pid == 0) {
     std::memset(c, 0, sizeof(float) * kI * kJ);
@@ -65,30 +67,22 @@ void GemmParallelBlocked(const float a[kI][kK], const float b[kK][kJ],
         // Do matrix multiplication on blocks
         for (ii=0; ii<BLOCK_SIZE; ii++) {
           for (jj=0; jj<BLOCK_SIZE; jj++) {
-            float cVal = 0;
+            float cVal = cBlock[(i+ii)*kJ+j+jj];
             for (kk=0; kk<BLOCK_SIZE; kk++) {
               cVal += aBlock[ii*BLOCK_SIZE + kk] * bBlock[kk*BLOCK_SIZE + jj];
             }
-            cBlock[ii*BLOCK_SIZE + jj] = cVal;
-          }
-        }
-
-        // Reduce to single block and copy result to c
-        MPI_Reduce(
-          cBlock, cBuffer, BLOCK_SIZE*BLOCK_SIZE,
-          MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD
-        );
-
-        if (pid == 0) {
-          for (ii=0; ii<BLOCK_SIZE; ii++) {
-            for (jj=0; jj<BLOCK_SIZE; jj++) {
-              c[i+ii][j+jj] += cBuffer[ii*BLOCK_SIZE + jj];
-            }
+            cBlock[(i+ii)*kJ+j+jj] = cVal;
           }
         }
       }
     }
   }
+
+  // Reduce to single block and copy result to c
+  MPI_Reduce(
+    cBlock, c, kI*kJ,
+    MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD
+  );
 
   free(aBlock);
   free(bBlock);
