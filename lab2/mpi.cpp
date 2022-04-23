@@ -28,12 +28,12 @@ void GemmParallelBlocked(const float a[kI][kK], const float b[kK][kJ],
   // Used for holding block input/output
   float* aBlock = (float*) lab2::aligned_alloc(ALIGNMENT_SIZE, sizeof(float) * BLOCK_SIZE);
   float* bBlock = (float*) lab2::aligned_alloc(ALIGNMENT_SIZE, sizeof(float) * BLOCK_SIZE);
-  float* cBlock = (float*) lab2::aligned_alloc(ALIGNMENT_SIZE, sizeof(float) * kI * kJ);
-  std::memset(cBlock, 0, sizeof(float) * kI * kJ);
+  float* cBuffer = (float*) lab2::aligned_alloc(ALIGNMENT_SIZE, sizeof(float) * kI * kJ);
+  std::memset(cBuffer, 0, sizeof(float) * kI * kJ);
 
-  // bBlocks used to hold blocks of b needed by a processor (rowwise)
-  float* bBlocksTmp = (float*) lab2::aligned_alloc(ALIGNMENT_SIZE, sizeof(float) * runs_k * BLOCK_LEN * kJ);
+  // bBlocks used to hold blocks of B needed by this processor (row-wise)
   float* bBlocks = (float*) lab2::aligned_alloc(ALIGNMENT_SIZE, sizeof(float) * runs_k * BLOCK_LEN * kJ);
+  float* bBlocksTmp = (float*) lab2::aligned_alloc(ALIGNMENT_SIZE, sizeof(float) * runs_k * BLOCK_LEN * kJ);
 
   // Read columns of b and scatter blocks among processors
   for (r=0; r<runs_k; r++) {
@@ -59,7 +59,7 @@ void GemmParallelBlocked(const float a[kI][kK], const float b[kK][kJ],
 
   for (i=0; i<kI; i+=BLOCK_LEN) {
     for (r=0; r<runs_k; r++) {
-      // Scatter block of a among processors
+      // Scatter block of A among processors (column-wise)
       k = r * pnum * BLOCK_LEN;
       for (ii=0; ii<BLOCK_LEN; ii++) {
         MPI_Scatter(
@@ -79,22 +79,22 @@ void GemmParallelBlocked(const float a[kI][kK], const float b[kK][kJ],
             for (kk=0; kk<BLOCK_LEN; kk++) {
               cVal += aBlock[ii*BLOCK_LEN + kk] * bBlock[kk*BLOCK_LEN + jj];
             }
-            cBlock[(i+ii)*kJ + (j+jj)] += cVal;
+            cBuffer[(i+ii)*kJ + (j+jj)] += cVal;
           }
         }
       }
     }
   }
 
-  // Reduce every process's copy to c
+  // Reduce every process's copy to C
   MPI_Reduce(
-    cBlock, c, kI*kJ,
+    cBuffer, c, kI*kJ,
     MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD
   );
 
   free(aBlock);
   free(bBlock);
-  free(cBlock);
-  free(bBlocksTmp);
+  free(cBuffer);
   free(bBlocks);
+  free(bBlocksTmp);
 }
