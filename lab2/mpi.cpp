@@ -9,7 +9,6 @@
 // You can directly use aligned_alloc
 // with lab2::aligned_alloc(...)
 
-// Using declarations, if any...
 #define BLOCK_LEN 16
 #define BLOCK_SIZE BLOCK_LEN*BLOCK_LEN
 #define ALIGNMENT_SIZE 4096
@@ -18,83 +17,65 @@ void GemmParallelBlocked(const float a[kI][kK], const float b[kK][kJ],
                          float c[kI][kJ]) {
   int i, j, k, r;
   int ii, jj, kk;
-  int pnum, pid;
+  int pnum, pid, runs_I;
 
   MPI_Comm_size(MPI_COMM_WORLD, &pnum);
   MPI_Comm_rank(MPI_COMM_WORLD, &pid);
 
-  int runs_k = kK / pnum / BLOCK_LEN;
+  // aBlock is used to hold blocks of A needed by this processor (row-wise)
+  float* aBlock = (float*) lab2::aligned_alloc(ALIGNMENT_SIZE, sizeof(float) * BLOCK_LEN * kK);
 
-  // Used for holding block input/output
-  float* aBlock = (float*) lab2::aligned_alloc(ALIGNMENT_SIZE, sizeof(float) * BLOCK_SIZE);
-  float* bBlock = (float*) lab2::aligned_alloc(ALIGNMENT_SIZE, sizeof(float) * BLOCK_SIZE);
-  float* cBuffer = (float*) lab2::aligned_alloc(ALIGNMENT_SIZE, sizeof(float) * kI * kJ);
-  std::memset(cBuffer, 0, sizeof(float) * kI * kJ);
+  // cBuffer is used for storing computations for C, to be gathered at the end of each run
+  float* cBuffer = (float*) lab2::aligned_alloc(ALIGNMENT_SIZE, sizeof(float) * BLOCK_LEN * kJ);
 
-  // bBlocks used to hold blocks of B needed by this processor (row-wise)
-  float* bBlocks = (float*) lab2::aligned_alloc(ALIGNMENT_SIZE, sizeof(float) * runs_k * BLOCK_LEN * kJ);
-  float* bBlocksTmp = (float*) lab2::aligned_alloc(ALIGNMENT_SIZE, sizeof(float) * runs_k * BLOCK_LEN * kJ);
+  float* bCopy = (float*) lab2::aligned_alloc(ALIGNMENT_SIZE, sizeof(float) * kK * kJ);
+  if (pid == 0) {
+    std::memcpy(bCopy, b, sizeof(float) * kK * kJ);
+  }
 
-  // Read columns of b and scatter blocks among processors
-  for (r=0; r<runs_k; r++) {
+  MPI_Bcast(
+    bCopy, kK * kJ, MPI_FLOAT,
+    0, MPI_COMM_WORLD
+  );
+
+  runs_I = kI / pnum / BLOCK_LEN;
+
+  // Iterate over each run, where each processor works on BLOCK_LEN rows in C
+  for (r=0; r<runs_I; r++) {
+    std::memset(cBuffer, 0, sizeof(float) * BLOCK_LEN * kJ);
+    i = r * pnum * BLOCK_LEN;
+
+    // Each processor gets BLOCK_LEN rows of A blocks
     MPI_Scatter(
-      b[r*pnum*BLOCK_LEN], BLOCK_LEN*kJ, MPI_FLOAT,
-      &bBlocksTmp[r*BLOCK_LEN*kJ], BLOCK_LEN*kJ, MPI_FLOAT,
+      a[i], BLOCK_LEN*kK, MPI_FLOAT,
+      aBlock, BLOCK_LEN*kK, MPI_FLOAT,
       0, MPI_COMM_WORLD
     );
-  }
 
-  // Format blocks of b such that elements in the same block are contiguous
-  for (r=0; r<runs_k; r++) {
-    for (j=0; j<kJ; j+=BLOCK_LEN) {
-      for (kk=0; kk<BLOCK_LEN; kk++) {
-        std::memcpy(
-          &bBlocks[(r*kJ+j+kk)*BLOCK_LEN],
-          &bBlocksTmp[(r*kJ*BLOCK_LEN)+(kk*kJ)+j],
-          sizeof(float) * BLOCK_LEN
-        );
-      }
-    }
-  }
-
-  for (i=0; i<kI; i+=BLOCK_LEN) {
-    for (r=0; r<runs_k; r++) {
-      // Scatter block of A among processors (column-wise)
-      k = r * pnum * BLOCK_LEN;
-      for (ii=0; ii<BLOCK_LEN; ii++) {
-        MPI_Scatter(
-          &a[i+ii][k], BLOCK_LEN, MPI_FLOAT,
-          &aBlock[ii*BLOCK_LEN], BLOCK_LEN, MPI_FLOAT,
-          0, MPI_COMM_WORLD
-        );
-      }
-
+    for (k=0; k<kK; k+=BLOCK_LEN) {
       for (j=0; j<kJ; j+=BLOCK_LEN) {
-        std::memcpy(bBlock, &bBlocks[(r*kJ+j)*BLOCK_LEN], sizeof(float) * BLOCK_SIZE);
-
-        // Do matrix multiplication on blocks
+        // Perform matrix multiplication on individual blocks
         for (ii=0; ii<BLOCK_LEN; ii++) {
           for (jj=0; jj<BLOCK_LEN; jj++) {
             float cVal = 0;
             for (kk=0; kk<BLOCK_LEN; kk++) {
-              cVal += aBlock[ii*BLOCK_LEN + kk] * bBlock[kk*BLOCK_LEN + jj];
+              cVal += aBlock[ii*kK + k+kk] * bCopy[(k+kk)*kJ + j+jj];
             }
-            cBuffer[(i+ii)*kJ + (j+jj)] += cVal;
+            cBuffer[ii*kJ + (j+jj)] += cVal;
           }
         }
       }
     }
+
+    // Gather computed rows from this run across all processors into C
+    MPI_Gather(
+      cBuffer, BLOCK_LEN * kJ, MPI_FLOAT,
+      &c[i], BLOCK_LEN * kJ, MPI_FLOAT,
+      0, MPI_COMM_WORLD
+    );
   }
 
-  // Reduce every process's copy to C
-  MPI_Reduce(
-    cBuffer, c, kI*kJ,
-    MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD
-  );
-
   free(aBlock);
-  free(bBlock);
   free(cBuffer);
-  free(bBlocks);
-  free(bBlocksTmp);
+  free(bCopy);
 }
