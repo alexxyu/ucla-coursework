@@ -31,6 +31,7 @@ void GemmParallelBlocked(const float a[kI][kK], const float b[kK][kJ],
   std::memset(cBlock, 0, sizeof(float) * kI * kJ);
 
   // bBlocks used to hold blocks of b needed by a processor (rowwise)
+  float* bBlocksTmp = (float*) lab2::aligned_alloc(ALIGNMENT_SIZE, sizeof(float) * runs_k * BLOCK_SIZE * kJ);
   float* bBlocks = (float*) lab2::aligned_alloc(ALIGNMENT_SIZE, sizeof(float) * runs_k * BLOCK_SIZE * kJ);
 
   // Read columns of b and scatter blocks among processors
@@ -38,9 +39,22 @@ void GemmParallelBlocked(const float a[kI][kK], const float b[kK][kJ],
     int start = r*pnum*BLOCK_SIZE;
     MPI_Scatter(
       b[start], BLOCK_SIZE*kJ, MPI_FLOAT,
-      bBlocks+(r*BLOCK_SIZE*kJ), BLOCK_SIZE*kJ, MPI_FLOAT,
+      &bBlocksTmp[r*BLOCK_SIZE*kJ], BLOCK_SIZE*kJ, MPI_FLOAT,
       0, MPI_COMM_WORLD
     );
+  }
+
+  // Format blocks of b such that elements in the same block are contiguous
+  for (r=0; r<runs_k; r++) {
+    for (j=0; j<kJ; j+=BLOCK_SIZE) {
+      for (kk=0; kk<BLOCK_SIZE; kk++) {
+        std::memcpy(
+          &bBlocks[(r*kJ+j+kk)*BLOCK_SIZE],
+          &bBlocksTmp[(r*kJ*BLOCK_SIZE)+(kk*kJ)+j],
+          sizeof(float) * BLOCK_SIZE
+        );
+      }
+    }
   }
 
   for (i=0; i<kI; i+=BLOCK_SIZE) {
@@ -49,16 +63,14 @@ void GemmParallelBlocked(const float a[kI][kK], const float b[kK][kJ],
       // Scatter block of a among processors
       for (ii=0; ii<BLOCK_SIZE; ii++) {
         MPI_Scatter(
-          a[i+ii]+start, BLOCK_SIZE, MPI_FLOAT,
-          aBlock+(ii*BLOCK_SIZE), BLOCK_SIZE, MPI_FLOAT,
+          &a[i+ii][start], BLOCK_SIZE, MPI_FLOAT,
+          &aBlock[ii*BLOCK_SIZE], BLOCK_SIZE, MPI_FLOAT,
           0, MPI_COMM_WORLD
         );
       }
 
       for (j=0; j<kJ; j+=BLOCK_SIZE) {
-        for (kk=0; kk<BLOCK_SIZE; kk++) {
-          std::memcpy(bBlock+(kk*BLOCK_SIZE), bBlocks+(r*kJ*BLOCK_SIZE)+(kk*kJ)+j, sizeof(float) * BLOCK_SIZE);
-        }
+        std::memcpy(bBlock, &bBlocks[(r*kJ+j)*BLOCK_SIZE], sizeof(float) * BLOCK_SIZE * BLOCK_SIZE);
 
         // Do matrix multiplication on blocks
         for (ii=0; ii<BLOCK_SIZE; ii++) {
@@ -67,7 +79,7 @@ void GemmParallelBlocked(const float a[kI][kK], const float b[kK][kJ],
             for (kk=0; kk<BLOCK_SIZE; kk++) {
               cVal += aBlock[ii*BLOCK_SIZE + kk] * bBlock[kk*BLOCK_SIZE + jj];
             }
-            cBlock[(i+ii)*kJ+j+jj] += cVal;
+            cBlock[(i+ii)*kJ + (j+jj)] += cVal;
           }
         }
       }
