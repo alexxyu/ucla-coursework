@@ -24,25 +24,16 @@ void GemmParallelBlocked(const float a[kI][kK], const float b[kK][kJ],
 
   runs_I = kI / pnum / BLOCK_LEN;
 
-  float* aDist;
-
   // aBlocks is used to blocks of A assigned to this processor (row-wise)
   float* aBlocks = (float*) lab2::aligned_alloc(ALIGNMENT_SIZE, sizeof(float) * runs_I * BLOCK_LEN * kK);
   float* aBlock = (float*) lab2::aligned_alloc(ALIGNMENT_SIZE, sizeof(float) * BLOCK_SIZE);
   float* bCopy = (float*) lab2::aligned_alloc(ALIGNMENT_SIZE, sizeof(float) * kK * kJ);
 
   // cBuffer is used for storing computations for C, to be gathered at the end of each run
-  float* cBuffer = (float*) lab2::aligned_alloc(ALIGNMENT_SIZE, sizeof(float) * BLOCK_LEN * kJ);
+  float* cBuffer = (float*) lab2::aligned_alloc(ALIGNMENT_SIZE, sizeof(float) * runs_I * BLOCK_LEN * kJ);
+  std::memset(cBuffer, 0, sizeof(float) * runs_I * BLOCK_LEN * kJ);
 
   if (pid == 0) {
-    // Prepare A for scattering (all rows assigned to a processor are contiguous)
-    aDist = (float*) lab2::aligned_alloc(ALIGNMENT_SIZE, sizeof(float) * kI * kK);
-    for (r=0; r<runs_I; r++) {
-      for (p=0; p<pnum; p++) {
-        std::memcpy(&aDist[(p*runs_I+r)*BLOCK_LEN*kK], &a[(r*pnum+p)*BLOCK_LEN], sizeof(float) * BLOCK_LEN * kK);
-      }
-    }
-
     std::memcpy(bCopy, b, sizeof(float) * kK * kJ);
   }
 
@@ -52,19 +43,14 @@ void GemmParallelBlocked(const float a[kI][kK], const float b[kK][kJ],
   );
 
   MPI_Scatter(
-    aDist, runs_I * BLOCK_LEN * kK, MPI_FLOAT,
+    a, runs_I * BLOCK_LEN * kK, MPI_FLOAT,
     aBlocks, runs_I * BLOCK_LEN * kK, MPI_FLOAT,
     0, MPI_COMM_WORLD
   );
 
-  if (pid == 0) {
-    free(aDist);
-  }
-
   // Iterate over each run, where each processor works on BLOCK_LEN rows in C
   for (r=0; r<runs_I; r++) {
-    std::memset(cBuffer, 0, sizeof(float) * BLOCK_LEN * kJ);
-    i = r * pnum * BLOCK_LEN;
+    i = r * BLOCK_LEN;
 
     for (k=0; k<kK; k+=BLOCK_LEN) {
       for (ii=0; ii<BLOCK_LEN; ii++) {
@@ -79,22 +65,22 @@ void GemmParallelBlocked(const float a[kI][kK], const float b[kK][kJ],
             for (kk=0; kk<BLOCK_LEN; kk++) {
               cVal += aBlock[ii*BLOCK_LEN + kk] * bCopy[(k+kk)*kJ + j+jj];
             }
-            cBuffer[ii*kJ + (j+jj)] += cVal;
+            cBuffer[(i+ii)*kJ + (j+jj)] += cVal;
           }
         }
       }
     }
-
-    // Gather computed rows from this run across all processors into C
-    MPI_Gather(
-      cBuffer, BLOCK_LEN * kJ, MPI_FLOAT,
-      &c[i], BLOCK_LEN * kJ, MPI_FLOAT,
-      0, MPI_COMM_WORLD
-    );
   }
+
+  // Gather computed rows from this run across all processors into C
+  MPI_Gather(
+    cBuffer, runs_I * BLOCK_LEN * kJ, MPI_FLOAT,
+    c, runs_I * BLOCK_LEN * kJ, MPI_FLOAT,
+    0, MPI_COMM_WORLD
+  );
 
   free(aBlocks);
   free(aBlock);
-  free(cBuffer);
   free(bCopy);
+  free(cBuffer);
 }
