@@ -56,9 +56,8 @@ int main(int argc, char** argv) {
     clog << "Perf: " << gflops << " GFlops\n";
   } else {
     kernel_wrapper(g_input, g_weight, g_bias, g_output);
+    cudaMemcpy(output, g_output, output_size, cudaMemcpyDeviceToHost);
   }
-
-  cudaMemcpy(output, g_output, output_size, cudaMemcpyDeviceToHost);
 
   int error = Verify(data_dir, output, output_size);
   if (error != 0) {
