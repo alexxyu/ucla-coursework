@@ -1,52 +1,75 @@
 #include "lib/macros.cuh"
 #include "kernel.h"
 
+#define TILE_WIDTH 32
+#define INPUT_WIDTH TILE_WIDTH+kKernel-1
+
 __global__ void cnn_gpu(float* input,
     float* weight,
     float* bias, float* output)
 {
-  // your implementation goes here
-  // refer to the seq. implementation until you achieve correctness
-
-  // Allocate memory on heap to avoid stack overflow.
-  float C[kImSize][kImSize];
-
-  // Input size: 256 x 228 x 228
+  // Input size: 256 x 224 x 224
+  // OUtput size: 256 x 112 x 112
   // GPU specs: 16 SMs, 32 blocks/SM, 2048 threads/SM (32K threads total)
-  // 256 channels -> 256 x 1 x 1 grid (note: we're using 50% of max # of blocks)
 
-  // Bias
-  int i = blockIdx.x;
-  for (int h = 0; h < kImSize; ++h) {
-    for (int w = 0; w < kImSize; ++w)
-      C[h][w] = bias[i];
-  }
+  const int N_CHANNELS = kNum / gridDim.x;
 
-  // Convolution
-  for (int j = 0; j < kNum; ++j) {
-    for (int h = 0; h < kImSize; ++h) {
-      for (int w = 0; w < kImSize; ++w) {
-        for (int p = 0; p < kKernel; ++p) {
-          for (int q = 0; q < kKernel; ++q)
-            C[h][w] += weight(i, j, p, q) * input(j, h + p, w + q);
+  int bi = blockIdx.x * N_CHANNELS;
+  const int tr = threadIdx.y;
+  const int tc = threadIdx.x;
+
+  __shared__ float C[TILE_WIDTH][TILE_WIDTH];
+  __shared__ float weightShared[kNum][kKernel][kKernel];
+  __shared__ float inputShared[TILE_WIDTH+kKernel-1][TILE_WIDTH+kKernel-1];
+  
+  for (int i = bi; i < bi+N_CHANNELS; i++) {
+    for (int j = (tr*TILE_WIDTH)+tc; j < kNum; j += TILE_WIDTH*TILE_WIDTH) {
+      for (int p = 0; p < kKernel; ++p) {
+        for (int q = 0; q < kKernel; ++q) {
+          weightShared[j][p][q] = weight(i, j, p, q);
         }
       }
     }
-  }
 
-  // ReLU
-  for (int h = 0; h < kImSize; ++h) {
-    for (int w = 0; w < kImSize; ++w) {
-      C[h][w] = max(0.f, C[h][w]);
-    }
-  }
+    for (int h = tr; h < kImSize; h += TILE_WIDTH) {
+      for (int w = tc; w < kImSize; w += TILE_WIDTH) {
+        // Bias
+        float reg = bias[i];
 
-  // Max pooling
-  for (int h = 0; h < kOutImSize; ++h) {
-    for (int w = 0; w < kOutImSize; ++w) {
-      output(i, h, w) = max(
-          max(C[h * 2][w * 2    ], C[h * 2 + 1][w * 2    ]),
-          max(C[h * 2][w * 2 + 1], C[h * 2 + 1][w * 2 + 1]));
+        // Convolution
+        for (int j = 0; j < kNum; ++j) {
+          inputShared[tr][tc] = input(j, h, w);
+          if (tc < kKernel-1) {
+            inputShared[tr][tc+TILE_WIDTH] = input(j, h, w+TILE_WIDTH);
+          }
+          if (tr < kKernel-1) {
+            inputShared[tr+TILE_WIDTH][tc] = input(j, h+TILE_WIDTH, w);
+          }
+          if (tr < kKernel-1 && tc < kKernel-1) {
+            inputShared[tr+TILE_WIDTH][tc+TILE_WIDTH] = input(j, h+TILE_WIDTH, w+TILE_WIDTH);
+          }
+          __syncthreads();
+
+          for (int p = 0; p < kKernel; ++p) {
+            for (int q = 0; q < kKernel; ++q) {
+              reg += weightShared[j][p][q] * inputShared[tr + p][tc + q];
+            }
+          }
+          __syncthreads();
+        }
+
+        // ReLU
+        C[tr][tc] = max(0.f, reg);
+
+        // Max pooling
+        __syncthreads();
+        if (tr % 2 == 0 && tc % 2 == 0) {
+          output(i, h/2, w/2) = max(
+              max(C[tr][tc    ], C[tr + 1][tc    ]),
+              max(C[tr][tc + 1], C[tr + 1][tc + 1]));
+        }
+        __syncthreads();
+      }
     }
   }
 }
