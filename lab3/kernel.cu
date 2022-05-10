@@ -9,7 +9,7 @@ __global__ void cnn_gpu(float* input,
   // refer to the seq. implementation until you achieve correctness
 
   // Allocate memory on heap to avoid stack overflow.
-  static float C[kImSize][kImSize];
+  float C[kImSize][kImSize];
 
   // Input size: 256 x 228 x 228
   // GPU specs: 16 SMs, 32 blocks/SM, 2048 threads/SM (32K threads total)
