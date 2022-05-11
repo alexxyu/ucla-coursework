@@ -2,7 +2,7 @@
 #include "kernel.h"
 
 #define TILE_WIDTH 32
-#define INPUT_WIDTH TILE_WIDTH+kKernel-1
+#define BLOCK_J 8
 
 __global__ void cnn_gpu(float* input,
     float* weight,
@@ -19,40 +19,39 @@ __global__ void cnn_gpu(float* input,
   const int tc = threadIdx.x;
 
   __shared__ float C[TILE_WIDTH][TILE_WIDTH];
-  __shared__ float weightShared[kNum][kKernel][kKernel];
-  __shared__ float inputShared[TILE_WIDTH+kKernel-1][TILE_WIDTH+kKernel-1];
+  __shared__ float weightShared[BLOCK_J][kKernel][kKernel];
+  __shared__ float inputShared[BLOCK_J][TILE_WIDTH+kKernel-1][TILE_WIDTH+kKernel-1];
   
   for (int i = bi; i < bi+N_CHANNELS; i++) {
-    for (int j = (tr*TILE_WIDTH)+tc; j < kNum; j += TILE_WIDTH*TILE_WIDTH) {
-      for (int p = 0; p < kKernel; ++p) {
-        for (int q = 0; q < kKernel; ++q) {
-          weightShared[j][p][q] = weight(i, j, p, q);
-        }
-      }
-    }
-
     for (int h = tr; h < kImSize; h += TILE_WIDTH) {
       for (int w = tc; w < kImSize; w += TILE_WIDTH) {
         // Bias
         float reg = bias[i];
 
         // Convolution
-        for (int j = 0; j < kNum; ++j) {
-          inputShared[tr][tc] = input(j, h, w);
-          if (tc < kKernel-1) {
-            inputShared[tr][tc+TILE_WIDTH] = input(j, h, w+TILE_WIDTH);
-          }
-          if (tr < kKernel-1) {
-            inputShared[tr+TILE_WIDTH][tc] = input(j, h+TILE_WIDTH, w);
-          }
-          if (tr < kKernel-1 && tc < kKernel-1) {
-            inputShared[tr+TILE_WIDTH][tc+TILE_WIDTH] = input(j, h+TILE_WIDTH, w+TILE_WIDTH);
+        for (int bj = 0; bj < kNum; bj += BLOCK_J) {
+          for (int j = 0; j < BLOCK_J; j++) {
+            inputShared[j][tr][tc] = input(bj+j, h, w);
+            if (tc < kKernel-1) {
+              inputShared[j][tr][tc+TILE_WIDTH] = input(bj+j, h, w+TILE_WIDTH);
+            }
+            if (tr < kKernel-1) {
+              inputShared[j][tr+TILE_WIDTH][tc] = input(bj+j, h+TILE_WIDTH, w);
+            }
+            if (tr < kKernel-1 && tc < kKernel-1) {
+              inputShared[j][tr+TILE_WIDTH][tc+TILE_WIDTH] = input(bj+j, h+TILE_WIDTH, w+TILE_WIDTH);
+            }
+            if (tr < kKernel && tc < kKernel) {
+              weightShared[j][tr][tc] = weight(i, bj+j, tr, tc);
+            }
           }
           __syncthreads();
 
-          for (int p = 0; p < kKernel; ++p) {
-            for (int q = 0; q < kKernel; ++q) {
-              reg += weightShared[j][p][q] * inputShared[tr + p][tc + q];
+          for (int j = 0; j < BLOCK_J; j++) {
+            for (int p = 0; p < kKernel; ++p) {
+              for (int q = 0; q < kKernel; ++q) {
+                reg += weightShared[j][p][q] * inputShared[j][tr + p][tc + q];
+              }
             }
           }
           __syncthreads();
@@ -68,7 +67,6 @@ __global__ void cnn_gpu(float* input,
               max(C[tr][tc    ], C[tr + 1][tc    ]),
               max(C[tr][tc + 1], C[tr + 1][tc + 1]));
         }
-        __syncthreads();
       }
     }
   }
