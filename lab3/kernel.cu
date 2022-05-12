@@ -12,9 +12,8 @@ __global__ void cnn_gpu(float* input,
   // OUtput size: 256 x 112 x 112
   // GPU specs: 16 SMs, 32 blocks/SM, 2048 threads/SM (32K threads total)
 
-  const int N_CHANNELS = kNum / gridDim.x;
-
-  int bi = blockIdx.x * N_CHANNELS;
+  const int ch = kNum / gridDim.x;
+  const int bi = blockIdx.x * ch;
   const int tr = threadIdx.y;
   const int tc = threadIdx.x;
 
@@ -22,7 +21,7 @@ __global__ void cnn_gpu(float* input,
   __shared__ float weightShared[BLOCK_J][kKernel][kKernel];
   __shared__ float inputShared[BLOCK_J][TILE_WIDTH+kKernel-1][TILE_WIDTH+kKernel-1];
   
-  for (int i = bi; i < bi+N_CHANNELS; i++) {
+  for (int i = bi; i < bi+ch; i++) {
     for (int h = tr; h < kImSize; h += TILE_WIDTH) {
       for (int w = tc; w < kImSize; w += TILE_WIDTH) {
         // Bias
