@@ -19,8 +19,8 @@ __global__ void cnn_gpu(float* input,
   const int h = 2*tr;
   const int w = 2*tc;
 
-  __shared__ float inputShared[TILE_SIZE+kKernel-1][TILE_SIZE+kKernel-1];
-  __shared__ float weightShared[kKernel][kKernel];
+  __shared__ float inputShared [TILE_SIZE+kKernel-1][TILE_SIZE+kKernel-1] __attribute__((aligned(16 * sizeof(float))));
+  __shared__ float weightShared[kKernel            ][kKernel            ] __attribute__((aligned(16 * sizeof(float))));
 
   for (int i = 0; i < kNum; i++) {
     // Bias
@@ -33,8 +33,8 @@ __global__ void cnn_gpu(float* input,
     for (int j = 0; j < kNum; j++) {
       // Load input and weight submatrices into shared memory
       inputShared[h  ][w  ] = input(j, br+h  , bc+w  );
-      inputShared[h+1][w  ] = input(j, br+h+1, bc+w  );
       inputShared[h  ][w+1] = input(j, br+h  , bc+w+1);
+      inputShared[h+1][w  ] = input(j, br+h+1, bc+w  );
       inputShared[h+1][w+1] = input(j, br+h+1, bc+w+1);
 
       if (tr < kKernel-1) {
