@@ -1,8 +1,7 @@
 #include "lib/macros.cuh"
 #include "kernel.h"
 
-#define TILE_WIDTH 32
-#define STEP_J 8
+#define TILE_SIZE 32
 
 __global__ void cnn_gpu(float* input,
     float* weight,
@@ -12,61 +11,63 @@ __global__ void cnn_gpu(float* input,
   // OUtput size: 256 x 112 x 112
   // GPU specs: 16 SMs, 32 blocks/SM, 2048 threads/SM (32K threads total)
 
-  const int NROWS = kNum / gridDim.x;
-  const int ROW = blockIdx.x * NROWS;
+  const int br = blockIdx.y * blockDim.y * 2;
+  const int bc = blockIdx.x * blockDim.x * 2;
+
   const int tr = threadIdx.y;
   const int tc = threadIdx.x;
+  const int h = 2*tr;
+  const int w = 2*tc;
 
-  __shared__ float C[TILE_WIDTH][TILE_WIDTH];
-  __shared__ float weightShared[STEP_J][kKernel][kKernel];
-  __shared__ float inputShared[STEP_J][TILE_WIDTH+kKernel-1][TILE_WIDTH+kKernel-1];
-  
-  for (int i = ROW; i < ROW+NROWS; i++) {
-    for (int h = tr; h < kImSize; h += TILE_WIDTH) {
-      for (int w = tc; w < kImSize; w += TILE_WIDTH) {
-        // Bias
-        float reg = bias[i];
+  __shared__ float inputShared[TILE_SIZE+kKernel-1][TILE_SIZE+kKernel-1];
+  __shared__ float weightShared[kKernel][kKernel];
 
-        // Convolution
-        for (int j = 0; j < kNum; j += STEP_J) {
-          for (int jj = 0; jj < STEP_J; jj++) {
-            inputShared[jj][tr][tc] = input(j+jj, h, w);
-            if (tc < kKernel-1) {
-              inputShared[jj][tr][tc+TILE_WIDTH] = input(j+jj, h, w+TILE_WIDTH);
-            }
-            if (tr < kKernel-1) {
-              inputShared[jj][tr+TILE_WIDTH][tc] = input(j+jj, h+TILE_WIDTH, w);
-            }
-            if (tr < kKernel-1 && tc < kKernel-1) {
-              inputShared[jj][tr+TILE_WIDTH][tc+TILE_WIDTH] = input(j+jj, h+TILE_WIDTH, w+TILE_WIDTH);
-            }
-            if (tr < kKernel && tc < kKernel) {
-              weightShared[jj][tr][tc] = weight(i, j+jj, tr, tc);
-            }
-          }
-          __syncthreads();
+  for (int i = 0; i < kNum; i++) {
+    // Bias
+    float C0 = bias[i];
+    float C1 = bias[i];
+    float C2 = bias[i];
+    float C3 = bias[i];
 
-          for (int jj = 0; jj < STEP_J; jj++) {
-            for (int p = 0; p < kKernel; ++p) {
-              for (int q = 0; q < kKernel; ++q) {
-                reg += weightShared[jj][p][q] * inputShared[jj][tr + p][tc + q];
-              }
-            }
-          }
-          __syncthreads();
-        }
+    // Convolution
+    for (int j = 0; j < kNum; j++) {
+      // Load input and weight submatrices into shared memory
+      inputShared[h  ][w  ] = input(j, br+h  , bc+w  );
+      inputShared[h+1][w  ] = input(j, br+h+1, bc+w  );
+      inputShared[h  ][w+1] = input(j, br+h  , bc+w+1);
+      inputShared[h+1][w+1] = input(j, br+h+1, bc+w+1);
 
-        // ReLU
-        C[tr][tc] = max(0.f, reg);
+      if (tr < kKernel-1) {
+        inputShared[TILE_SIZE+tr][w  ] = input(j, br+TILE_SIZE+tr, bc+w  );
+        inputShared[TILE_SIZE+tr][w+1] = input(j, br+TILE_SIZE+tr, bc+w+1);
+      }
+      if (tc < kKernel-1) {
+        inputShared[h  ][TILE_SIZE+tc] = input(j, br+h  , bc+TILE_SIZE+tc);
+        inputShared[h+1][TILE_SIZE+tc] = input(j, br+h+1, bc+TILE_SIZE+tc);
+      }
+      if (tr < kKernel-1 && tc < kKernel-1) {
+        inputShared[TILE_SIZE+tr][TILE_SIZE+tc] = input(j, br+TILE_SIZE+tr, bc+TILE_SIZE+tc);
+      }
+      if (tr < kKernel && tc < kKernel) {
+        weightShared[tr][tc] = weight(i, j, tr, tc);
+      }
+      __syncthreads();
 
-        // Max pooling
-        __syncthreads();
-        if (tr % 2 == 0 && tc % 2 == 0) {
-          output(i, h/2, w/2) = max(
-              max(C[tr][tc    ], C[tr + 1][tc    ]),
-              max(C[tr][tc + 1], C[tr + 1][tc + 1]));
+      // Matrix multiplication between weight and input submatrices
+      for (int p = 0; p < kKernel; p++) {
+        for (int q = 0; q < kKernel; q++) {
+          C0 += weightShared[p][q] * inputShared[h+p  ][w+q  ];
+          C1 += weightShared[p][q] * inputShared[h+p+1][w+q  ];
+          C2 += weightShared[p][q] * inputShared[h+p  ][w+q+1];
+          C3 += weightShared[p][q] * inputShared[h+p+1][w+q+1];
         }
       }
+      __syncthreads();
     }
+
+    // Max pooling + ReLU
+    output(i, (br+h)/2, (bc+w)/2) = max(0.f, max(
+        max(C0, C1),
+        max(C2, C3)));
   }
 }
