@@ -1,7 +1,11 @@
 #include "lib/macros.cuh"
 #include "kernel.h"
 
-#define TILE_SIZE 32
+#define BLOCKDIM_X 16
+#define BLOCKDIM_Y 16
+
+#define TILE_WIDTH_C BLOCKDIM_X*2
+#define TILE_WIDTH_R BLOCKDIM_Y*2
 
 __global__ void cnn_gpu(float* input,
     float* weight,
@@ -11,18 +15,21 @@ __global__ void cnn_gpu(float* input,
   // OUtput size: 256 x 112 x 112
   // GPU specs: 16 SMs, 32 blocks/SM, 2048 threads/SM (32K threads total)
 
-  const int br = blockIdx.y * blockDim.y * 2;
-  const int bc = blockIdx.x * blockDim.x * 2;
+  const int nc = kNum / gridDim.z;
+  const int channel = blockIdx.z * nc;
+
+  const int br = blockIdx.y * TILE_WIDTH_R;
+  const int bc = blockIdx.x * TILE_WIDTH_C;
 
   const int tr = threadIdx.y;
   const int tc = threadIdx.x;
-  const int h = 2*tr;
-  const int w = 2*tc;
+  const int h = 2 * tr;
+  const int w = 2 * tc;
 
-  __shared__ float inputShared [TILE_SIZE+kKernel-1][TILE_SIZE+kKernel-1] __attribute__((aligned(16 * sizeof(float))));
-  __shared__ float weightShared[kKernel            ][kKernel            ] __attribute__((aligned(16 * sizeof(float))));
+  __shared__ float inputShared [TILE_WIDTH_R+kKernel-1][TILE_WIDTH_C+kKernel-1] __attribute__((aligned(16 * sizeof(float))));
+  __shared__ float weightShared[kKernel               ][kKernel               ] __attribute__((aligned(16 * sizeof(float))));
 
-  for (int i = 0; i < kNum; i++) {
+  for (int i = channel; i < channel+nc && i < kNum; i++) {
     // Bias
     float C0 = bias[i];
     float C1 = bias[i];
@@ -38,15 +45,15 @@ __global__ void cnn_gpu(float* input,
       inputShared[h+1][w+1] = input(j, br+h+1, bc+w+1);
 
       if (tr < kKernel-1) {
-        inputShared[TILE_SIZE+tr][w  ] = input(j, br+TILE_SIZE+tr, bc+w  );
-        inputShared[TILE_SIZE+tr][w+1] = input(j, br+TILE_SIZE+tr, bc+w+1);
+        inputShared[TILE_WIDTH_R+tr][w  ] = input(j, br+TILE_WIDTH_R+tr, bc+w  );
+        inputShared[TILE_WIDTH_R+tr][w+1] = input(j, br+TILE_WIDTH_R+tr, bc+w+1);
       }
       if (tc < kKernel-1) {
-        inputShared[h  ][TILE_SIZE+tc] = input(j, br+h  , bc+TILE_SIZE+tc);
-        inputShared[h+1][TILE_SIZE+tc] = input(j, br+h+1, bc+TILE_SIZE+tc);
+        inputShared[h  ][TILE_WIDTH_C+tc] = input(j, br+h  , bc+TILE_WIDTH_C+tc);
+        inputShared[h+1][TILE_WIDTH_C+tc] = input(j, br+h+1, bc+TILE_WIDTH_C+tc);
       }
       if (tr < kKernel-1 && tc < kKernel-1) {
-        inputShared[TILE_SIZE+tr][TILE_SIZE+tc] = input(j, br+TILE_SIZE+tr, bc+TILE_SIZE+tc);
+        inputShared[TILE_WIDTH_R+tr][TILE_WIDTH_C+tc] = input(j, br+TILE_WIDTH_R+tr, bc+TILE_WIDTH_C+tc);
       }
       if (tr < kKernel && tc < kKernel) {
         weightShared[tr][tc] = weight(i, j, tr, tc);
