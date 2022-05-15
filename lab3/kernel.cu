@@ -1,9 +1,11 @@
 #include "lib/macros.cuh"
 #include "kernel.h"
 
-#define BLOCKDIM_X 16
-#define BLOCKDIM_Y 16
+#define GRIDDIM_Z    64
+#define BLOCKDIM_X   16
+#define BLOCKDIM_Y   16
 
+#define NC           kNum / GRIDDIM_Z
 #define TILE_WIDTH_C BLOCKDIM_X*2
 #define TILE_WIDTH_R BLOCKDIM_Y*2
 
@@ -26,6 +28,7 @@ __global__ void cnn_gpu(float* input,
   const int h = 2 * tr;
   const int w = 2 * tc;
 
+  float C[NC];
   __shared__ float inputShared [TILE_WIDTH_R+kKernel-1][TILE_WIDTH_C+kKernel-1] __attribute__((aligned(16 * sizeof(float))));
   __shared__ float weightShared[kKernel               ][kKernel               ] __attribute__((aligned(16 * sizeof(float))));
 
@@ -73,8 +76,12 @@ __global__ void cnn_gpu(float* input,
     }
 
     // Max pooling + ReLU
-    output(i, (br+h)/2, (bc+w)/2) = max(0.f, max(
+    C[i-channel] = max(0.f, max(
         max(C0, C1),
         max(C2, C3)));
+  }
+
+  for (int i = channel; i < channel+nc && i < kNum; i++) {
+    output(i, (br+h)/2, (bc+w)/2) = C[i-channel];
   }
 }
