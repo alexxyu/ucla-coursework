@@ -1,6 +1,6 @@
 // If you want to modify the tiling size, uncomment:
-// #define kTileH   (28)
-// #define kTileW   (56)
+#define kTileH   (28)
+#define kTileW   (56)
 
 // Tiling specification must be before the #include
 // and 224 must be a multiple of the tiling size
@@ -19,6 +19,9 @@ void CnnKernel_YourCode(
 
   // TODO:  You may want to add array partitioning here, e.g.:
   // #pragma HLS array_partition variable=input dim=3 factor=5 cyclic
+
+  #pragma HLS array_partition variable=weight dim=2 factor=5 cyclic
+  #pragma HLS array_partition variable=input  dim=0 factor=5 cyclic
 
   // Read the whole arrays from memory to device
   read_weight_from_memory(weight_g, weight);
@@ -43,20 +46,24 @@ void CnnKernel_YourCode(
 
         // Set bias
         set_bias:
-        for (int h = 0; h < kTileH; ++h) {
-          for (int w = 0; w < kTileW; ++w)
+        bias_h: for (int h = 0; h < kTileH; ++h) {
+          bias_w: for (int w = 0; w < kTileW; ++w) {
             C[h][w] = bias[i];
+          }
         }
 
         // Convolution
         conv:
-        for (int j = 0; j < kNum; ++j) {
-          for (int h = 0; h < kTileH; ++h) {
-            for (int w = 0; w < kTileW; ++w) {
-              for (int p = 0; p < kKernel; ++p) {
-                for (int q = 0; q < kKernel; ++q)
+        conv_j: for (int j = 0; j < kNum; ++j) {
+          conv_h: for (int h = 0; h < kTileH; ++h) {
+            conv_w: for (int w = 0; w < kTileW; ++w) {
+              conv_p: for (int p = 0; p < kKernel; ++p) {
+              #pragma HLS unroll
+                conv_q: for (int q = 0; q < kKernel; ++q) {
+                #pragma HLS unroll
                   C[h][w] += weight[i][j][p][q] *
                              input[j][h + p][w + q];
+                }
               }
             }
           }
@@ -64,16 +71,16 @@ void CnnKernel_YourCode(
 
         // ReLU
         relu:
-        for (int h = 0; h < kTileH; ++h) {
-          for (int w = 0; w < kTileW; ++w) {
+        relu_h: for (int h = 0; h < kTileH; ++h) {
+          relu_w: for (int w = 0; w < kTileW; ++w) {
             if (C[h][w] < 0) C[h][w] = 0;
           }
         }
 
         // Max pooling
         maxpool:
-        for (int h = 0; h < kTileH/2; ++h) {
-          for (int w = 0; w < kTileW/2; ++w) {
+        maxpool_h: for (int h = 0; h < kTileH/2; ++h) {
+          maxpool_w: for (int w = 0; w < kTileW/2; ++w) {
             output[i][h][w] = max(
                 max(C[h * 2][w * 2    ], C[h * 2 + 1][w * 2    ]),
                 max(C[h * 2][w * 2 + 1], C[h * 2 + 1][w * 2 + 1]));
