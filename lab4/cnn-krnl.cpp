@@ -17,6 +17,8 @@ void CnnKernel_YourCode(
 
   static compute_t C[kTileH][kTileW];
 
+  compute_t zero = 0;
+
   // TODO:  You may want to add array partitioning here, e.g.:
   // #pragma HLS array_partition variable=input dim=3 factor=5 cyclic
 
@@ -69,21 +71,13 @@ void CnnKernel_YourCode(
           }
         }
 
-        // ReLU
-        relu:
-        relu_h: for (int h = 0; h < kTileH; ++h) {
-          relu_w: for (int w = 0; w < kTileW; ++w) {
-            if (C[h][w] < 0) C[h][w] = 0;
-          }
-        }
-
-        // Max pooling
-        maxpool:
-        maxpool_h: for (int h = 0; h < kTileH/2; ++h) {
-          maxpool_w: for (int w = 0; w < kTileW/2; ++w) {
-            output[i][h][w] = max(
+        // ReLU + Max pooling
+        relu_maxpool:
+        relu_maxpool_h: for (int h = 0; h < kTileH/2; ++h) {
+          relu_maxpool_w: for (int w = 0; w < kTileW/2; ++w) {
+            output[i][h][w] = max(zero, max(
                 max(C[h * 2][w * 2    ], C[h * 2 + 1][w * 2    ]),
-                max(C[h * 2][w * 2 + 1], C[h * 2 + 1][w * 2 + 1]));
+                max(C[h * 2][w * 2 + 1], C[h * 2 + 1][w * 2 + 1])));
           }
         }
       }
