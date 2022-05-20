@@ -6,6 +6,17 @@
 // and 224 must be a multiple of the tiling size
 #include "lib/cnn-krnl.h"
 
+compute_t ConvolveKernel(weight_t* weight, input_t* input) {
+#pragma HLS inline off
+  compute_t C = 0;
+  conv_p: for (int p = 0; p < kKernel; ++p) {
+    conv_q: for (int q = 0; q < kKernel; ++q) {
+      C += weight[p*kKernel + q] * input[p*(kTileW+kKernel-1) + q];
+    }
+  }
+  return C;
+}
+
 void CnnKernel_YourCode(
     const input_g_t *input_g, const weight_g_t *weight_g,
     const bias_g_t  *bias_g,        output_g_t *output_g) {
@@ -22,8 +33,8 @@ void CnnKernel_YourCode(
   // TODO:  You may want to add array partitioning here, e.g.:
   // #pragma HLS array_partition variable=input dim=3 factor=5 cyclic
 
-  #pragma HLS array_partition variable=weight dim=2 factor=5 cyclic
-  #pragma HLS array_partition variable=input  dim=0 factor=5 cyclic
+  #pragma HLS array_partition variable=input  dim=1 factor=64 cyclic
+  #pragma HLS array_partition variable=weight dim=2 factor=64 cyclic
 
   // Read the whole arrays from memory to device
   read_weight_from_memory(weight_g, weight);
@@ -46,28 +57,16 @@ void CnnKernel_YourCode(
         fprintf(stderr, "Finished %d%% channel(s) #%d/#%d\r",
                 100*i/kNum, i, kNum);
 
-        // Set bias
-        set_bias:
-        bias_h: for (int h = 0; h < kTileH; ++h) {
-          bias_w: for (int w = 0; w < kTileW; ++w) {
-            C[h][w] = bias[i];
-          }
-        }
-
         // Convolution
         conv:
-        conv_j: for (int j = 0; j < kNum; ++j) {
-          conv_h: for (int h = 0; h < kTileH; ++h) {
-            conv_w: for (int w = 0; w < kTileW; ++w) {
-              conv_p: for (int p = 0; p < kKernel; ++p) {
-              #pragma HLS unroll
-                conv_q: for (int q = 0; q < kKernel; ++q) {
-                #pragma HLS unroll
-                  C[h][w] += weight[i][j][p][q] *
-                             input[j][h + p][w + q];
-                }
-              }
+        conv_h: for (int h = 0; h < kTileH; ++h) {
+          conv_w: for (int w = 0; w < kTileW; ++w) {
+            compute_t c = bias[i];
+            conv_j: for (int j = 0; j < kNum; ++j) {
+#pragma HLS unroll factor=64
+              c += ConvolveKernel((weight_t*) weight[i][j], (input_t*) &input[j][h][w]);
             }
+            C[h][w] = c;
           }
         }
 
