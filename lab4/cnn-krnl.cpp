@@ -10,7 +10,9 @@ compute_t ConvolveKernel(weight_t* weight, input_t* input) {
 #pragma HLS inline off
   compute_t C = 0;
   conv_p: for (int p = 0; p < kKernel; ++p) {
+#pragma HLS unroll
     conv_q: for (int q = 0; q < kKernel; ++q) {
+#pragma HLS unroll
       C += weight[p*kKernel + q] * input[p*(kTileW+kKernel-1) + q];
     }
   }
@@ -33,8 +35,8 @@ void CnnKernel_YourCode(
   // TODO:  You may want to add array partitioning here, e.g.:
   // #pragma HLS array_partition variable=input dim=3 factor=5 cyclic
 
-  #pragma HLS array_partition variable=input  dim=1 factor=64 cyclic
-  #pragma HLS array_partition variable=weight dim=2 factor=64 cyclic
+  #pragma HLS array_partition variable=input  dim=1 factor=128 cyclic
+  #pragma HLS array_partition variable=weight dim=2 factor=128 cyclic
 
   // Read the whole arrays from memory to device
   read_weight_from_memory(weight_g, weight);
@@ -63,7 +65,7 @@ void CnnKernel_YourCode(
           conv_w: for (int w = 0; w < kTileW; ++w) {
             compute_t c = bias[i];
             conv_j: for (int j = 0; j < kNum; ++j) {
-#pragma HLS unroll factor=64
+#pragma HLS unroll factor=128
               c += ConvolveKernel((weight_t*) weight[i][j], (input_t*) &input[j][h][w]);
             }
             C[h][w] = c;
