@@ -6,17 +6,26 @@
 // and 224 must be a multiple of the tiling size
 #include "lib/cnn-krnl.h"
 
-compute_t ConvolveKernel(weight_t* weight, input_t* input) {
+void ConvolveWQ(weight_t* weight, input_t* input, compute_t* C) {
 #pragma HLS inline off
-  compute_t C = 0;
-  conv_p: for (int p = 0; p < kKernel; ++p) {
+#pragma HLS pipeline
+  conv_w: for (int w = 0; w < kTileW; ++w) {
 #pragma HLS unroll
+    compute_t c = 0;
     conv_q: for (int q = 0; q < kKernel; ++q) {
 #pragma HLS unroll
-      C += weight[p*kKernel + q] * input[p*(kTileW+kKernel-1) + q];
+      c += weight[q] * input[w+q];
     }
+    C[w] += c;
   }
-  return C;
+}
+
+void ConvolveH(weight_t* weight, input_t* input, compute_t* C) {
+#pragma HLS inline off
+  conv_h: for (int h = 0; h < kTileH; ++h) {
+#pragma HLS pipeline
+    ConvolveWQ(weight, &input[h*(kTileW+kKernel-1)], &C[h*kTileW]);
+  }
 }
 
 void CnnKernel_YourCode(
@@ -35,8 +44,9 @@ void CnnKernel_YourCode(
   // TODO:  You may want to add array partitioning here, e.g.:
   // #pragma HLS array_partition variable=input dim=3 factor=5 cyclic
 
-  #pragma HLS array_partition variable=input  dim=1 factor=128 cyclic
-  #pragma HLS array_partition variable=weight dim=2 factor=128 cyclic
+  #pragma HLS array_partition variable=weight dim=4 complete
+  #pragma HLS array_partition variable=input  dim=3 complete
+  #pragma HLS array_partition variable=C      dim=0 complete
 
   // Read the whole arrays from memory to device
   read_weight_from_memory(weight_g, weight);
@@ -59,16 +69,20 @@ void CnnKernel_YourCode(
         fprintf(stderr, "Finished %d%% channel(s) #%d/#%d\r",
                 100*i/kNum, i, kNum);
 
+        // Set bias
+        bias_t b = bias[i];
+        bias_h: for (int h = 0; h < kTileH; ++h) {
+          bias_w: for (int w = 0; w < kTileW; ++w) {
+            C[h][w] = b;
+          }
+        }
+
         // Convolution
         conv:
-        conv_h: for (int h = 0; h < kTileH; ++h) {
-          conv_w: for (int w = 0; w < kTileW; ++w) {
-            compute_t c = bias[i];
-            conv_j: for (int j = 0; j < kNum; ++j) {
-#pragma HLS unroll factor=128
-              c += ConvolveKernel((weight_t*) weight[i][j], (input_t*) &input[j][h][w]);
-            }
-            C[h][w] = c;
+        conv_j: for (int j = 0; j < kNum; ++j) {
+          conv_p: for (int p = 0; p < kKernel; ++p) {
+#pragma HLS pipeline
+            ConvolveH((weight_t*) weight[i][j][p], (input_t*) input[j][p], (compute_t*) C);
           }
         }
 
