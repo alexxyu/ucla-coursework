@@ -23,3 +23,46 @@ conda activate CM122
 You can then use `conda install package_name` to install any package you might need. The description of each project will mention if you need to install any packages for that project.
 
 For Windows users and those who are generally adverse to using the command-line, you don't __really__ need to have a separate environment for this project, but if you wish to do it, you can manage virtual environments using PyCharm as well: https://www.jetbrains.com/help/pycharm/creating-virtual-environment.html or you should be able to run the commands above using the Anaconda prompt that came with your Anaconda installation.
+
+# Grades
+## Lab 1: 10K Length Genome
+
+| Mutation    | Score |
+|-------------|-------|
+| SNP         | 96.77 |
+| Indel       | 65.2  |
+| Copy Number | 0.0   |
+| Inversion   | 0.0   |
+| STR         | 0.0   |
+| ALU         | 0.0   |
+
+Total score: 53.96
+
+**Placement: 4/170**
+
+## Lab 2: HP2A 1M Length Genome
+
+| Mutation    | Score |
+|-------------|-------|
+| SNP         | 87.77 |
+| Indel       | 55.51 |
+| Copy Number | 0.0   |
+| Inversion   | 0.0   |
+| STR         | 0.0   |
+| ALU         | 0.0   |
+
+Total score: 28.65
+
+**Placement: 14/141**
+
+## Lab 3: 10K Normal Read Assembly
+
+| Metric       | Score |
+|--------------|-------|
+| Coverage     | 87.14 |
+| Contig Sizes | 10.33 |
+| Accuracy     | 48.0  |
+
+Total score: 48.49
+
+**Placement: 65/160**
