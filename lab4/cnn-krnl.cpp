@@ -47,6 +47,8 @@ void CnnKernel_YourCode(
   #pragma HLS array_partition variable=weight dim=4 complete
   #pragma HLS array_partition variable=input  dim=3 complete
   #pragma HLS array_partition variable=C      dim=0 complete
+  #pragma HLS array_partition variable=output dim=2 complete
+  #pragma HLS array_partition variable=output dim=3 complete
 
   // Read the whole arrays from memory to device
   read_weight_from_memory(weight_g, weight);
@@ -72,7 +74,9 @@ void CnnKernel_YourCode(
         // Set bias
         bias_t b = bias[i];
         bias_h: for (int h = 0; h < kTileH; ++h) {
+#pragma HLS pipeline
           bias_w: for (int w = 0; w < kTileW; ++w) {
+#pragma HLS unroll
             C[h][w] = b;
           }
         }
@@ -89,7 +93,9 @@ void CnnKernel_YourCode(
         // ReLU + Max pooling
         relu_maxpool:
         relu_maxpool_h: for (int h = 0; h < kTileH/2; ++h) {
+#pragma HLS pipeline
           relu_maxpool_w: for (int w = 0; w < kTileW/2; ++w) {
+#pragma HLS unroll
             output[i][h][w] = max(zero, max(
                 max(C[h * 2][w * 2    ], C[h * 2 + 1][w * 2    ]),
                 max(C[h * 2][w * 2 + 1], C[h * 2 + 1][w * 2 + 1])));
