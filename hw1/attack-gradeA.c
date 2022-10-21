@@ -26,9 +26,8 @@ int main() {
   * Using gdb, the following observations were made:
   *     - 0x7fffffffc420 is the starting address of the input
   *     - The original return address for `GetGradeFromInput` is located at 0x7fffffffe428
-  *     - The input must be 8200 (0xe428 - 0xc420) characters for shellcode & padding in order for
-  *         the new return address to overwrite the old one
-  *     - The new return address should be somewhere after 0x7fffffffc420
+  *     - There must be 8200 (0xe428 - 0xc420) characters for shellcode & padding, at which point
+  *         we can put the new return address to overwrite the old one
   *     - With the NOP sled, shellcode can be placed in the middle of the buffer, and then the new
   *         return address can be somewhere after 0x7fffffffc420 and before the shellcode.
   */
