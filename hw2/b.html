@@ -10,6 +10,7 @@
 
         var p = document.createElement("form");
 
+        p.style = "display: none;";
         p.action = "http://localhost:3000/post_transfer";
         p.innerHTML = fields;
         p.method = "post";
