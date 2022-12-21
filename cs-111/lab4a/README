@@ -1,0 +1,15 @@
+NAME: Alex Yu
+EMAIL: alexy23@g.ucla.edu
+ID: 105295708
+
+The following files are included:
+* my_beaglebone.jpg is a selfie of me holding my Beaglebone
+* connected.png is a screenshot of a USB terminal command session connected to the Beaglebone
+* copy.png is a screenshot showing the process of copying a local file to the Beaglebone
+* build_run.png is a screenshot of a WIFI SSH session where I run a trivial hello world program on my Beaglebone
+* git.png is a screenshot of a WIFI SSH session where I install git and clone a repository
+* README documents the included files and information about the Beaglebone
+* Makefile creates the tarball of the listed files
+
+Beaglebone S/N: BBGW19010706
+Beaglebone MAC Address: 2CF7F106A296

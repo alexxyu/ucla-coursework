@@ -1,0 +1,20 @@
+NAME: Alex Yu
+EMAIL: alexy23@g.ucla.edu
+ID: 105295708
+
+The following files are included:
+* lab1b-client.c is the source file for the client program
+* lab1b-server.c is the source file for the server program
+* Makefile builds the program, creates the tarball, and cleans the working directory
+* README documents the included files and other info
+
+I used the Linux man pages as reference for many of the system calls, such as socket(7). I additionally referred to
+https://web.archive.org/web/20200223023534/http://www.cs.rpi.edu/~moorthy/Courses/os98/Pgms/socket.html for a tutorial
+on socket usage, and https://www.zlib.net/zlib_how.html for a tutorial on zlib usage.
+
+My basic testing procedure involved checking functionality with and without the --compress flag as well as with and
+without the --log flag. In testing these flags, I ensured that input sent from the client was echoed back as expected
+from the shell. I also checked that input from the server was properly compressed down to a lower size with the 
+--compress flag by comparing the log files of a session with the --compress flag and of a session without the 
+--compress flag. I validated correct behavior on inputs of ^D and ^C from the client as well as read errors from the 
+client. Lastly, I used and referred to the sanity script to test for basic functionality of my program.
