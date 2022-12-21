@@ -7,7 +7,8 @@ import aiohttp
 import asyncio
 import logging
 
-API_KEY='AIzaSyDIDfU2F1b1vEwQdhv1KFwdgUKft2KqCM8'
+API_KEY='MY_KEY_HERE' # Replace with actual API key for Google Places
+
 SERVER_LINKS={
     'Riley': ['Jaquez', 'Juzang'],
     'Bernard': ['Jaquez', 'Juzang', 'Campbell'],
@@ -15,6 +16,7 @@ SERVER_LINKS={
     'Jaquez': ['Riley', 'Bernard'],
     'Campbell': ['Bernard', 'Juzang']
 }
+
 PORT_MAPPING={
     'Riley': 12115,
     'Bernard': 12116,
