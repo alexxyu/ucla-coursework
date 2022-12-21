@@ -1,0 +1,57 @@
+diff --git a/Makefile b/Makefile
+index c50f5b6..cfcd46d 100644
+--- a/Makefile
++++ b/Makefile
+@@ -3,7 +3,7 @@
+ # 2009-05-17 by Arthur David Olson.
+ 
+ # Version numbers of the code and data distributions.
+-VERSION = 2012e
++VERSION = 2012f
+ 
+ # Change the line below for your time zone (after finding the zone you want in
+ # the time zone files, or adding it to a time zone file).
+diff --git a/Theory b/Theory
+index e442bcd..b00a492 100644
+--- a/Theory
++++ b/Theory
+@@ -226,7 +226,7 @@ among the following goals:
+    agreed since 1970.  This is essential for the intended use: static
+    clocks keeping local civil time.
+ 
+- * Indicate to humans as to where that region is.  This simplifes use.
++ * Indicate to humans as to where that region is.  This simplifies use.
+ 
+  * Be robust in the presence of political changes.  This reduces the
+    number of updates and backward-compatibility hacks.  For example,
+diff --git a/australasia b/australasia
+index c7d5611..eb24117 100644
+--- a/australasia
++++ b/australasia
+@@ -321,15 +321,23 @@ Zone	Indian/Cocos	6:27:40	-	LMT	1900
+ # The commencement of daylight saving will remain unchanged and start
+ # on the  23rd of October, 2011.
+ 
++# From the Fiji Government Online Portal (2012-08-21) via Steffen Thorsen:
++# The Minister for Labour, Industrial Relations and Employment Mr Jone Usamate
++# today confirmed that Fiji will start daylight savings at 2 am on Sunday 21st
++# October 2012 and end at 3 am on Sunday 20th January 2013.
++# http://www.fiji.gov.fj/index.php?option=com_content&view=article&id=6702&catid=71&Itemid=155
++#
++# From Paul Eggert (2012-08-31):
++# For now, guess a pattern of the penultimate Sundays in October and January.
++
+ # Rule	NAME	FROM	TO	TYPE	IN	ON	AT	SAVE	LETTER/S
+ Rule	Fiji	1998	1999	-	Nov	Sun>=1	2:00	1:00	S
+ Rule	Fiji	1999	2000	-	Feb	lastSun	3:00	0	-
+ Rule	Fiji	2009	only	-	Nov	29	2:00	1:00	S
+ Rule	Fiji	2010	only	-	Mar	lastSun	3:00	0	-
+-Rule	Fiji	2010	only	-	Oct	24	2:00	1:00	S
++Rule	Fiji	2010	max	-	Oct	Sun>=18	2:00	1:00	S
+ Rule	Fiji	2011	only	-	Mar	Sun>=1	3:00	0	-
+-Rule	Fiji	2011	only	-	Oct	23	2:00	1:00	S
+-Rule	Fiji	2012	only	-	Jan	22	3:00	0	-
++Rule	Fiji	2012	max	-	Jan	Sun>=18	3:00	0	-
+ # Zone	NAME		GMTOFF	RULES	FORMAT	[UNTIL]
+ Zone	Pacific/Fiji	11:53:40 -	LMT	1915 Oct 26	# Suva
+ 			12:00	Fiji	FJ%sT	# Fiji Time

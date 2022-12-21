@@ -1,0 +1,36 @@
+1. mv is located under /usr/local/cs/bin directory while sh is located under
+the /usr/bin directory.
+2. ar, pr, tr are the only programs in /usr/bin that have exactly two
+characters and end in r. ar handles archives, which are collections of other
+individual files. pr formats text files for printing. tr transforms text input
+in specified ways.
+3. /etc/alternatives/emacs is the actual file that is executed by the symbolic
+link /usr/bin/emacs.
+4. The version of /usr/bin/gcc is 4.8.5 while the version of the plain gcc
+program is 9.3.0. They are different programs probably because /usr/bin/gcc is
+the version that came with RedHat as part of the Linux servers while gcc is
+the updated version that students run.
+5. chmod u+sx,o-w means that the user has execution permissions (u+x), others
+don't have write permissions (o-w), and the program will be executed with the
+userid of its owner (u+s).
+6. There are 447 directories that have been modified in the past four weeks
+under /usr/local/cs. The first five are listed below:
+/usr/local/cs
+/usr/local/cs/src/git
+/usr/local/cs/src/git/RCS
+/usr/local/cs/src/coreutils
+/usr/local/cs/src/coreutils/RCS
+7. There are 280 symbolic links in the same directory as the find command
+(/usr/bin).
+8. The oldest regular file in /usr/lib64 is librom1394.so.0.3.0.
+9. According to the man page for locale, the locale definition files are by
+default under /usr/share/i18n/locales.
+10. The only commands in Emacs that have downcase in their name are
+downcase-word, downcase-region, and downcase-dwim.
+11. C-M-r does a backwards search using a regular expression. C-M-v scrolls
+another open window by less than a full screen.
+12. The C-g command signals a quit condition. C-g will abort any execution of
+Lisp code and will quit any command being entered in Emacs.
+13. The yank function pastes or reinserts the most recent killed text. It can
+be invoked using the keystroke C-y.
+14. The Emacs dired command lists "." and ".." while ls -l does not.

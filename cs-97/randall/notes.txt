@@ -1,0 +1,82 @@
+RANDALL LAB NOTEBOOK
+
+In the Makefile, I added a 'make check' test that simply checks if the returned 
+output length from randall is what is specified.
+
+I separated components from the randall source code into their individual C 
+and header files. This included the hardware-generation part, the software-
+generation part, and the output part. This involved adding and removing libraries 
+as required by each individual module, and changing some static functions to be 
+non-static instead. I changed the Makefile as necessary by compiling object files 
+individually before linking them together.
+
+I also split up the software rng into two further modules: one that uses the
+mrand48 function in GNU/C, and another that reads from a file for random data
+(already provided from the original source code). I made the necessary changes
+to the Makefile to compile and link these two modules.
+
+Then, I read up on how getopt is used. In the newly created options file, I created
+a processArguments function. In it, I created a switch statement to parse the 
+arguments. After the switch statement, I processed the -i and -o flags, checking 
+for validity of the provided arguments. I then processed the nbytes argument by 
+checking for the presence of the nbytes argument and checking whether nbytes is a 
+positive integer using strtoll. Along the way, I added pointer arguments to the 
+function to be used in the main routine in randall.c. These pointer arguments
+would hold argument values passed and determine which RNG method was used and which
+output to use. I also added printing error messages as needed. 
+
+Back in the main routine, I made the routine call the processArguments function.
+Using the pointer arguments as pass-by-reference, I made the main routine choose
+the right RNG method as specified by the -i flag. I also made the main routine
+return 1 if the processArguments returned a 1 (indicating an error).
+
+In output.c, I created new functions to deal with the writing by block. I created
+an initializer similar to the ones in the RNG modules that set the block size and
+malloc'ed a C-string of that block size. I took the code from the current writebytes
+function to create a writeblocks function. It was similar, except it used the write
+system call and wrote only every defined number of bytes. I then added a fini 
+function that wrote remaining bytes from the block, if any, and freed the malloc'ed
+memory. 
+
+Note: I had trouble getting the write system call to work. I used valgrind to debug.
+I found that I was getting errors related to reading from non-addressable memory. It
+took me a while to figure out. Turned out that you just pass the C-string pointer to
+the write system call, but I was passing a pointer to the C-string pointer by mistake.
+
+At this point, I started testing the time efficiency of randall. For these tests, I 
+added the -O2 flag as the optimization level in the Makefile.
+
+Results:
+
+time dd if=/dev/urandom ibs=8192 obs=8192 count=16384 >/dev/null: 0.932s
+Baseline comparison for randall
+
+time ./randall 133562368 > /dev/null: 3.133s
+Baseline comparison for other options, noticeably slower than dd
+
+time ./randall 133562368 | cat > /dev/null: 3.272s
+Makes sense, takes slightlylonger to process through cat instead of piping directly 
+to /dev/null
+
+time ./randall 133562368 > rand.data: 4.431s
+For the sake of testing, it's definitely faster to just pipe to /dev/null
+
+time ./randall 133562368 -i mrand48 > /dev/null: 1.537s
+Much faster compared to baseline
+
+time ./randall 133562368 -i /dev/random > /dev/null: N/A
+I waited for about 2 minutes for this one. I'm not sure if it would ever 
+finish, and I became impatient, but this is clearly the worst.
+
+time ./randall 133562368 -i /dev/urandom > /dev/null: 2.737s
+A LOT faster than /dev/random. Conclusion: don't ever use /dev/random
+
+time ./randall 133562368 -o 8 > /dev/null: 2.289s
+A lot faster to use write by block compared to write by byte
+
+time ./randall 133562368 -i /dev/urandom -o 8 > /dev/null: 1.678s
+Good, but not good enough
+
+time ./randall 133562368 -i mrand48 -o 8 > /dev/null: 0.503s
+The fastest time I was able to record out of all my test runs. Even faster than 
+using dd to copy from /dev/urandom!
