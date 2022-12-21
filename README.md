@@ -14,5 +14,7 @@ the following:
 | Assignment           | Grade |
 |----------------------|-------|
 | HW1: Buffer Overflow | 15/15 |
-| HW2: XSS & CSRF      | -/15  |
+| HW2: XSS & CSRF      | 15/15  |
 | HW3: Mobile Security | -/15  |
+
+I did not submit HW3, as the lowest homework grade was dropped per the syllabus.
