@@ -1,0 +1,65 @@
+NAME: Alex Yu
+EMAIL: alexy23@g.ucla.edu
+ID: 105295708
+
+The following files are included:
+* lab2_list.c is a C program that implements shared doubly linked-list functions with yield and synchronization options
+* lab2_list.gp is a gnuplot data reduction script used to generate graphs for lab2_list
+* lab2b_list.csv is a csv file that contains all of the data generated from lab2_list tests
+* lab2b_1.png, lab2b_2.png, lab2b_3.png, lab2b_4.png, and lab2b_5.png are graphs generated using data from the 
+lab2_list tests
+* SortedList.h, SortedList.c are a header file and a C module that define and implement doubly linked-lists
+* profile.out is an execution profiling report of where time was spent in the un-partitioned spin-lock implementation
+* Makefile provides targets to build, test, plot data, and clean up the program(s)
+* test.sh is a script that tests lab2_add and lab2_list and stores the results in the csv files
+* README is a text file that documents the included files and provides answers to the questions from the spec
+
+QUESTION 2.3.1 - Cycles in the basic list implementation:
+    In the low-thread list tests, most of the time/cycles are likely spent on the list operations themselves. 
+    
+    Since there are few threads, there is less contention for access to the list, so threads do not have to wait long
+    at the synchronization stage. Thus, the expensive parts of the code would logically be the list operations.
+
+    In the high-thread spin-lock tests, most of the time/cycles are likely spent when the threads are blocked by the 
+    spin lock. Each thread has to wait for more threads to finish their list operations, which is costly in time.
+
+    In the high-thread mutex tests, most of the time/cycles are likely spent when the threads are blocked by the 
+    mutex functions. Each thread has to wait for more threads to finish their list operations, which is costly in time.
+
+QUESTION 2.3.2 - Execution Profiling:
+    Most of the cycles are being consumed when the thread is blocked by the spin-lock itself (i.e. at the line
+
+        while(__sync_lock_test_and_set(&spinlocks[idx], 1) == 1);
+
+    This operation becomes very expensive with large numbers of threads because there are more threads that need to
+    access the shared resource (i.e. the list(s)), meaning that there are more threads that need to wait for another 
+    to exit the critical section. As a result, there are more samples where a thread is simply waiting at this line 
+    for another thread to reset the spin lock.
+
+QUESTION 2.3.3 - Mutex Wait Time:
+    The average lock-wait time rises so much as the number of contending threads increases because each thread must
+    wait longer since more threads need to access the list(s). Thus, each thread must wait longer while the others 
+    exit the critical section, increasing the average wait time.
+
+    Why does the completion time per operation rise (less dramatically) with the number of contending threads?
+    The completion time per operation rises with the number of contending threads because there are more context 
+    switches in total since more threads need to be scheduled, which adds to the per-operation cost.
+
+    The average wait time increases faster/higher than the completion time per operation because n-1 threads each 
+    accumulate wait time when they are blocked by the last one. Thus, average wait time increases more dramatically
+    since more threads means not only longer blocking but also more wait time across more threads.
+
+QUESTION 2.3.4 - Performance of Partitioned Lists
+    The performance, in terms of throughput, consistently increases as the number of lists increases.
+
+    The throughput should continue to increase as the number of lists is further increased. However, there is a limit
+    because there is a finite number of possible keys, so at a certain point, each key will be in its own sublist, so
+    adding more sublists will have no discernable effect. The throughput will no longer increase at that point.
+
+    The suggestion that the throughput of an N-way partitioned list should be equivalent to the throughput of a single 
+    list with fewer threads appears to be true. For example, 8-way partitioned list with 8 threads has roughly the same
+    throughput as a single list with 1 thread.
+
+I consulted TA Tianxiang Li's Lab 2B discussion slides for reference on gprof installation and usage. I also used Lee
+Phillip's gnuplot Cookbook (https://subscription.packtpub.com/book/big_data_and_business_intelligence/9781849517249)
+for basic reference on gnuplot.
