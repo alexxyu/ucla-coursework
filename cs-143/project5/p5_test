@@ -1,0 +1,74 @@
+#!/bin/bash
+ZIP_FILE=project5.zip
+TMP_DIR=/tmp/p5-grading/
+REQUIRED_FILES="bookPairs.py"
+DATA_FILE="/home/cs143/data/goodreads.user.books"
+MAIN_CODE="bookPairs.py" 
+
+function error_exit()
+{
+   echo "ERROR: $1" 1>&2
+   rm -rf ${TMP_DIR}
+   exit 1
+}
+
+# use user-provided parameter as the zip file name
+if [ $# -eq 1 ]; then
+    ZIP_FILE=$1
+fi
+
+# make sure that the script runs on VM
+if [ `whoami` != "cs143" ]; then
+     error_exit "ERROR: You need to run this script within the container"
+fi
+
+# check the data file existence
+if [ ! -f ${DATA_FILE} ]; then
+    error_exit "File ${DATA_FILE} does not exist. This script cannot be executed without the file."
+fi
+
+# clean any existing files
+rm -rf ${TMP_DIR}
+
+# create temporary directory used for grading
+mkdir -p ${TMP_DIR}
+
+# unzip the zip file
+if [ ! -f ${ZIP_FILE} ]; then
+    error_exit "ERROR: Cannot find ${ZIP_FILE}"
+fi
+unzip -q -d ${TMP_DIR} ${ZIP_FILE}
+if [ "$?" -ne "0" ]; then
+    error_exit "ERROR: Cannot unzip ${ZIP_FILE} to ${TMP_DIR}"
+fi
+
+# change directory to the partc folder
+cd ${TMP_DIR}
+
+# check the existence of the required files
+for FILE in ${REQUIRED_FILES}
+do
+    if [ ! -f ${FILE} ]; then
+        error_exit "ERROR: Cannot find ${FILE} in the root folder of ${ZIP_FILE}"
+    fi
+done
+
+# run the student code
+echo "Executing your Spark code....." 1>&2
+spark-submit ${MAIN_CODE}
+
+# check if the expected output directory and files have been generated
+if [ ! -d output ]; then
+    error_exit "ERROR: Output directory "output" was not created by your Spark code"
+fi
+if [ ! -f 'output/part-00000' ]; then
+    error_exit "ERROR: Cannot find the output file output/part-00000 after your code is run"
+fi
+head -5 output/part-????? 1>&2
+
+# clean up
+rm -rf ${TMP_DIR}
+
+echo
+echo "SUCCESS! We finished testing your zip file integrity." 1>&2
+exit 0

@@ -1,0 +1,97 @@
+#!/bin/bash
+TMP_DIR=/tmp/p3-grading/
+REQUIRED_FILES="convert.sh load.sql q1.sql q2.sql q3.sql q4.sql q5.sql laureate.php"
+DATA_FILE="/home/cs143/data/nobel-laureates.json"
+ZIP_FILE=project3.zip
+
+# exit the script with the provided error message
+function error_exit()
+{
+   echo "ERROR: $1" 1>&2
+   rm -rf ${TMP_DIR}
+   exit 1
+}
+
+# check if the given list of files exist
+function check_files()
+{
+    for FILE in $1; do
+        if [ ! -f ${FILE} ]; then
+            error_exit "Cannot find ${FILE} in $2"
+        fi
+    done
+}
+
+# use the user-provided zip file name
+if [ $# -eq 1 ]; then
+    ZIP_FILE=$1
+fi
+
+# make sure that the script is running inside the container
+if [ `whoami` != "cs143" ]; then
+     error_exit "You need to run this script within the container"
+fi
+
+# check the data file existence
+if [ ! -f ${DATA_FILE} ]; then
+    error_exit "File ${DATA_FILE} does not exist. This script cannot be executed without the file."
+fi
+
+# clean any existing files
+rm -rf ${TMP_DIR}
+mkdir ${TMP_DIR}
+
+# unzip the submission zip file 
+if [ ! -f ${ZIP_FILE} ]; then
+    error_exit "Cannot find $ZIP_FILE"
+fi
+unzip -q -d ${TMP_DIR} ${ZIP_FILE}
+if [ "$?" -ne "0" ]; then 
+    error_exit "Cannot unzip ${ZIP_FILE} to ${TMP_DIR}"
+fi
+
+# change directory to the grading folder
+cd ${TMP_DIR}
+
+# check the existence of the required files
+check_files "${REQUIRED_FILES}" "root folder of the zip file"
+
+echo "Running the conversion program via convert.sh..."
+sh convert.sh
+echo ""
+echo "Showing the load files created by your conversion program:"
+ls *.del
+
+echo ""
+echo "Running your load.sql script..."
+mysql class_db < load.sql
+if [ $? -ne 0 ]; then
+    error_exit "An error was encountered while running your load.sql file"
+fi
+
+QUERIES="q1.sql q2.sql q3.sql q4.sql q5.sql"
+for QUERY in ${QUERIES}; do
+    if [ ! -f ${QUERY} ]; then
+        error_exit "Cannot find ${QUERY} in your zip file"
+    fi
+    echo ""
+    echo "Running your query script ${QUERY}..."
+    mysql class_db < ${QUERY}
+    if [ $? -ne 0 ]; then
+        error_exit "An error was encountered while running your query script ${QUERY}"
+    fi
+done
+
+echo ""
+echo "Copying your laureate.php file to ~/www/"
+cp -f laureate.php /home/cs143/www/
+if [ $? -ne 0 ]; then
+    error_exit "An error was encountered while copying laureate.php"
+fi
+echo "All done!"
+echo ""
+echo "Please ensure that you have the Web service available at http://localhost:8888/laureate.php?id=X"
+echo "(1) Please make sure that the returned JSON format is valid"
+echo "(2) Please make sure that the return JSON structure is the same as the original, except the properties that are dropped"
+echo "(3) Please make sure that both person and organization laureates have the correct structure"
+exit 0

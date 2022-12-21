@@ -1,0 +1,4 @@
+SELECT dept
+FROM Class
+GROUP BY dept
+HAVING COUNT(*) >= 3;

@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+ZIP_FILE=project6.zip
+REQUIRED_FILES="q1.sh q2.sh q3.sh q4.sh q5.sh"
+OPTIONAL_FILES="README.txt"
+DATA_FILE="/home/cs143/data/googlebooks-eng-all-1gram-20120701-s.gz"
+
+CUR_DIR=$(pwd -P)
+SRC_DIR=${CUR_DIR}
+
+#error function
+function error_exit()
+{
+   echo -e "ERROR: $1" 1>&2
+   rm -rf ${TMP_DIR}
+   exit 1
+}
+
+# make sure running in container
+if [ `whoami` != "cs143" ]; then
+    error_exit "You need to run this script within the container"
+fi
+
+# if the source directory is passed as parameter, use it
+if [ $# -eq 1 ]; then
+    SRC_DIR=$1
+fi
+
+# remove the zip file if it already exists
+if [ -f ${CUR_DIR}/${ZIP_FILE} ]; then
+    rm -f ${CUR_DIR}/${ZIP_FILE}
+fi
+
+# change to the directory with the submission files
+cd ${SRC_DIR}
+
+# check the existence of the required files and make sure that they reference the absolute data file path
+for FILE in ${REQUIRED_FILES}
+do
+    if [ ! -f ${FILE} ]; then
+        echo "ERROR: Cannot find ${FILE} in ${DIR}" 1>&2
+        exit 1
+    fi
+    grep ${DATA_FILE} ${FILE} &> /dev/null
+    if [ $? -ne 0 ]; then
+        echo "WARNING: The path ${DATA_FILE} is not referenced in ${FILE}."
+        echo "         Are you sure you are using the correct path?"
+    fi
+done
+
+# check the existence of the optional files
+TO_ADD=""
+for FILE in ${OPTIONAL_FILES}
+do
+    if [ -f ${FILE} ]; then
+	TO_ADD+=" ${FILE}"
+    fi
+done
+
+echo "zip ${ZIP_FILE} ${REQUIRED_FILES} ${TO_ADD}"
+zip ${CUR_DIR}/${ZIP_FILE} ${REQUIRED_FILES} ${TO_ADD}
+if [ $? -ne 0 ]; then
+    error_exit "Create ${CUR_DIR}/${ZIP_FILE} failed, check for error messages in console."
+fi
+
+echo "[SUCCESS] Created '${CUR_DIR}/${ZIP_FILE}'"
+
+exit 0
