@@ -1,0 +1,25 @@
+After-action report:
+
+I wrote make_matcher in terms of make_parser based on the following reasoning.
+The two functions share the same underlying strategy of top-down derivation and
+backtracking. The only real difference is that make_matcher returns the output
+of the acceptor, while make_parser returns the optional parse tree. Thus, what
+I did was have make_parser use my own defined acceptor that returns the parse
+tree iff the fragment is entirely matched as specified. Then, I had
+make_matcher use a wrapper function that ignores the parse tree argument and
+simply returns the output of the provided acceptor with the fragment as the
+sole argument.
+
+The main weakness of my solution in the context of parsing/matching CFG's is
+that it cannot handle recursive grammars consistently. Particularly, rules with
+left recursion will cause my program to go into an infinite loop. For example, 
+given a grammar with rule "Expr -> Expr Binop Expr", my solution may see the
+'Expr' symbol first and then try to apply this same rule again one recursive
+level down.
+
+Moreover, extremely large grammars in terms of number of rules and symbols will
+likely be very time consuming. My solution essentially performs a depth-first 
+search to find the first combination of rules that matches the provided
+fragment. Due to the branching nature of such a search, my solution may require
+a long time to execute for complicated grammars as the search space grows 
+exponentially larger for every symbol or rule.
