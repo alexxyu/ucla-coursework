@@ -1,0 +1,7 @@
+temp/*
+.idea/*
+.ipynb_checkpoints/*
+*.aux
+*.out
+*.log
+*.synctex*

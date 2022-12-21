@@ -1,6 +1,6 @@
 # CS 31
 
-Projects for CS 31 Fall 2019 with Professor Smallberg
+Projects for CS 31 Fall 2019 with David Smallberg
 
 | Project #    | Score   |
 |--------------|---------|
