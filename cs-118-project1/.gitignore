@@ -1,0 +1,10 @@
+.idea
+
+*.o
+*.dSYM
+server
+client
+
+*.DS_Store
+
+assets/
