@@ -46,7 +46,7 @@ class KNN(object):
         #   training point using norm(), and store the result in dists[i, j].     
         # ================================================================ #
 
-        pass
+        dists[i, j] = norm(X[i] - self.X_train[j])
 
         # ================================================================ #
         # END YOUR CODE HERE
@@ -83,7 +83,9 @@ class KNN(object):
     #   array.
     # ================================================================ #
 
-    pass
+    X_train_squared = np.sum(self.X_train ** 2, axis=1).flatten()
+    X_test_squared = np.array([np.sum(X ** 2, axis=1).flatten()]).T
+    dists = np.sqrt((X_train_squared + X_test_squared) - 2*(X @ self.X_train.T))
 
     # ================================================================ #
     # END YOUR CODE HERE
@@ -122,7 +124,9 @@ class KNN(object):
       #   as y_pred[i].  Break ties by choosing the smaller label.
       # ================================================================ #
   
-      pass
+      closest_train = np.argsort(dists[i])[:k]
+      closest_y = sorted([self.y_train[i] for i in closest_train])
+      y_pred[i] = max(set(closest_y), key=closest_y.count)
 
       # ================================================================ #
       # END YOUR CODE HERE
