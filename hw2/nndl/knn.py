@@ -38,12 +38,12 @@ class KNN(object):
     num_train = self.X_train.shape[0]
     dists = np.zeros((num_test, num_train))
     for i in np.arange(num_test):
-        
+
       for j in np.arange(num_train):
         # ================================================================ #
         # YOUR CODE HERE:
-        #   Compute the distance between the ith test point and the jth       
-        #   training point using norm(), and store the result in dists[i, j].     
+        #   Compute the distance between the ith test point and the jth
+        #   training point using norm(), and store the result in dists[i, j].
         # ================================================================ #
 
         dists[i, j] = norm(X[i] - self.X_train[j])
@@ -73,13 +73,13 @@ class KNN(object):
 
     # ================================================================ #
     # YOUR CODE HERE:
-    #   Compute the L2 distance between the ith test point and the jth       
-    #   training point and store the result in dists[i, j].  You may 
+    #   Compute the L2 distance between the ith test point and the jth
+    #   training point and store the result in dists[i, j].  You may
     #   NOT use a for loop (or list comprehension).  You may only use
     #   numpy operations.
     #
     #   HINT: use broadcasting.  If you have a shape (N,1) array and
-    #   a shape (M,) array, adding them together produces a shape (N, M) 
+    #   a shape (M,) array, adding them together produces a shape (N, M)
     #   array.
     # ================================================================ #
 
@@ -105,7 +105,7 @@ class KNN(object):
 
     Returns:
     - y: A numpy array of shape (num_test,) containing predicted labels for the
-      test data, where y[i] is the predicted label for the test point X[i].  
+      test data, where y[i] is the predicted label for the test point X[i].
     """
     num_test = dists.shape[0]
     y_pred = np.zeros(num_test)
@@ -115,15 +115,15 @@ class KNN(object):
       closest_y = []
       # ================================================================ #
       # YOUR CODE HERE:
-      #   Use the distances to calculate and then store the labels of 
+      #   Use the distances to calculate and then store the labels of
       #   the k-nearest neighbors to the ith test point.  The function
       #   numpy.argsort may be useful.
-      #   
+      #
       #   After doing this, find the most common label of the k-nearest
       #   neighbors.  Store the predicted label of the ith training example
       #   as y_pred[i].  Break ties by choosing the smaller label.
       # ================================================================ #
-  
+
       closest_train = np.argsort(dists[i])[:k]
       closest_y = sorted([self.y_train[i] for i in closest_train])
       y_pred[i] = max(set(closest_y), key=closest_y.count)
