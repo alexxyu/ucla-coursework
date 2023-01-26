@@ -8,8 +8,8 @@ class Softmax(object):
 
   def init_weights(self, dims):
     """
-    Initializes the weight matrix of the Softmax classifier.  
-    Note that it has shape (C, D) where C is the number of 
+    Initializes the weight matrix of the Softmax classifier.
+    Note that it has shape (C, D) where C is the number of
     classes and D is the feature size.
     """
     self.W = np.random.normal(size=dims) * 0.0001
@@ -17,15 +17,15 @@ class Softmax(object):
   def loss(self, X, y):
     """
     Calculates the softmax loss.
-  
+
     Inputs have dimension D, there are C classes, and we operate on minibatches
     of N examples.
-  
+
     Inputs:
     - X: A numpy array of shape (N, D) containing a minibatch of data.
     - y: A numpy array of shape (N,) containing training labels; y[i] = c means
       that X[i] has label c, where 0 <= c < C.
-  
+
     Returns a tuple of:
     - loss as single float
     """
@@ -36,12 +36,15 @@ class Softmax(object):
     # ================================================================ #
     # YOUR CODE HERE:
     #   Calculate the normalized softmax loss.  Store it as the variable loss.
-    #   (That is, calculate the sum of the losses of all the training 
-    #   set margins, and then normalize the loss by the number of 
+    #   (That is, calculate the sum of the losses of all the training
+    #   set margins, and then normalize the loss by the number of
     #   training examples.)
     # ================================================================ #
-    pass
-    
+
+    for Xs, ys in zip(X, y):
+        loss += np.log(np.sum(np.exp(Xs @ self.W.T))) - self.W[ys].T @ Xs
+    loss /= y.shape[0]
+
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
@@ -52,21 +55,32 @@ class Softmax(object):
     """
     Same as self.loss(X, y), except that it also returns the gradient.
 
-    Output: grad -- a matrix of the same dimensions as W containing 
+    Output: grad -- a matrix of the same dimensions as W containing
       the gradient of the loss with respect to W.
     """
 
     # Initialize the loss and gradient to zero.
     loss = 0.0
     grad = np.zeros_like(self.W)
-  
+
     # ================================================================ #
     # YOUR CODE HERE:
     #   Calculate the softmax loss and the gradient. Store the gradient
     #   as the variable grad.
     # ================================================================ #
-    pass
-    
+
+    c, m = self.W.shape[0], y.shape[0]
+    for Xs, ys in zip(X, y):
+        loss += np.log(np.sum(np.exp(np.dot(Xs, self.W.T)))) - np.dot(self.W[ys].T, Xs)
+    loss /= m
+
+    A = self.W @ X.T
+    for i in range(c):
+        for j, (Xs, ys) in enumerate(zip(X, y)):
+            ind = 1 if ys == i else 0
+            grad[i, :] += (ind - np.exp(A[i, j]) / np.sum(np.exp(A[:, j]))) * Xs
+    grad = -grad / m
+
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
@@ -78,17 +92,17 @@ class Softmax(object):
     sample a few random elements and only return numerical
     in these dimensions.
     """
-  
+
     for i in np.arange(num_checks):
       ix = tuple([np.random.randint(m) for m in self.W.shape])
-  
+
       oldval = self.W[ix]
       self.W[ix] = oldval + h # increment by h
       fxph = self.loss(X, y)
       self.W[ix] = oldval - h # decrement by h
       fxmh = self.loss(X,y) # evaluate f(x - h)
       self.W[ix] = oldval # reset
-  
+
       grad_numerical = (fxph - fxmh) / (2 * h)
       grad_analytic = your_grad[ix]
       rel_error = abs(grad_numerical - grad_analytic) / (abs(grad_numerical) + abs(grad_analytic))
@@ -101,13 +115,24 @@ class Softmax(object):
     """
     loss = 0.0
     grad = np.zeros(self.W.shape) # initialize the gradient as zero
-  
+
     # ================================================================ #
     # YOUR CODE HERE:
     #   Calculate the softmax loss and gradient WITHOUT any for loops.
     # ================================================================ #
-    pass
-    
+
+    c, m = self.W.shape[0], y.shape[0]
+    A = X @ self.W.T
+    loss += np.sum(np.log(np.sum(np.exp(X @ self.W.T), axis=1)))
+    loss -= np.sum(A[np.arange(len(A)), y])
+    loss /= m
+
+    A = self.W @ X.T
+    exp = np.repeat(np.array([np.sum(np.exp(A), axis=0)]), c, axis=0)
+    ind = np.arange(c)[:, None] == y
+    grad = (ind - np.exp(A) / exp) @ X
+    grad /= -m
+
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
@@ -146,7 +171,7 @@ class Softmax(object):
 
       # ================================================================ #
       # YOUR CODE HERE:
-      #   Sample batch_size elements from the training data for use in 
+      #   Sample batch_size elements from the training data for use in
       #     gradient descent.  After sampling,
       #     - X_batch should have shape: (batch_size, dim)
       #     - y_batch should have shape: (batch_size,)
@@ -154,7 +179,10 @@ class Softmax(object):
       #   in the dataset.  Use np.random.choice.  It's okay to sample with
       #   replacement.
       # ================================================================ #
-      pass
+
+      sample = np.random.choice(np.arange(num_train), size=batch_size)
+      X_batch, y_batch = X[sample], y[sample]
+
       # ================================================================ #
       # END YOUR CODE HERE
       # ================================================================ #
@@ -165,9 +193,10 @@ class Softmax(object):
 
       # ================================================================ #
       # YOUR CODE HERE:
-      #   Update the parameters, self.W, with a gradient step 
+      #   Update the parameters, self.W, with a gradient step
       # ================================================================ #
-      pass
+
+      self.W -= learning_rate * grad
 
       # ================================================================ #
       # END YOUR CODE HERE
@@ -193,7 +222,13 @@ class Softmax(object):
     # YOUR CODE HERE:
     #   Predict the labels given the training data.
     # ================================================================ #
-    pass
+
+    A = X @ self.W.T
+    c = self.W.shape[0]
+    exp = np.repeat(np.array([np.sum(np.exp(A), axis=1)]), c, axis=0).T
+    B = np.exp(A) / exp
+    y_pred = np.argmax(B, axis=1)
+
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
