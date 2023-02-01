@@ -80,13 +80,14 @@ class TwoLayerNet(object):
     #   use a for loop in your implementation.
     # ================================================================ #
 
-    pass
-    
+    relu_out = np.maximum(0, (X @ W1.T + b1))
+    scores = relu_out @ W2.T + b2
+
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
 
-  
+
     # If the targets are not given then jump out, we're done
     if y is None:
       return scores
@@ -103,7 +104,12 @@ class TwoLayerNet(object):
     # ================================================================ #
 
     # scores is num_examples by num_classes
-    pass
+
+    scores_exp = np.exp(scores)
+    probs = scores_exp / np.sum(scores_exp, axis=1, keepdims=True)
+    loss = -np.sum(np.log(probs[np.arange(N), y])) / N
+    loss += 0.5*reg*(np.linalg.norm(W1, 'fro')**2 + np.linalg.norm(W2, 'fro')**2)
+
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
@@ -118,7 +124,17 @@ class TwoLayerNet(object):
     #   W1, and be of the same size as W1.
     # ================================================================ #
 
-    pass
+    # A is the (N x C) matrix of activations i.e. the outputs of the second FC layer
+    dLdA = probs
+    dLdA[np.arange(N), y] -= 1
+    dLdA /= N
+    grads['W2'] = dLdA.T @ relu_out + reg*W2
+    grads['b2'] = np.sum(dLdA, axis=0)
+
+    # B is the (N x H) matrix output of the first FC layer
+    dLdB = (X @ W1.T > 0) * (dLdA @ W2)
+    grads['W1'] = dLdB.T @ X + reg*W1
+    grads['b1'] = np.sum(dLdB, axis=0)
 
     # ================================================================ #
     # END YOUR CODE HERE
@@ -163,7 +179,10 @@ class TwoLayerNet(object):
       # YOUR CODE HERE:
       #   Create a minibatch by sampling batch_size samples randomly.
       # ================================================================ #
-      pass
+
+      batch_indices = np.random.choice(np.arange(num_train), size=batch_size, replace=True)
+      X_batch = X[batch_indices]
+      y_batch = y[batch_indices]
 
       # ================================================================ #
       # END YOUR CODE HERE
@@ -179,7 +198,8 @@ class TwoLayerNet(object):
       #   all parameters (i.e., W1, W2, b1, and b2).
       # ================================================================ #
 
-      pass
+      for p in self.params:
+          self.params[p] -= learning_rate * grads[p]
 
       # ================================================================ #
       # END YOUR CODE HERE
@@ -226,8 +246,10 @@ class TwoLayerNet(object):
     # YOUR CODE HERE:
     #   Predict the class given the input data.
     # ================================================================ #
-    pass
 
+    relu_out = np.maximum(0, (X @ self.params['W1'].T) + self.params['b1'])
+    scores = (relu_out @ self.params['W2'].T) + self.params['b2']
+    y_pred = np.argmax(scores, axis=1)
 
     # ================================================================ #
     # END YOUR CODE HERE
