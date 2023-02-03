@@ -108,7 +108,7 @@ class TwoLayerNet(object):
     scores_exp = np.exp(scores)
     probs = scores_exp / np.sum(scores_exp, axis=1, keepdims=True)
     loss = -np.sum(np.log(probs[np.arange(N), y])) / N
-    loss += 0.5*reg*(np.linalg.norm(W1, 'fro')**2 + np.linalg.norm(W2, 'fro')**2)
+    loss += 0.5*reg*(np.sum(W1**2) + np.sum(W2**2))
 
     # ================================================================ #
     # END YOUR CODE HERE
