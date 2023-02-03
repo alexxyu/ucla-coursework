@@ -17,7 +17,7 @@ def affine_forward(x, w, b):
   - x: A numpy array containing input data, of shape (N, d_1, ..., d_k)
   - w: A numpy array of weights, of shape (D, M)
   - b: A numpy array of biases, of shape (M,)
-  
+
   Returns a tuple of:
   - out: output, of shape (N, M)
   - cache: (x, w, b)
@@ -26,16 +26,18 @@ def affine_forward(x, w, b):
   # ================================================================ #
   # YOUR CODE HERE:
   #   Calculate the output of the forward pass.  Notice the dimensions
-  #   of w are D x M, which is the transpose of what we did in earlier 
+  #   of w are D x M, which is the transpose of what we did in earlier
   #   assignments.
   # ================================================================ #
 
-  pass
+  N, D = x.shape[0], w.shape[0]
+  x_reshaped = np.reshape(x, (N, D))
+  out = x_reshaped @ w + b
 
   # ================================================================ #
   # END YOUR CODE HERE
   # ================================================================ #
-    
+
   cache = (x, w, b)
   return out, cache
 
@@ -68,12 +70,16 @@ def affine_backward(dout, cache):
   # dw should be D x M; it relates to dout through multiplication with x, which is N x D after reshaping
   # db should be M; it is just the sum over dout examples
 
-  pass
+  N, D = x.shape[0], w.shape[0]
+
+  dx = np.reshape(dout @ w.T, x.shape)
+  dw = np.reshape(x, (N, D)).T @ dout
+  db = np.sum(dout, axis=0)
 
   # ================================================================ #
   # END YOUR CODE HERE
   # ================================================================ #
-  
+
   return dx, dw, db
 
 def relu_forward(x):
@@ -92,11 +98,12 @@ def relu_forward(x):
   #   Implement the ReLU forward pass.
   # ================================================================ #
 
-  pass
+  out = np.maximum(0, x)
+
   # ================================================================ #
   # END YOUR CODE HERE
   # ================================================================ #
- 
+
   cache = x
   return out, cache
 
@@ -120,12 +127,12 @@ def relu_backward(dout, cache):
   # ================================================================ #
 
   # ReLU directs linearly to those > 0
-  pass
-    
+  dx = (x > 0) * dout
+
   # ================================================================ #
   # END YOUR CODE HERE
   # ================================================================ #
- 
+
   return dx
 
 
