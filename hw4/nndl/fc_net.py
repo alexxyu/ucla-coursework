@@ -274,6 +274,9 @@ class FullyConnectedNet(object):
                 out_layer, layer_cache = affine_batchnorm_relu_forward(in_layer, W, b, gamma, beta, self.bn_params[i-1])
             else:
                 out_layer, layer_cache = affine_relu_forward(in_layer, W, b)
+            if self.use_dropout:
+                out_layer, dropout_cache = dropout_forward(out_layer, self.dropout_param)
+                layer_cache = (*layer_cache, dropout_cache)
             caches[i] = layer_cache
             in_layer = out_layer
 
@@ -307,14 +310,19 @@ class FullyConnectedNet(object):
 
         dhi = dL
         for i in range(L, 0, -1):
+            cache = caches[i]
             if i == L:
-                dhi, dwi, dbi = affine_backward(dhi, caches[i])
-            elif not self.use_batchnorm:
-                dhi, dwi, dbi = affine_relu_backward(dhi, caches[i])
+                dhi, dwi, dbi = affine_backward(dhi, cache)
             else:
-                dhi, dwi, dbi, dgammai, dbetai = affine_batchnorm_relu_backward(dhi, caches[i])
-                grads[f'gamma{i}'] = dgammai.T
-                grads[f'beta{i}'] = dbetai.T
+                if self.use_dropout:
+                    dhi = dropout_backward(dhi, cache[-1])
+                    cache = cache[:-1]
+                if not self.use_batchnorm:
+                    dhi, dwi, dbi = affine_relu_backward(dhi, cache)
+                else:
+                    dhi, dwi, dbi, dgammai, dbetai = affine_batchnorm_relu_backward(dhi, cache)
+                    grads[f'gamma{i}'] = dgammai.T
+                    grads[f'beta{i}'] = dbetai.T
             grads[f'W{i}'] = dwi + self.reg * self.params[f'W{i}']
             grads[f'b{i}'] = dbi.T
 
