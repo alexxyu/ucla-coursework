@@ -10,7 +10,7 @@ class TwoLayerNet(object):
     A two-layer fully-connected neural network with ReLU nonlinearity and
     softmax loss that uses a modular layer design. We assume an input dimension
     of D, a hidden dimension of H, and perform classification over C classes.
-    
+
     The architecure should be affine - relu - affine - softmax.
 
     Note that this class does not implement gradient descent; instead, it
@@ -20,7 +20,7 @@ class TwoLayerNet(object):
     The learnable parameters of the model are stored in the dictionary
     self.params that maps parameter names to numpy arrays.
     """
-    
+
     def __init__(self, input_dim=3*32*32, hidden_dims=100, num_classes=10,
                  dropout=1, weight_scale=1e-3, reg=0.0):
         """
@@ -37,10 +37,10 @@ class TwoLayerNet(object):
         """
         self.params = {}
         self.reg = reg
-        
+
         # ================================================================ #
         # YOUR CODE HERE:
-        #   Initialize W1, W2, b1, and b2.  Store these as self.params['W1'], 
+        #   Initialize W1, W2, b1, and b2.  Store these as self.params['W1'],
         #   self.params['W2'], self.params['b1'] and self.params['b2']. The
         #   biases are initialized to zero and the weights are initialized
         #   so that each parameter has mean 0 and standard deviation weight_scale.
@@ -71,7 +71,7 @@ class TwoLayerNet(object):
         - loss: Scalar value giving the loss
         - grads: Dictionary with the same keys as self.params, mapping parameter
           names to gradients of the loss with respect to those parameters.
-        """  
+        """
         scores = None
 
         # ================================================================ #
@@ -79,36 +79,36 @@ class TwoLayerNet(object):
         #   Implement the forward pass of the two-layer neural network. Store
         #   the class scores as the variable 'scores'.  Be sure to use the layers
         #   you prior implemented.
-        # ================================================================ #    
-        
+        # ================================================================ #
+
         # ================================================================ #
         # END YOUR CODE HERE
         # ================================================================ #
-        
+
         # If y is None then we are in test mode so just return scores
         if y is None:
             return scores
-        
+
         loss, grads = 0, {}
         # ================================================================ #
         # YOUR CODE HERE:
         #   Implement the backward pass of the two-layer neural net.  Store
-        #   the loss as the variable 'loss' and store the gradients in the 
+        #   the loss as the variable 'loss' and store the gradients in the
         #   'grads' dictionary.  For the grads dictionary, grads['W1'] holds
         #   the gradient for W1, grads['b1'] holds the gradient for b1, etc.
         #   i.e., grads[k] holds the gradient for self.params[k].
         #
         #   Add L2 regularization, where there is an added cost 0.5*self.reg*W^2
-        #   for each W.  Be sure to include the 0.5 multiplying factor to 
+        #   for each W.  Be sure to include the 0.5 multiplying factor to
         #   match our implementation.
         #
         #   And be sure to use the layers you prior implemented.
-        # ================================================================ #    
-        
+        # ================================================================ #
+
         # ================================================================ #
         # END YOUR CODE HERE
         # ================================================================ #
-        
+
         return loss, grads
 
 
@@ -118,12 +118,12 @@ class FullyConnectedNet(object):
     ReLU nonlinearities, and a softmax loss function. This will also implement
     dropout and batch normalization as options. For a network with L layers,
     the architecture will be
-    
+
     {affine - [batch norm] - relu - [dropout]} x (L - 1) - affine - softmax
-    
+
     where batch normalization and dropout are optional, and the {...} block is
     repeated L - 1 times.
-    
+
     Similar to the TwoLayerNet above, learnable parameters are stored in the
     self.params dictionary and will be learned using the Solver class.
     """
@@ -133,7 +133,7 @@ class FullyConnectedNet(object):
                weight_scale=1e-2, dtype=np.float32, seed=None):
         """
         Initialize a new FullyConnectedNet.
-        
+
         Inputs:
         - hidden_dims: A list of integers giving the size of each hidden layer.
         - input_dim: An integer giving the size of the input.
@@ -161,7 +161,7 @@ class FullyConnectedNet(object):
         # ================================================================ #
         # YOUR CODE HERE:
         #   Initialize all parameters of the network in the self.params dictionary.
-        #   The weights and biases of layer 1 are W1 and b1; and in general the 
+        #   The weights and biases of layer 1 are W1 and b1; and in general the
         #   weights and biases of layer i are Wi and bi. The
         #   biases are initialized to zero and the weights are initialized
         #   so that each parameter has mean 0 and standard deviation weight_scale.
@@ -169,15 +169,15 @@ class FullyConnectedNet(object):
         #   BATCHNORM: Initialize the gammas of each layer to 1 and the beta
         #   parameters to zero.  The gamma and beta parameters for layer 1 should
         #   be self.params['gamma1'] and self.params['beta1'].  For layer 2, they
-        #   should be gamma2 and beta2, etc. Only use batchnorm if self.use_batchnorm 
+        #   should be gamma2 and beta2, etc. Only use batchnorm if self.use_batchnorm
         #   is true and DO NOT do batch normalize the output scores.
         # ================================================================ #
-        
+
 
         # ================================================================ #
         # END YOUR CODE HERE
         # ================================================================ #
-        
+
         # When using dropout we need to pass a dropout_param dictionary to each
         # dropout layer so that the layer knows the dropout probability and the mode
         # (train / test). You can pass the same dropout_param to each dropout layer.
@@ -186,7 +186,7 @@ class FullyConnectedNet(object):
             self.dropout_param = {'mode': 'train', 'p': dropout}
         if seed is not None:
             self.dropout_param['seed'] = seed
-    
+
         # With batch normalization we need to keep track of running means and
         # variances, so we need to pass a special bn_param object to each batch
         # normalization layer. You should pass self.bn_params[0] to the forward pass
@@ -195,7 +195,7 @@ class FullyConnectedNet(object):
         self.bn_params = []
         if self.use_batchnorm:
             self.bn_params = [{'mode': 'train'} for i in np.arange(self.num_layers - 1)]
-        
+
         # Cast all parameters to the correct datatype
         for k, v in self.params.items():
             self.params[k] = v.astype(dtype)
@@ -213,13 +213,13 @@ class FullyConnectedNet(object):
         # Set train/test mode for batchnorm params and dropout param since they
         # behave differently during training and testing.
         if self.dropout_param is not None:
-            self.dropout_param['mode'] = mode   
+            self.dropout_param['mode'] = mode
         if self.use_batchnorm:
             for bn_param in self.bn_params:
                 bn_param['mode'] = mode
 
         scores = None
-    
+
         # ================================================================ #
         # YOUR CODE HERE:
         #   Implement the forward pass of the FC net and store the output
@@ -237,7 +237,7 @@ class FullyConnectedNet(object):
         # ================================================================ #
         # END YOUR CODE HERE
         # ================================================================ #
-        
+
         # If test mode return early
         if mode == 'test':
             return scores
@@ -259,5 +259,5 @@ class FullyConnectedNet(object):
         # ================================================================ #
         # END YOUR CODE HERE
         # ================================================================ #
-        
+
         return loss, grads

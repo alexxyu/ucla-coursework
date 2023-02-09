@@ -59,17 +59,17 @@ def sgd_momentum(w, dw, config=None):
     config.setdefault('learning_rate', 1e-2)
     config.setdefault('momentum', 0.9) # set momentum to 0.9 if it wasn't there
     v = config.get('velocity', np.zeros_like(w))   # gets velocity, else sets it to zero.
-    
+
     # ================================================================ #
     # YOUR CODE HERE:
     #   Implement the momentum update formula.  Return the updated weights
     #   as next_w, and the updated velocity as v.
     # ================================================================ #
-    
+
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
-    
+
     config['velocity'] = v
 
     return next_w, config
@@ -89,7 +89,7 @@ def sgd_nesterov_momentum(w, dw, config=None):
     config.setdefault('learning_rate', 1e-2)
     config.setdefault('momentum', 0.9) # set momentum to 0.9 if it wasn't there
     v = config.get('velocity', np.zeros_like(w))   # gets velocity, else sets it to zero.
-    
+
     # ================================================================ #
     # YOUR CODE HERE:
     #   Implement the momentum update formula.  Return the updated weights
@@ -99,7 +99,7 @@ def sgd_nesterov_momentum(w, dw, config=None):
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
-    
+
     config['velocity'] = v
 
     return next_w, config
@@ -135,7 +135,7 @@ def rmsprop(w, dw, config=None):
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
-    
+
     return next_w, config
 
 
@@ -161,7 +161,7 @@ def adam(w, dw, config=None):
     config.setdefault('v', np.zeros_like(w))
     config.setdefault('a', np.zeros_like(w))
     config.setdefault('t', 0)
-    
+
     next_w = None
 
     # ================================================================ #
@@ -175,5 +175,5 @@ def adam(w, dw, config=None):
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
-    
+
     return next_w, config

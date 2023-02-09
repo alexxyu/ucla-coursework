@@ -15,7 +15,7 @@ def affine_forward(x, w, b):
     - x: A numpy array containing input data, of shape (N, d_1, ..., d_k)
     - w: A numpy array of weights, of shape (D, M)
     - b: A numpy array of biases, of shape (M,)
-    
+
     Returns a tuple of:
     - out: output, of shape (N, M)
     - cache: (x, w, b)
@@ -24,16 +24,16 @@ def affine_forward(x, w, b):
     # ================================================================ #
     # YOUR CODE HERE:
     #   Calculate the output of the forward pass.  Notice the dimensions
-    #   of w are D x M, which is the transpose of what we did in earlier 
+    #   of w are D x M, which is the transpose of what we did in earlier
     #   assignments.
     # ================================================================ #
-    
+
 
 
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
-      
+
     cache = (x, w, b)
     return out, cache
 
@@ -60,7 +60,7 @@ def affine_backward(dout, cache):
     # ================================================================ #
     # YOUR CODE HERE:
     #   Calculate the gradients for the backward pass.
-    # Notice:  
+    # Notice:
     #   dout is N x M
     #   dx should be N x d1 x ... x dk; it relates to dout through multiplication with w, which is D x M
     #   dw should be D x M; it relates to dout through multiplication with x, which is N x D after reshaping
@@ -71,7 +71,7 @@ def affine_backward(dout, cache):
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
-    
+
     return dx, dw, db
 
 def relu_forward(x):
@@ -93,7 +93,7 @@ def relu_forward(x):
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
-    
+
     cache = x
     return out, cache
 
@@ -115,18 +115,18 @@ def relu_backward(dout, cache):
     # YOUR CODE HERE:
     #   Implement the ReLU backward pass
     # ================================================================ #
-    
-    
+
+
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
-    
+
     return dx
 
 def batchnorm_forward(x, gamma, beta, bn_param):
     """
     Forward pass for batch normalization.
-    
+
     During training the sample mean and (uncorrected) sample variance are
     computed from minibatch statistics and used to normalize the incoming data.
     During training we also keep an exponentially decaying running mean of the mean
@@ -171,7 +171,7 @@ def batchnorm_forward(x, gamma, beta, bn_param):
 
     out, cache = None, None
     if mode == 'train':
-        
+
         # ================================================================ #
         # YOUR CODE HERE:
         #   A few steps here:
@@ -195,9 +195,9 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         #   the running mean and variance, and then scale and shift appropriately.
         #   Store the output as 'out'.
         # ================================================================ #
-        
+
         pass
-        
+
         # ================================================================ #
         # END YOUR CODE HERE
         # ================================================================ #
@@ -213,15 +213,15 @@ def batchnorm_forward(x, gamma, beta, bn_param):
 def batchnorm_backward(dout, cache):
     """
     Backward pass for batch normalization.
-    
+
     For this implementation, you should write out a computation graph for
     batch normalization on paper and propagate gradients backward through
     intermediate nodes.
-    
+
     Inputs:
     - dout: Upstream derivatives, of shape (N, D)
     - cache: Variable of intermediates from batchnorm_forward.
-    
+
     Returns a tuple of:
     - dx: Gradient with respect to inputs x, of shape (N, D)
     - dgamma: Gradient with respect to scale parameter gamma, of shape (D,)
@@ -237,7 +237,7 @@ def batchnorm_backward(dout, cache):
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
-    
+
     return dx, dgamma, dbeta
 
 def dropout_forward(x, dropout_param):
@@ -270,25 +270,25 @@ def dropout_forward(x, dropout_param):
     if mode == 'train':
         # ================================================================ #
         # YOUR CODE HERE:
-        #   Implement the inverted dropout forward pass during training time.  
-        #   Store the masked and scaled activations in out, and store the 
+        #   Implement the inverted dropout forward pass during training time.
+        #   Store the masked and scaled activations in out, and store the
         #   dropout mask as the variable mask.
         # ================================================================ #
-        
-        
+
+
         pass
         # ================================================================ #
         # END YOUR CODE HERE
         # ================================================================ #
-    
+
     elif mode == 'test':
-        
+
         # ================================================================ #
         # YOUR CODE HERE:
         #   Implement the inverted dropout forward pass during test time.
         # ================================================================ #
-        
-        
+
+
         pass
         # ================================================================ #
         # END YOUR CODE HERE
@@ -309,15 +309,15 @@ def dropout_backward(dout, cache):
     """
     dropout_param, mask = cache
     mode = dropout_param['mode']
-    
+
     dx = None
     if mode == 'train':
         # ================================================================ #
         # YOUR CODE HERE:
         #   Implement the inverted dropout backward pass during training time.
         # ================================================================ #
-        
-        
+
+
         pass
         # ================================================================ #
         # END YOUR CODE HERE
@@ -327,8 +327,8 @@ def dropout_backward(dout, cache):
         # YOUR CODE HERE:
         #   Implement the inverted dropout backward pass during test time.
         # ================================================================ #
-        
-        
+
+
         pass
         # ================================================================ #
         # END YOUR CODE HERE

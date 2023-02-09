@@ -28,8 +28,8 @@ def affine_forward_test():
     # Compare your output with ours. The error should be around 1e-9.
     print('If affine_forward function is working, difference should be less than 1e-9:')
     print('difference: {}'.format(rel_error(out, correct_out)))
-    
-def affine_backward_test(): 
+
+def affine_backward_test():
     # Test the affine_backward function
 
     x = np.random.randn(10, 2, 3)
@@ -49,7 +49,7 @@ def affine_backward_test():
     print('dx error: {}'.format(rel_error(dx_num, dx)))
     print('dw error: {}'.format(rel_error(dw_num, dw)))
     print('db error: {}'.format(rel_error(db_num, db)))
-    
+
 def relu_forward_test():
     # Test the relu_forward function
 
@@ -63,7 +63,7 @@ def relu_forward_test():
     # Compare your output with ours. The error should be around 1e-8
     print('If relu_forward function is working, difference should be around 1e-8:')
     print('difference: {}'.format(rel_error(out, correct_out)))
-    
+
 def relu_backward_test():
     x = np.random.randn(10, 10)
     dout = np.random.randn(*x.shape)
@@ -76,7 +76,7 @@ def relu_backward_test():
     # The error should be around 1e-12
     print('If relu_forward function is working, error should be less than 1e-9:')
     print('dx error: {}'.format(rel_error(dx_num, dx)))
-    
+
 def affine_relu_test():
 
     x = np.random.randn(2, 3, 4)
@@ -95,7 +95,7 @@ def affine_relu_test():
     print('dx error: {}'.format(rel_error(dx_num, dx)))
     print('dw error: {}'.format(rel_error(dw_num, dw)))
     print('db error: {}'.format(rel_error(db_num, db)))
-    
+
 def fc_net_test():
     N, D, H1, H2, C = 2, 15, 20, 30, 10
     X = np.random.randn(N, D)
