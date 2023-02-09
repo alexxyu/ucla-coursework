@@ -193,7 +193,14 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         #         the 'cache' variable.
         # ================================================================ #
 
-        pass
+        batch_mean = np.mean(x, axis=0)
+        running_mean = momentum*running_mean + (1-momentum) * batch_mean
+        batch_var = np.var(x, axis=0)
+        running_var = momentum*running_var + (1-momentum) * batch_var
+
+        x_normalized = (x - batch_mean) / np.sqrt(batch_var + eps)
+        out = gamma * x_normalized + beta
+        cache = (batch_mean, batch_var, gamma, eps, x, x_normalized)
 
         # ================================================================ #
         # END YOUR CODE HERE
@@ -206,7 +213,8 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         #   Store the output as 'out'.
         # ================================================================ #
 
-        pass
+        x_normalized = (x - running_mean) / np.sqrt(running_var + eps)
+        out = gamma * x_normalized + beta
 
         # ================================================================ #
         # END YOUR CODE HERE
@@ -243,6 +251,24 @@ def batchnorm_backward(dout, cache):
     # YOUR CODE HERE:
     #   Implement the batchnorm backward pass, calculating dx, dgamma, and dbeta.
     # ================================================================ #
+
+    mean, var, gamma, eps, x, x_normalized = cache
+    m = x.shape[0]
+
+    # dLdx = 1/sqrt(var + eps) * dLdnorm + 2*(x - mean)/m * dLdvar + dLdmean / m
+    # dLdnorm = dLdout * gamma
+    # dLdvar = sum(-1/2 * 1/(var + eps)^(3/2) * (x - mean) * dLdnorm)
+    # dLdmean = -1/sqrt(var + eps) * sum(dLdnorm) -  dLdvar * 2/m * sum(x - mean)
+    dnorm = dout * gamma
+    dvar = -0.5 * np.sum((x - mean) * dnorm, axis=0) / (np.sqrt(var + eps)**3)
+    dmean = -(np.sum(dnorm, axis=0) / np.sqrt(var + eps)) - (2 * dvar / m * np.sum(x - mean, axis=0))
+    dx = dnorm / np.sqrt(var + eps) + 2*(x - mean)/m * dvar + dmean / m
+
+    # dLdgamma = sum(dLdout * x)
+    dgamma = np.sum(dout * x_normalized, axis=0)
+
+    #dLdbeta = sum(dLdout)
+    dbeta = np.sum(dout, axis=0)
 
     # ================================================================ #
     # END YOUR CODE HERE

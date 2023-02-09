@@ -193,10 +193,16 @@ class FullyConnectedNet(object):
         # ================================================================ #
 
         in_dim = input_dim
-        for i, out_dim in enumerate(hidden_dims + [num_classes]):
+        for i, out_dim in enumerate(hidden_dims):
             self.params[f'W{i+1}'] = np.random.normal(loc=0, scale=weight_scale, size=(in_dim, out_dim))
             self.params[f'b{i+1}'] = np.zeros((out_dim,))
+            if self.use_batchnorm:
+                self.params[f'gamma{i+1}'] = np.ones((out_dim,))
+                self.params[f'beta{i+1}'] = np.zeros((out_dim,))
             in_dim = out_dim
+
+        self.params[f'W{self.num_layers}'] = np.random.normal(loc=0, scale=weight_scale, size=(in_dim, num_classes))
+        self.params[f'b{self.num_layers}'] = np.zeros((num_classes,))
 
         # ================================================================ #
         # END YOUR CODE HERE
@@ -263,7 +269,11 @@ class FullyConnectedNet(object):
 
         for i in range(1, L):
             W, b = self.params[f'W{i}'], self.params[f'b{i}']
-            out_layer, layer_cache = affine_relu_forward(in_layer, W, b)
+            if self.use_batchnorm:
+                gamma, beta = self.params[f'gamma{i}'], self.params[f'beta{i}']
+                out_layer, layer_cache = affine_batchnorm_relu_forward(in_layer, W, b, gamma, beta, self.bn_params[i-1])
+            else:
+                out_layer, layer_cache = affine_relu_forward(in_layer, W, b)
             caches[i] = layer_cache
             in_layer = out_layer
 
@@ -295,13 +305,18 @@ class FullyConnectedNet(object):
             if p[0] == 'W':
                 loss += 0.5 * self.reg * np.sum(self.params[p]**2)
 
-        backward = affine_backward
-        dhi, dwi, dbi = dL, None, None
+        dhi = dL
         for i in range(L, 0, -1):
-            dhi, dwi, dbi = backward(dhi, caches[i])
+            if i == L:
+                dhi, dwi, dbi = affine_backward(dhi, caches[i])
+            elif not self.use_batchnorm:
+                dhi, dwi, dbi = affine_relu_backward(dhi, caches[i])
+            else:
+                dhi, dwi, dbi, dgammai, dbetai = affine_batchnorm_relu_backward(dhi, caches[i])
+                grads[f'gamma{i}'] = dgammai.T
+                grads[f'beta{i}'] = dbetai.T
             grads[f'W{i}'] = dwi + self.reg * self.params[f'W{i}']
             grads[f'b{i}'] = dbi.T
-            backward = affine_relu_backward
 
         # ================================================================ #
         # END YOUR CODE HERE
