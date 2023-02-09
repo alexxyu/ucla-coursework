@@ -48,6 +48,10 @@ class TwoLayerNet(object):
         #   dimensions of W2 should be (hidden_dims, num_classes)
         # ================================================================ #
 
+        self.params['W1'] = np.random.normal(loc=0, scale=weight_scale, size=(input_dim, hidden_dims))
+        self.params['b1'] = np.zeros(hidden_dims)
+        self.params['W2'] = np.random.normal(loc=0, scale=weight_scale, size=(hidden_dims, num_classes))
+        self.params['b2'] = np.zeros(num_classes)
 
         # ================================================================ #
         # END YOUR CODE HERE
@@ -81,6 +85,10 @@ class TwoLayerNet(object):
         #   you prior implemented.
         # ================================================================ #
 
+        layer_1_out, layer_1_cache = affine_relu_forward(X, self.params['W1'], self.params['b1'])
+        layer_2_out, layer_2_cache = affine_forward(layer_1_out, self.params['W2'], self.params['b2'])
+        scores = layer_2_out
+
         # ================================================================ #
         # END YOUR CODE HERE
         # ================================================================ #
@@ -104,6 +112,17 @@ class TwoLayerNet(object):
         #
         #   And be sure to use the layers you prior implemented.
         # ================================================================ #
+
+        loss, dL = softmax_loss(scores, y)
+        loss += 0.5 * self.reg * (np.sum(self.params['W1']**2) +  np.sum(self.params['W2']**2))
+
+        dh, dw2, db2 = affine_backward(dL, layer_2_cache)
+        _, dw1, db1 = affine_relu_backward(dh, layer_1_cache)
+
+        grads['W1'] = dw1 + self.reg * self.params['W1']
+        grads['b1'] = db1.T
+        grads['W2'] = dw2 + self.reg * self.params['W2']
+        grads['b2'] = db2.T
 
         # ================================================================ #
         # END YOUR CODE HERE
@@ -173,6 +192,11 @@ class FullyConnectedNet(object):
         #   is true and DO NOT do batch normalize the output scores.
         # ================================================================ #
 
+        in_dim = input_dim
+        for i, out_dim in enumerate(hidden_dims + [num_classes]):
+            self.params[f'W{i+1}'] = np.random.normal(loc=0, scale=weight_scale, size=(in_dim, out_dim))
+            self.params[f'b{i+1}'] = np.zeros((out_dim,))
+            in_dim = out_dim
 
         # ================================================================ #
         # END YOUR CODE HERE
@@ -233,6 +257,18 @@ class FullyConnectedNet(object):
         #   every ReLU layer.
         # ================================================================ #
 
+        L = self.num_layers
+        in_layer = X
+        caches = dict()
+
+        for i in range(1, L):
+            W, b = self.params[f'W{i}'], self.params[f'b{i}']
+            out_layer, layer_cache = affine_relu_forward(in_layer, W, b)
+            caches[i] = layer_cache
+            in_layer = out_layer
+
+        scores, layer_cache = affine_forward(in_layer, self.params[f'W{L}'], self.params[f'b{L}'])
+        caches[L] = layer_cache
 
         # ================================================================ #
         # END YOUR CODE HERE
@@ -254,7 +290,18 @@ class FullyConnectedNet(object):
         #   DROPOUT: Incorporate the backward pass of dropout.
         # ================================================================ #
 
+        loss, dL = softmax_loss(scores, y)
+        for p in self.params:
+            if p[0] == 'W':
+                loss += 0.5 * self.reg * np.sum(self.params[p]**2)
 
+        backward = affine_backward
+        dhi, dwi, dbi = dL, None, None
+        for i in range(L, 0, -1):
+            dhi, dwi, dbi = backward(dhi, caches[i])
+            grads[f'W{i}'] = dwi + self.reg * self.params[f'W{i}']
+            grads[f'b{i}'] = dbi.T
+            backward = affine_relu_backward
 
         # ================================================================ #
         # END YOUR CODE HERE
