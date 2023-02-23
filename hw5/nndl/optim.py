@@ -69,7 +69,9 @@ def sgd_momentum(w, dw, config=None):
     #   Implement the momentum update formula.  Return the updated weights
     #   as next_w, and the updated velocity as v.
     # ================================================================ #
-    pass
+
+    v = config['momentum'] * v - config['learning_rate'] * dw
+    next_w = w + v
 
     # ================================================================ #
     # END YOUR CODE HERE
@@ -104,7 +106,10 @@ def sgd_nesterov_momentum(w, dw, config=None):
     #   Implement the momentum update formula.  Return the updated weights
     #   as next_w, and the updated velocity as v.
     # ================================================================ #
-    pass
+
+    v_new = config['momentum'] * v - config['learning_rate'] * dw
+    next_w = w + v_new + config['momentum'] * (v_new - v)
+    v = v_new
 
     # ================================================================ #
     # END YOUR CODE HERE
@@ -143,7 +148,11 @@ def rmsprop(w, dw, config=None):
     #   moment gradients, so they can be used for future gradients. Concretely,
     #   config['a'] corresponds to "a" in the lecture notes.
     # ================================================================ #
-    pass
+
+    a = config['decay_rate'] * config['a'] + (1-config['decay_rate']) * (dw**2)
+    next_w = w - config['learning_rate'] / \
+        (np.sqrt(a) + config['epsilon']) * dw
+    config['a'] = a
 
     # ================================================================ #
     # END YOUR CODE HERE
@@ -185,7 +194,24 @@ def adam(w, dw, config=None):
     #   moment gradients, and in config['v'] the moving average of the
     #   first moments.  Finally, store in config['t'] the increasing time.
     # ================================================================ #
-    pass
+
+    config['t'] += 1
+
+    # First moment update
+    v = config['beta1'] * config['v'] + (1 - config['beta1']) * dw
+
+    # Second moment update
+    a = config['beta2'] * config['a'] + (1 - config['beta2']) * (dw**2)
+
+    # Bias correction
+    v_corrected = 1 / (1 - config['beta1']**config['t']) * v
+    a_corrected = 1 / (1 - config['beta2']**config['t']) * a
+
+    # Gradient step
+    next_w = w - config['learning_rate'] / \
+        (np.sqrt(a_corrected) + config['epsilon']) * v_corrected
+    config['v'] = v
+    config['a'] = a
 
     # ================================================================ #
     # END YOUR CODE HERE
