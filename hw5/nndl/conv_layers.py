@@ -36,7 +36,24 @@ def conv_forward_naive(x, w, b, conv_param):
     #   Store the output as 'out'.
     #   Hint: to pad the array, you can use the function np.pad.
     # ================================================================ #
-    pass
+
+    N, _, H, W = x.shape
+    F, _, HH, WW = w.shape
+    Hout, Wout = 1 + (H + 2*pad - HH) // stride, 1 + (W + 2*pad - WW) // stride
+
+    def convolve(x, w, b):
+        out = np.zeros((Hout, Wout))
+        for i in range(Hout):
+            for j in range(Wout):
+                r, c = i*stride, j*stride
+                out[i, j] = (x[:, r:r+HH, c:c+WW] * w).sum() + b
+        return out
+
+    x_padded = np.pad(x, ((0, 0), (0, 0), (pad, pad), (pad, pad)))
+    out = np.zeros((N, F, Wout, Hout))
+    for i, xi in enumerate(x_padded):
+        for j, (wj, bj) in enumerate(zip(w, b)):
+            out[i, j] = convolve(xi, wj, bj)
 
     # ================================================================ #
     # END YOUR CODE HERE
@@ -73,7 +90,24 @@ def conv_backward_naive(dout, cache):
     #   Implement the backward pass of a convolutional neural network.
     #   Calculate the gradients: dx, dw, and db.
     # ================================================================ #
-    pass
+
+    Hout, Wout, HH, WW = out_height, out_width, f_height, f_width
+    _, _, H, W = x.shape
+
+    db = np.sum(dout, axis=(0, 2, 3))
+
+    dx, dw = np.zeros_like(x), np.zeros_like(w)
+    for i, xi in enumerate(xpad):
+        dxi = np.zeros_like(xi)
+        for j, wj in enumerate(w):
+            dwj = np.zeros_like(wj)
+            for ii in range(Hout):
+                for jj in range(Wout):
+                    r, c = ii*stride, jj*stride
+                    dxi[:, r:r+HH, c:c+WW] += wj * dout[i, j, ii, jj]
+                    dwj += xi[:, r:r+HH, c:c+WW] * dout[i, j, ii, jj]
+            dw[j] += dwj
+        dx[i] += dxi[:, pad:-pad, pad:-pad]
 
     # ================================================================ #
     # END YOUR CODE HERE
@@ -104,7 +138,22 @@ def max_pool_forward_naive(x, pool_param):
     #   Implement the max pooling forward pass.
     # ================================================================ #
 
-    pass
+    N, C, H, W = x.shape
+    pool_height, pool_width, stride = pool_param['pool_height'], pool_param['pool_width'], pool_param['stride']
+    Hout = (H - pool_height) // stride + 1
+    Wout = (W - pool_width) // stride + 1
+
+    out = np.zeros((N, C, Hout, Wout))
+    for i, xi in enumerate(x):
+        for j, xij in enumerate(xi):
+            out_ij = np.zeros((Hout, Wout))
+            for r in range(Hout):
+                for c in range(Wout):
+                    rr, cc = r*stride, c*stride
+                    out_ij[r, c] = np.max(
+                        xij[rr:rr+pool_height, cc:cc+pool_width])
+            out[i, j] = out_ij
+
     # ================================================================ #
     # END YOUR CODE HERE
     # ================================================================ #
@@ -131,7 +180,23 @@ def max_pool_backward_naive(dout, cache):
     # YOUR CODE HERE:
     #   Implement the max pooling backward pass.
     # ================================================================ #
-    pass
+
+    _, _, H, W = x.shape
+    Hout = (H - pool_height) // stride + 1
+    Wout = (W - pool_width) // stride + 1
+
+    dx = np.zeros(x.shape)
+    for i, xi in enumerate(x):
+        for j, xij in enumerate(xi):
+            dx_ij = np.zeros((H, W))
+            for r in range(Hout):
+                for c in range(Wout):
+                    rr, cc = r*stride, c*stride
+                    pool_slice = xij[rr:rr+pool_height, cc:cc+pool_width]
+                    a, b = np.unravel_index(
+                        pool_slice.argmax(), pool_slice.shape)
+                    dx_ij[rr + a, cc + b] += dout[i, j, r, c]
+            dx[i, j] = dx_ij
 
     # ================================================================ #
     # END YOUR CODE HERE
