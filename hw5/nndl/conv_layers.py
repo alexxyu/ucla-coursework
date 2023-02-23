@@ -92,11 +92,10 @@ def conv_backward_naive(dout, cache):
     # ================================================================ #
 
     Hout, Wout, HH, WW = out_height, out_width, f_height, f_width
-    _, _, H, W = x.shape
 
     db = np.sum(dout, axis=(0, 2, 3))
-
     dx, dw = np.zeros_like(x), np.zeros_like(w)
+
     for i, xi in enumerate(xpad):
         dxi = np.zeros_like(xi)
         for j, wj in enumerate(w):
