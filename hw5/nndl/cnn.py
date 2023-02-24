@@ -51,7 +51,26 @@ class ThreeLayerConvNet(object):
         #         standard deviation given by weight_scale.
         # ================================================================ #
 
-        pass
+        C, H, W = input_dim
+
+        conv_stride, conv_pad = 1, (filter_size - 1) / 2
+        pool_length, pool_stride = 2, 2
+
+        self.params['b1'] = np.zeros(num_filters)
+        self.params['W1'] = np.random.normal(
+            loc=0.0, scale=weight_scale, size=(num_filters, C, filter_size, filter_size))
+
+        H_conv = (H + 2*conv_pad - filter_size) // conv_stride + 1
+        W_conv = (W + 2*conv_pad - filter_size) // conv_stride + 1
+        H_pool = (H_conv - pool_length) // pool_stride + 1
+        W_pool = (W_conv - pool_length) // pool_stride + 1
+        self.params['b2'] = np.zeros(hidden_dim)
+        self.params['W2'] = np.random.normal(
+            loc=0.0, scale=weight_scale, size=(int(num_filters*H_pool*W_pool), hidden_dim))
+
+        self.params['b3'] = np.zeros(num_classes)
+        self.params['W3'] = np.random.normal(
+            loc=0.0, scale=weight_scale, size=(hidden_dim, num_classes))
 
         # ================================================================ #
         # END YOUR CODE HERE
@@ -85,7 +104,13 @@ class ThreeLayerConvNet(object):
         #   scores as the variable "scores".
         # ================================================================ #
 
-        pass
+        # conv - relu - 2x2 max pool - affine - relu - affine - softmax
+        conv_out, conv_cache = conv_relu_pool_forward(
+            X, W1, b1, conv_param, pool_param)
+        affine_1_out, affine_1_cache = affine_relu_forward(conv_out, W2, b2)
+        affine_2_out, affine_2_cache = affine_forward(affine_1_out, W3, b3)
+        scores = affine_2_out
+
         # ================================================================ #
         # END YOUR CODE HERE
         # ================================================================ #
@@ -102,13 +127,17 @@ class ThreeLayerConvNet(object):
         #   don't forget to add regularization on ALL weight matrices.
         # ================================================================ #
 
-        pass
+        loss, dLoss = softmax_loss(scores, y)
+        dz3, dw3, db3 = affine_backward(dLoss, affine_2_cache)
+        dz2, dw2, db2 = affine_relu_backward(dz3, affine_1_cache)
+        dx, dw1, db1 = conv_relu_pool_backward(dz2, conv_cache)
+
+        grads['W3'], grads['b3'] = dw3, db3
+        grads['W2'], grads['b2'] = dw2, db2
+        grads['W1'], grads['b1'] = dw1, db1
 
         # ================================================================ #
         # END YOUR CODE HERE
         # ================================================================ #
 
         return loss, grads
-
-
-pass
