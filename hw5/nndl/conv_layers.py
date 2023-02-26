@@ -39,21 +39,16 @@ def conv_forward_naive(x, w, b, conv_param):
 
     N, _, H, W = x.shape
     F, _, HH, WW = w.shape
-    Hout, Wout = 1 + (H + 2*pad - HH) // stride, 1 + (W + 2*pad - WW) // stride
-
-    def convolve(x, w, b):
-        out = np.zeros((Hout, Wout))
-        for i in range(Hout):
-            for j in range(Wout):
-                r, c = i*stride, j*stride
-                out[i, j] = (x[:, r:r+HH, c:c+WW] * w).sum() + b
-        return out
+    Hout, Wout = 1 + (H + 2 * pad - HH) // stride, 1 + (W + 2 * pad - WW) // stride
 
     x_padded = np.pad(x, ((0, 0), (0, 0), (pad, pad), (pad, pad)))
     out = np.zeros((N, F, Wout, Hout))
-    for i, xi in enumerate(x_padded):
-        for j, (wj, bj) in enumerate(zip(w, b)):
-            out[i, j] = convolve(xi, wj, bj)
+
+    for k, xk in enumerate(x_padded):
+        for i in range(Hout):
+            for j in range(Wout):
+                r, c = i * stride, j * stride
+                out[k, :, i, j] = (xk[:, r:r + HH, c:c + WW] * w).sum(axis=(1, 2, 3)) + b
 
     # ================================================================ #
     # END YOUR CODE HERE
@@ -102,9 +97,9 @@ def conv_backward_naive(dout, cache):
             dwj = np.zeros_like(wj)
             for ii in range(Hout):
                 for jj in range(Wout):
-                    r, c = ii*stride, jj*stride
-                    dxi[:, r:r+HH, c:c+WW] += wj * dout[i, j, ii, jj]
-                    dwj += xi[:, r:r+HH, c:c+WW] * dout[i, j, ii, jj]
+                    r, c = ii * stride, jj * stride
+                    dxi[:, r:r + HH, c:c + WW] += wj * dout[i, j, ii, jj]
+                    dwj += xi[:, r:r + HH, c:c + WW] * dout[i, j, ii, jj]
             dw[j] += dwj
         dx[i] += dxi[:, pad:-pad, pad:-pad]
 
@@ -148,9 +143,8 @@ def max_pool_forward_naive(x, pool_param):
             out_ij = np.zeros((Hout, Wout))
             for r in range(Hout):
                 for c in range(Wout):
-                    rr, cc = r*stride, c*stride
-                    out_ij[r, c] = np.max(
-                        xij[rr:rr+pool_height, cc:cc+pool_width])
+                    rr, cc = r * stride, c * stride
+                    out_ij[r, c] = np.max(xij[rr:rr + pool_height, cc:cc + pool_width])
             out[i, j] = out_ij
 
     # ================================================================ #
@@ -190,10 +184,9 @@ def max_pool_backward_naive(dout, cache):
             dx_ij = np.zeros((H, W))
             for r in range(Hout):
                 for c in range(Wout):
-                    rr, cc = r*stride, c*stride
-                    pool_slice = xij[rr:rr+pool_height, cc:cc+pool_width]
-                    a, b = np.unravel_index(
-                        pool_slice.argmax(), pool_slice.shape)
+                    rr, cc = r * stride, c * stride
+                    pool_slice = xij[rr:rr + pool_height, cc:cc + pool_width]
+                    a, b = np.unravel_index(pool_slice.argmax(), pool_slice.shape)
                     dx_ij[rr + a, cc + b] += dout[i, j, r, c]
             dx[i, j] = dx_ij
 
@@ -237,7 +230,7 @@ def spatial_batchnorm_forward(x, gamma, beta, bn_param):
     # ================================================================ #
 
     N, C, H, W = x.shape
-    x_reshaped = x.transpose(0, 2, 3, 1).reshape((N*H*W, C))
+    x_reshaped = x.transpose(0, 2, 3, 1).reshape((N * H * W, C))
     out_reshaped, cache = batchnorm_forward(x_reshaped, gamma, beta, bn_param)
     out = out_reshaped.reshape((N, H, W, C)).transpose(0, 3, 1, 2)
 
@@ -272,7 +265,7 @@ def spatial_batchnorm_backward(dout, cache):
     # ================================================================ #
 
     N, C, H, W = dout.shape
-    dout_reshaped = dout.transpose(0, 2, 3, 1).reshape((N*H*W, C))
+    dout_reshaped = dout.transpose(0, 2, 3, 1).reshape((N * H * W, C))
     dx_reshaped, dgamma, dbeta = batchnorm_backward(dout_reshaped, cache)
     dx = dx_reshaped.reshape((N, H, W, C)).transpose(0, 3, 1, 2)
 
