@@ -9,3 +9,4 @@ Originally, I had (about) one repo per class, but I decided to [merge](https://s
 Some of my coursework involved group projects that can be found in other repos:
 * CS 97: [Projector](https://github.com/CS97-Projector/Projector)
 * CS 130: [TeleTale](https://github.com/ColeTrammer/TeleTale)
+* ECE C147: [EEG Classifier](https://github.com/matthewyu01/eeg-classifier)
